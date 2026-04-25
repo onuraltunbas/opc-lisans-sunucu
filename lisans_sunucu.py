@@ -1,0 +1,2803 @@
+# -*- coding: utf-8 -*-
+
+"""
+OPC Gateway Lisans Doğrulama Sunucusu v5.0 (İstihbarat Entegreli)
+FastAPI + SQLite | Railway deploy
+"""
+
+import os
+import uuid
+import secrets
+import datetime
+import hmac
+import urllib.request
+import urllib.parse
+import json
+from typing import Optional, List
+from functools import wraps
+
+from fastapi import FastAPI, HTTPException, Header, Depends, Request, Form, Response, BackgroundTasks
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, EmailStr
+from sqlalchemy import (
+    create_engine, Column, String, DateTime,
+    Boolean, Integer, Text
+)
+from sqlalchemy.orm import declarative_base, sessionmaker, Session
+import hashlib
+
+# =====================================================================
+# YAPILANDIRMA — Railway'de Environment Variables olarak ayarlayın
+# =====================================================================
+SECRET_KEY         = os.getenv("SECRET_KEY", "BURAYA-GIZLI-ANAHTARINIZI-YAZIN")
+PANEL_KULLANICI    = os.getenv("PANEL_KULLANICI", "admin")
+PANEL_SIFRE        = os.getenv("PANEL_SIFRE", "admin123")
+DATABASE_URL       = os.getenv("DATABASE_URL", "sqlite:///./lisanslar.db")
+INDIRME_LINKI      = os.getenv("INDIRME_LINKI", "https://your-download-link.com")
+
+# TELEGRAM İSTİHBARAT AYARLARI
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID   = os.getenv("TELEGRAM_CHAT_ID", "")
+
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+# Offline lisans için gömülü anahtar
+_SK_P1 = bytes([0x4f, 0x50, 0x43, 0x5f, 0x47, 0x57, 0x5f, 0x4f])
+_SK_P2 = bytes([0x46, 0x46, 0x4c, 0x49, 0x4e, 0x45, 0x5f, 0x4b])
+_SK_P3 = hashlib.sha256(b"opcgw_offline_2026_salt_v1").digest()[:16]
+OFFLINE_SECRET_KEY = _SK_P1 + _SK_P2 + _SK_P3
+
+# =====================================================================
+# VERİTABANI MODELLERİ (Aynı Kalıyor)
+# =====================================================================
+_db_connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+engine   = create_engine(DATABASE_URL, connect_args=_db_connect_args)
+Session_ = sessionmaker(bind=engine)
+Base     = declarative_base()
+
+class Lisans(Base):
+    __tablename__ = "lisanslar"
+    id             = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    lisans_kodu    = Column(String, unique=True, nullable=False, index=True)
+    hwid           = Column(String, nullable=True)
+    musteri_adi    = Column(String, nullable=False)
+    musteri_email  = Column(String, nullable=True)
+    tur            = Column(String, nullable=False)
+    aktif          = Column(Boolean, default=True)
+    olusturma_tar  = Column(DateTime, default=datetime.datetime.utcnow)
+    bitis_tarihi   = Column(DateTime, nullable=True)
+    notlar         = Column(Text, nullable=True)
+    son_checkin    = Column(DateTime, nullable=True)
+    aktivasyon_tar = Column(DateTime, nullable=True)
+    iptal_nedeni   = Column(Text, nullable=True)
+    iptal_tarihi   = Column(DateTime, nullable=True)
+
+class Log(Base):
+    __tablename__ = "loglar"
+    id          = Column(Integer, primary_key=True, autoincrement=True)
+    tarih       = Column(DateTime, default=datetime.datetime.utcnow)
+    islem       = Column(String)
+    lisans_kodu = Column(String)
+    hwid        = Column(String)
+    ip          = Column(String)
+    mesaj       = Column(Text)
+
+class Kullanici(Base):
+    __tablename__ = "kullanicilar"
+    id              = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    ad_soyad        = Column(String, nullable=False)
+    email           = Column(String, unique=True, nullable=False, index=True)
+    sifre_hash      = Column(String, nullable=False)
+    email_dogrulandi = Column(Boolean, default=False)
+    dogrulama_kodu  = Column(String, nullable=True)
+    kayit_tar       = Column(DateTime, default=datetime.datetime.utcnow)
+    son_giris       = Column(DateTime, nullable=True)
+    son_ip          = Column(String, nullable=True)
+
+class LisansTalep(Base):
+    __tablename__ = "lisans_talepler"
+    id          = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    kullanici_id = Column(String, nullable=False)
+    ad_soyad    = Column(String, nullable=False)
+    email       = Column(String, nullable=False)
+    tur         = Column(String, nullable=False)
+    durum       = Column(String, default="beklemede")
+    talep_tar   = Column(DateTime, default=datetime.datetime.utcnow)
+    islem_tar   = Column(DateTime, nullable=True)
+    ip_adresi   = Column(String, nullable=True)
+    admin_notu  = Column(Text, nullable=True)
+
+class Mesaj(Base):
+    __tablename__ = "mesajlar"
+    id           = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    kullanici_id = Column(String, nullable=False)
+    gonderen     = Column(String, nullable=False)
+    icerik       = Column(Text, nullable=False)
+    tarih        = Column(DateTime, default=datetime.datetime.utcnow)
+    okundu       = Column(Boolean, default=False)
+
+class IpBan(Base):
+    __tablename__ = "ip_banlar"
+    id        = Column(Integer, primary_key=True, autoincrement=True)
+    ip        = Column(String, unique=True, nullable=False, index=True)
+    sebep     = Column(Text, nullable=True)
+    tarih     = Column(DateTime, default=datetime.datetime.utcnow)
+    aktif     = Column(Boolean, default=True)
+
+class UyelikTuru(Base):
+    __tablename__ = "uyelik_turleri"
+    id          = Column(Integer, primary_key=True, autoincrement=True)
+    kod         = Column(String, unique=True, nullable=False)
+    ad          = Column(String, nullable=False)
+    aciklama    = Column(Text, nullable=True)
+    aktif       = Column(Boolean, default=True)
+    sira        = Column(Integer, default=0)
+
+class PanelKullanici(Base):
+    __tablename__ = "panel_kullanicilari"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    kullanici_adi = Column(String, unique=True, nullable=False)
+    isim_soyad = Column(String, nullable=True)
+    email = Column(String, unique=True, nullable=True)
+    sifre_hash = Column(String, nullable=False)
+    is_admin = Column(Boolean, default=False)
+    yetki_lisans_olustur = Column(Boolean, default=False)
+    yetki_lisans_sil = Column(Boolean, default=False)
+    yetki_hwid_sifirla = Column(Boolean, default=False)
+    yetki_sure_uzat = Column(Boolean, default=False)
+    yetki_talep_onayla = Column(Boolean, default=False)
+    yetki_kullanici_ekle = Column(Boolean, default=False)
+    yetki_mesaj_yaz = Column(Boolean, default=False)
+    yetki_ip_ban = Column(Boolean, default=False)
+    yetki_uyelik_tur = Column(Boolean, default=False)
+    yetki_offline_lisans = Column(Boolean, default=False)
+    son_giris = Column(DateTime, nullable=True)
+    son_cikis = Column(DateTime, nullable=True)
+
+class PanelLog(Base):
+    __tablename__ = "panel_loglar"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    tarih = Column(DateTime, default=datetime.datetime.utcnow)
+    kullanici_adi = Column(String)
+    islem = Column(String)
+    detay = Column(Text)
+
+class Ayarlar(Base):
+    __tablename__ = "ayarlar"
+    id = Column(Integer, primary_key=True)
+    admin_kullanici = Column(String, nullable=True)
+    admin_sifre_hash = Column(String, nullable=True)
+
+class OfflineLisansAyarlari(Base):
+    __tablename__ = "offline_lisans_ayarlari"
+    id = Column(Integer, primary_key=True)
+    notlar = Column(Text, nullable=True)
+
+Base.metadata.create_all(engine)
+
+def _db_migrate():
+    if not DATABASE_URL.startswith("sqlite"): return
+    with engine.connect() as conn:
+        try:
+            conn.execute(__import__("sqlalchemy").text("ALTER TABLE panel_kullanicilari ADD COLUMN yetki_offline_lisans BOOLEAN DEFAULT 0"))
+            conn.commit()
+        except Exception: pass
+
+_db_migrate()
+
+def varsayilan_turleri_ekle():
+    s = Session_()
+    try:
+        if s.query(UyelikTuru).count() == 0:
+            turler = [
+                UyelikTuru(kod="aylik", ad="Aylık Lisans", aciklama="30 gün geçerli", sira=1),
+                UyelikTuru(kod="yillik", ad="Yıllık Lisans", aciklama="365 gün geçerli", sira=2),
+                UyelikTuru(kod="omur_boyu", ad="Ömür Boyu Lisans", aciklama="Süresiz geçerli", sira=3),
+                UyelikTuru(kod="deneme", ad="Deneme Sürümü", aciklama="24 saat ücretsiz deneme", sira=4),
+            ]
+            for t in turler: s.add(t)
+            s.commit()
+    finally: s.close()
+
+varsayilan_turleri_ekle()
+
+def db():
+    s = Session_()
+    try: yield s
+    finally: s.close()
+
+# =====================================================================
+# TELEGRAM İSTİHBARAT KÖPRÜSÜ (YENİ)
+# =====================================================================
+def get_ip_konum(ip: str) -> str:
+    if ip in ("127.0.0.1", "localhost", "0.0.0.0", "") or ip.startswith("192.168.") or ip.startswith("10."):
+        return "Yerel Ağ (LAN/Localhost)"
+    try:
+        url = f"http://ip-api.com/json/{ip}"
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=2) as response:
+            data = json.loads(response.read().decode())
+            if data.get("status") == "success":
+                return f"{data.get('city', '?')}, {data.get('country', '?')}"
+    except Exception:
+        pass
+    return "Bilinmeyen Konum"
+
+def istihbarat_raporu(bg_tasks: BackgroundTasks, islem_turu: str, actor: str, detay: str, ip: str):
+    """Telegrama asenkron olarak log fırlatır."""
+    def gorev():
+        if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID: return
+        konum = get_ip_konum(ip)
+        zaman = (datetime.datetime.utcnow() + datetime.timedelta(hours=3)).strftime("%d.%m.%Y - %H:%M:%S")
+        
+        mesaj = (
+            f"🚨 <b>YENİ SİSTEM İŞLEMİ</b> 🚨\n\n"
+            f"👤 <b>İşlemi Yapan:</b> {actor}\n"
+            f"⚙️ <b>İşlem:</b> {islem_turu}\n"
+            f"📄 <b>Detay:</b> {detay}\n\n"
+            f"🌐 <b>IP & Konum:</b> {ip} ({konum})\n"
+            f"🕒 <b>Tarih:</b> {zaman}"
+        )
+        try:
+            url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+            data = urllib.parse.urlencode({"chat_id": TELEGRAM_CHAT_ID, "text": mesaj, "parse_mode": "HTML"}).encode("utf-8")
+            req = urllib.request.Request(url, data=data)
+            urllib.request.urlopen(req, timeout=4)
+        except Exception:
+            pass
+            
+    if bg_tasks:
+        bg_tasks.add_task(gorev)
+
+# =====================================================================
+# YARDIMCI FONKSİYONLAR
+# =====================================================================
+def sifre_hashle(sifre: str) -> str:
+    return hashlib.sha256(sifre.encode()).hexdigest()
+
+def lisans_kodu_uret(tur_prefix="STD"):
+    parca = secrets.token_hex(6).upper()
+    return f"{tur_prefix}-{parca[:4]}-{parca[4:8]}-{parca[8:12]}"
+
+def bitis_tarihi_hesapla(tur: str, saat: Optional[int] = None) -> Optional[datetime.datetime]:
+    simdi = datetime.datetime.utcnow()
+    if tur == "aylik": return simdi + datetime.timedelta(days=30)
+    elif tur == "yillik": return simdi + datetime.timedelta(days=365)
+    elif tur == "deneme": return simdi + datetime.timedelta(hours=saat or 24)
+    elif tur == "omur_boyu": return None
+    return None
+
+def log_yaz(s: Session, islem, lisans_kodu, hwid, ip, mesaj):
+    s.add(Log(islem=islem, lisans_kodu=lisans_kodu, hwid=hwid, ip=ip, mesaj=mesaj))
+    s.commit()
+
+def panel_log_yaz(s: Session, kullanici_adi: str, islem: str, detay: str = ""):
+    s.add(PanelLog(kullanici_adi=kullanici_adi, islem=islem, detay=detay))
+    s.commit()
+
+def get_ana_admin_creds(s: Session):
+    ayar = s.query(Ayarlar).first()
+    if ayar and ayar.admin_kullanici and ayar.admin_sifre_hash:
+        return ayar.admin_kullanici, ayar.admin_sifre_hash
+    return PANEL_KULLANICI, sifre_hashle(PANEL_SIFRE)
+
+def ip_banlimi(s: Session, ip: str) -> bool:
+    ban = s.query(IpBan).filter_by(ip=ip, aktif=True).first()
+    return ban is not None
+
+# =====================================================================
+# SESSION YÖNETİMİ
+# =====================================================================
+_sessions = {}
+
+def session_olustur(kullanici_id: str) -> str:
+    token = secrets.token_urlsafe(32)
+    _sessions[token] = {"kullanici_id": kullanici_id, "tarih": datetime.datetime.utcnow()}
+    return token
+
+def session_dogrula(token: str) -> Optional[str]:
+    if not token: return None
+    s = _sessions.get(token)
+    if not s: return None
+    if (datetime.datetime.utcnow() - s["tarih"]).days > 7:
+        del _sessions[token]
+        return None
+    return s["kullanici_id"]
+
+def session_sil(token: str):
+    _sessions.pop(token, None)
+
+def get_kullanici_id(request: Request) -> Optional[str]:
+    token = request.cookies.get("session")
+    return session_dogrula(token) if token else None
+
+# =====================================================================
+# FASTAPI UYGULAMASI
+# =====================================================================
+app = FastAPI(title="OPC Gateway", docs_url=None, redoc_url=None)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+def app_sirri_dogrula(request: Request):
+    gelen = request.headers.get("x-app-secret") or request.headers.get("x_app_secret") or ""
+    if gelen != SECRET_KEY:
+        raise HTTPException(status_code=403, detail="Yetkisiz erisim.")
+
+class PanelUserDto:
+    def __init__(self, kadi, is_admin, yetkiler, isim_soyad=None):
+        self.kullanici_adi = kadi
+        self.is_admin = is_admin
+        self.yetkiler = yetkiler
+        self.isim_soyad = isim_soyad
+        self.tam_isim = f"{isim_soyad or kadi} ({kadi})"
+
+def panel_dogrula(request: Request, s: Session = Depends(db)):
+    auth = request.headers.get("authorization") or request.headers.get("Authorization") or ""
+    if auth.startswith("Bearer "):
+        token = auth[7:]
+        parts = token.split(":", 1)
+        if len(parts) == 2:
+            kadi = parts[0]
+            sifre = parts[1]
+            kadi_gercek, sifre_hash_gercek = get_ana_admin_creds(s)
+            
+            if kadi == kadi_gercek and sifre_hashle(sifre) == sifre_hash_gercek:
+                return PanelUserDto(kadi, True, {}, isim_soyad="Ana Admin")
+                
+            pk = s.query(PanelKullanici).filter_by(kullanici_adi=kadi, sifre_hash=sifre_hashle(sifre)).first()
+            if pk:
+                yetkiler = {
+                    "lisans_olustur": pk.yetki_lisans_olustur,
+                    "lisans_sil": pk.yetki_lisans_sil,
+                    "hwid_sifirla": pk.yetki_hwid_sifirla,
+                    "sure_uzat": pk.yetki_sure_uzat,
+                    "talep_onayla": pk.yetki_talep_onayla,
+                    "kullanici_ekle": pk.yetki_kullanici_ekle,
+                    "mesaj_yaz": pk.yetki_mesaj_yaz,
+                    "ip_ban": pk.yetki_ip_ban,
+                    "uyelik_tur": pk.yetki_uyelik_tur,
+                    "offline_lisans": pk.yetki_offline_lisans,
+                }
+                return PanelUserDto(kadi, pk.is_admin, yetkiler, isim_soyad=pk.isim_soyad)
+    raise HTTPException(status_code=401, detail="Panel kullanici adi veya sifresi yanlis.")
+
+def yetki_kontrol(istenen_yetki: str):
+    def checker(user: PanelUserDto = Depends(panel_dogrula)):
+        if user.is_admin: return user
+        if not user.yetkiler.get(istenen_yetki, False):
+            raise HTTPException(status_code=403, detail="Bu işlem için yetkiniz bulunmamaktadır.")
+        return user
+    return checker
+
+# =====================================================================
+# İSTEMCİ API (EXE kullanır)
+# =====================================================================
+class AktivasoyonIstek(BaseModel):
+    hwid: str
+    lisans_kodu: str
+
+class KontrolIstek(BaseModel):
+    hwid: str
+    lisans_kodu: str
+
+@app.post("/api/aktive-et", dependencies=[Depends(app_sirri_dogrula)])
+def aktive_et(istek: AktivasoyonIstek, request: Request, s: Session = Depends(db)):
+    ip = request.client.host
+    if ip_banlimi(s, ip): raise HTTPException(status_code=403, detail="Bu IP adresi yasaklanmıştır.")
+    kod = istek.lisans_kodu.strip().upper()
+    hwid = istek.hwid.strip()
+
+    lisans = s.query(Lisans).filter_by(lisans_kodu=kod).first()
+    if not lisans: raise HTTPException(status_code=404, detail="Lisans kodu bulunamadı.")
+    if not lisans.aktif: raise HTTPException(status_code=403, detail="Bu lisans iptal edilmiştir.")
+    if lisans.bitis_tarihi and datetime.datetime.utcnow() > lisans.bitis_tarihi: raise HTTPException(status_code=403, detail="Lisans süresi dolmuştur.")
+    if lisans.hwid and lisans.hwid != hwid: raise HTTPException(status_code=403, detail="Bu lisans başka bilgisayara kayıtlı.")
+    
+    if not lisans.hwid:
+        lisans.hwid = hwid
+        lisans.aktivasyon_tar = datetime.datetime.utcnow()
+    lisans.son_checkin = datetime.datetime.utcnow()
+    s.commit()
+    log_yaz(s, "aktivasyon", kod, hwid, ip, "Basarili aktivasyon")
+    return {"basarili": True, "mesaj": f"Hoş geldiniz, {lisans.musteri_adi}!", "tur": lisans.tur, "bitis_tarihi": lisans.bitis_tarihi.isoformat() if lisans.bitis_tarihi else None}
+
+@app.post("/api/kontrol", dependencies=[Depends(app_sirri_dogrula)])
+def kontrol(istek: KontrolIstek, request: Request, s: Session = Depends(db)):
+    ip = request.client.host
+    if ip_banlimi(s, ip): return {"gecerli": False, "mesaj": "Yasaklı IP."}
+    kod = istek.lisans_kodu.strip().upper()
+    hwid = istek.hwid.strip()
+    lisans = s.query(Lisans).filter_by(lisans_kodu=kod).first()
+    if not lisans or not lisans.aktif: return {"gecerli": False, "mesaj": "Lisans geçersiz."}
+    if lisans.hwid != hwid: return {"gecerli": False, "mesaj": "HWID uyuşmazlığı."}
+    if lisans.bitis_tarihi and datetime.datetime.utcnow() > lisans.bitis_tarihi: return {"gecerli": False, "mesaj": "Süre dolmuştur."}
+    lisans.son_checkin = datetime.datetime.utcnow()
+    s.commit()
+    return {"gecerli": True, "tur": lisans.tur, "bitis_tarihi": lisans.bitis_tarihi.isoformat() if lisans.bitis_tarihi else None}
+
+# =====================================================================
+# KULLANICI KAYIT/GİRİŞ API
+# =====================================================================
+@app.post("/api/kayit")
+async def kayit_ol(request: Request, bg_tasks: BackgroundTasks, s: Session = Depends(db)):
+    data = await request.json()
+    ad_soyad = data.get("ad_soyad", "").strip()
+    email = data.get("email", "").strip().lower()
+    sifre = data.get("sifre", "")
+    if not ad_soyad or not email or not sifre: raise HTTPException(status_code=400, detail="Eksik alan.")
+    if s.query(Kullanici).filter_by(email=email).first(): raise HTTPException(status_code=409, detail="Kayıtlı e-posta.")
+
+    k = Kullanici(ad_soyad=ad_soyad, email=email, sifre_hash=sifre_hashle(sifre), email_dogrulandi=True, son_ip=request.client.host)
+    s.add(k)
+    s.commit()
+    
+    # 🕵️ İstihbarat Raporu
+    istihbarat_raporu(bg_tasks, "Yeni Kullanıcı Kaydı", ad_soyad, f"E-posta: {email}", request.client.host)
+    return {"basarili": True, "mesaj": "Kayıt başarılı!"}
+
+@app.post("/api/giris")
+async def giris_yap(request: Request, response: Response, bg_tasks: BackgroundTasks, s: Session = Depends(db)):
+    data = await request.json()
+    email = data.get("email", "").strip().lower()
+    k = s.query(Kullanici).filter_by(email=email, sifre_hash=sifre_hashle(data.get("sifre", ""))).first()
+    if not k: raise HTTPException(status_code=401, detail="Yanlış şifre.")
+    k.son_giris = datetime.datetime.utcnow()
+    k.son_ip = request.client.host
+    s.commit()
+    
+    istihbarat_raporu(bg_tasks, "Müşteri Girişi", k.ad_soyad, f"Müşteri panele giriş yaptı. ({k.email})", request.client.host)
+    
+    token = session_olustur(k.id)
+    resp = JSONResponse({"basarili": True})
+    resp.set_cookie("session", token, httponly=True, max_age=604800, samesite="lax")
+    return resp
+
+@app.post("/api/cikis")
+def cikis_yap(request: Request, response: Response, bg_tasks: BackgroundTasks):
+    token = request.cookies.get("session")
+    if token: session_sil(token)
+    istihbarat_raporu(bg_tasks, "Müşteri Çıkışı", "Kullanıcı", "Sistemden çıkış yapıldı.", request.client.host)
+    resp = JSONResponse({"basarili": True})
+    resp.delete_cookie("session")
+    return resp
+
+@app.post("/api/talep-olustur")
+async def talep_olustur(request: Request, bg_tasks: BackgroundTasks, s: Session = Depends(db)):
+    kullanici_id = get_kullanici_id(request)
+    if not kullanici_id: raise HTTPException(status_code=401)
+    data = await request.json()
+    k = s.query(Kullanici).filter_by(id=kullanici_id).first()
+    if s.query(LisansTalep).filter_by(kullanici_id=kullanici_id, durum="beklemede").first():
+        raise HTTPException(status_code=409, detail="Zaten bekleyen talep var.")
+        
+    s.add(LisansTalep(kullanici_id=k.id, ad_soyad=k.ad_soyad, email=k.email, tur=data.get("tur"), ip_adresi=k.son_ip))
+    s.commit()
+    istihbarat_raporu(bg_tasks, "YENİ LİSANS TALEBİ", k.ad_soyad, f"Talep Edilen Tür: {data.get('tur')} | E-posta: {k.email}", request.client.host)
+    return {"basarili": True}
+
+@app.get("/api/benim-taleplerim")
+def benim_taleplerim(request: Request, s: Session = Depends(db)):
+    kid = get_kullanici_id(request)
+    if not kid: raise HTTPException(status_code=401)
+    talepler = s.query(LisansTalep).filter_by(kullanici_id=kid).order_by(LisansTalep.talep_tar.desc()).all()
+    return [{"id": t.id, "tur": t.tur, "durum": t.durum, "tarih": t.talep_tar.strftime("%d.%m.%Y %H:%M"), "admin_notu": t.admin_notu} for t in talepler]
+
+@app.post("/api/mesaj-gonder")
+async def mesaj_gonder(request: Request, s: Session = Depends(db)):
+    kid = get_kullanici_id(request)
+    if not kid: raise HTTPException(status_code=401)
+    data = await request.json()
+    s.add(Mesaj(kullanici_id=kid, gonderen="kullanici", icerik=data.get("icerik", "")))
+    s.commit()
+    return {"basarili": True}
+
+@app.get("/api/mesajlarim")
+def mesajlarim(request: Request, s: Session = Depends(db)):
+    kid = get_kullanici_id(request)
+    s.query(Mesaj).filter_by(kullanici_id=kid, gonderen="admin", okundu=False).update({"okundu": True})
+    s.commit()
+    mesajlar = s.query(Mesaj).filter_by(kullanici_id=kid).order_by(Mesaj.tarih.asc()).all()
+    return [{"gonderen": m.gonderen, "icerik": m.icerik, "tarih": m.tarih.strftime("%d.%m.%Y %H:%M")} for m in mesajlar]
+
+@app.get("/api/profil")
+def profil(request: Request, s: Session = Depends(db)):
+    kid = get_kullanici_id(request)
+    if not kid: raise HTTPException(status_code=401)
+    k = s.query(Kullanici).filter_by(id=kid).first()
+    lisans = s.query(Lisans).filter_by(musteri_email=k.email).order_by(Lisans.olusturma_tar.desc()).first()
+    l_bilgi = None
+    if lisans:
+        durum = "aktif" if lisans.aktif and (not lisans.bitis_tarihi or datetime.datetime.utcnow() <= lisans.bitis_tarihi) else "iptal" if not lisans.aktif else "suresi_dolmus"
+        l_bilgi = {"kod": lisans.lisans_kodu, "tur": lisans.tur, "bitis": lisans.bitis_tarihi.strftime("%d.%m.%Y") if lisans.bitis_tarihi else "Ömür Boyu", "aktif": lisans.aktif, "durum": durum}
+    return {"ad_soyad": k.ad_soyad, "email": k.email, "kayit_tar": k.kayit_tar.strftime("%d.%m.%Y"), "lisans": l_bilgi, "indirme_linki": INDIRME_LINKI if (l_bilgi and l_bilgi["durum"]=="aktif") else None}
+
+@app.post("/api/lisansimi-iptal-et")
+async def lisansimi_iptal_et(request: Request, bg_tasks: BackgroundTasks, s: Session = Depends(db)):
+    kid = get_kullanici_id(request)
+    k = s.query(Kullanici).filter_by(id=kid).first()
+    data = await request.json()
+    lisans = s.query(Lisans).filter_by(musteri_email=k.email, aktif=True).first()
+    if not lisans: raise HTTPException(status_code=404)
+    lisans.aktif = False
+    lisans.iptal_nedeni = data.get("neden", "")
+    s.commit()
+    istihbarat_raporu(bg_tasks, "Müşteri Lisansını İptal Etti", k.ad_soyad, f"İptal Edilen Kod: {lisans.lisans_kodu}\nNeden: {lisans.iptal_nedeni}", request.client.host)
+    return {"basarili": True}
+
+@app.get("/api/lisans-gecmisim")
+def lisans_gecmisim(request: Request, s: Session = Depends(db)):
+    k = s.query(Kullanici).filter_by(id=get_kullanici_id(request)).first()
+    lisanslar = s.query(Lisans).filter_by(musteri_email=k.email).order_by(Lisans.olusturma_tar.desc()).all()
+    sonuc = []
+    for l in lisanslar:
+        durum = "aktif" if l.aktif and (not l.bitis_tarihi or datetime.datetime.utcnow() <= l.bitis_tarihi) else "iptal" if not l.aktif else "suresi_dolmus"
+        sonuc.append({"kod": l.lisans_kodu, "tur": l.tur, "durum": durum, "olusturma": l.olusturma_tar.strftime("%d.%m.%Y") if l.olusturma_tar else "-", "bitis": l.bitis_tarihi.strftime("%d.%m.%Y") if l.bitis_tarihi else "Ömür Boyu", "aktivasyon": l.aktivasyon_tar.strftime("%d.%m.%Y") if l.aktivasyon_tar else None})
+    return sonuc
+
+@app.get("/api/uyelik-turleri-public")
+def uyelik_turleri_public(s: Session = Depends(db)):
+    return [{"kod": t.kod, "ad": t.ad, "aciklama": t.aciklama} for t in s.query(UyelikTuru).filter_by(aktif=True).order_by(UyelikTuru.sira).all()]
+
+
+# =====================================================================
+# PANEL API (Admin - İstihbarat Dolu)
+# =====================================================================
+class LisansOlusturIstek(BaseModel):
+    musteri_adi: str
+    musteri_email: Optional[str] = None
+    tur: str
+    deneme_saat: Optional[int] = 24
+    notlar: Optional[str] = None
+
+@app.post("/panel/lisans-olustur")
+def lisans_olustur(istek: LisansOlusturIstek, request: Request, bg_tasks: BackgroundTasks, user: PanelUserDto = Depends(yetki_kontrol("lisans_olustur")), s: Session = Depends(db)):
+    prefix_map = {"aylik": "AYL", "yillik": "YIL", "omur_boyu": "OBY", "deneme": "DEN"}
+    kod = lisans_kodu_uret(prefix_map[istek.tur])
+    bitis = bitis_tarihi_hesapla(istek.tur, istek.deneme_saat)
+    s.add(Lisans(lisans_kodu=kod, musteri_adi=istek.musteri_adi, musteri_email=istek.musteri_email, tur=istek.tur, bitis_tarihi=bitis, notlar=istek.notlar))
+    s.commit()
+    istihbarat_raporu(bg_tasks, "Online Lisans Üretildi", user.tam_isim, f"Müşteri: {istek.musteri_adi}\nTür: {istek.tur}\nKod: {kod}", request.client.host)
+    return {"lisans_kodu": kod, "bitis_tarihi": bitis.isoformat() if bitis else "Ömür boyu", "mesaj": f"Lisans oluşturuldu: {kod}"}
+
+@app.post("/panel/iptal")
+def iptal_et(lisans_kodu: str, request: Request, bg_tasks: BackgroundTasks, user: PanelUserDto = Depends(yetki_kontrol("lisans_sil")), s: Session = Depends(db)):
+    lisans = s.query(Lisans).filter_by(lisans_kodu=lisans_kodu.upper()).first()
+    lisans.aktif = False
+    s.commit()
+    istihbarat_raporu(bg_tasks, "Lisans İptal Edildi", user.tam_isim, f"İptal Edilen Kod: {lisans_kodu}", request.client.host)
+    return {"mesaj": f"{lisans_kodu} lisansı iptal edildi."}
+
+@app.delete("/panel/lisans-sil/{lisans_kodu}")
+def lisans_sil(lisans_kodu: str, request: Request, bg_tasks: BackgroundTasks, user: PanelUserDto = Depends(yetki_kontrol("lisans_sil")), s: Session = Depends(db)):
+    lisans = s.query(Lisans).filter_by(lisans_kodu=lisans_kodu.upper()).first()
+    s.delete(lisans)
+    s.commit()
+    istihbarat_raporu(bg_tasks, "Lisans KALICI OLARAK Silindi", user.tam_isim, f"Silinen Kod: {lisans_kodu}", request.client.host)
+    return {"mesaj": f"{lisans_kodu} silindi."}
+
+@app.post("/panel/hwid-sifirla")
+def hwid_sifirla(lisans_kodu: str, request: Request, bg_tasks: BackgroundTasks, user: PanelUserDto = Depends(yetki_kontrol("hwid_sifirla")), s: Session = Depends(db)):
+    lisans = s.query(Lisans).filter_by(lisans_kodu=lisans_kodu.upper()).first()
+    lisans.hwid = None
+    lisans.aktivasyon_tar = None
+    s.commit()
+    istihbarat_raporu(bg_tasks, "HWID Sıfırlandı", user.tam_isim, f"İşlem Yapılan Kod: {lisans_kodu}", request.client.host)
+    return {"mesaj": f"HWID sıfırlandı."}
+
+@app.post("/panel/sure-uzat")
+def sure_uzat(lisans_kodu: str, gun: int, request: Request, bg_tasks: BackgroundTasks, user: PanelUserDto = Depends(yetki_kontrol("sure_uzat")), s: Session = Depends(db)):
+    lisans = s.query(Lisans).filter_by(lisans_kodu=lisans_kodu.upper()).first()
+    lisans.bitis_tarihi = max(lisans.bitis_tarihi, datetime.datetime.utcnow()) + datetime.timedelta(days=gun)
+    lisans.aktif = True
+    s.commit()
+    istihbarat_raporu(bg_tasks, "Lisans Süresi Uzatıldı", user.tam_isim, f"Kod: {lisans_kodu}\nEklenen: +{gun} Gün", request.client.host)
+    return {"mesaj": f"{gun} gün eklendi."}
+
+@app.post("/panel/talep-guncelle")
+async def talep_guncelle(request: Request, bg_tasks: BackgroundTasks, user: PanelUserDto = Depends(yetki_kontrol("talep_onayla")), s: Session = Depends(db)):
+    data = await request.json()
+    talep = s.query(LisansTalep).filter_by(id=data["talep_id"]).first()
+    talep.durum = data["durum"]
+    s.commit()
+    
+    durum_str = "ONAYLANDI" if data["durum"] == "onaylandi" else "REDDEDİLDİ"
+    istihbarat_raporu(bg_tasks, f"Talep {durum_str}", user.tam_isim, f"Müşteri: {talep.ad_soyad} ({talep.email})\nTalep Türü: {talep.tur}\nNot: {data.get('admin_notu','')}", request.client.host)
+
+    if data["durum"] == "onaylandi":
+        kod = lisans_kodu_uret("STD")
+        s.add(Lisans(lisans_kodu=kod, musteri_adi=talep.ad_soyad, musteri_email=talep.email, tur=talep.tur, bitis_tarihi=bitis_tarihi_hesapla(talep.tur)))
+        s.commit()
+    return {"basarili": True}
+
+@app.post("/panel/admin-mesaj-gonder")
+async def admin_mesaj_gonder(request: Request, bg_tasks: BackgroundTasks, user: PanelUserDto = Depends(yetki_kontrol("mesaj_yaz")), s: Session = Depends(db)):
+    data = await request.json()
+    s.add(Mesaj(kullanici_id=data["kullanici_id"], gonderen="admin", icerik=data.get("icerik", ""), okundu=False))
+    s.commit()
+    istihbarat_raporu(bg_tasks, "Kullanıcıya Mesaj Gönderildi", user.tam_isim, f"Alıcı ID: {data['kullanici_id']}\nMesaj: {data.get('icerik')}", request.client.host)
+    return {"basarili": True}
+
+@app.post("/panel/ip-ban-ekle")
+async def ip_ban_ekle(request: Request, bg_tasks: BackgroundTasks, user: PanelUserDto = Depends(yetki_kontrol("ip_ban")), s: Session = Depends(db)):
+    data = await request.json()
+    s.add(IpBan(ip=data["ip"], sebep=data.get("sebep", "")))
+    s.commit()
+    istihbarat_raporu(bg_tasks, "IP Banlandı", user.tam_isim, f"Banlanan IP: {data['ip']}\nSebep: {data.get('sebep')}", request.client.host)
+    return {"mesaj": f"IP banlandı."}
+
+@app.post("/panel/ip-ban-kaldir")
+async def ip_ban_kaldir(request: Request, bg_tasks: BackgroundTasks, user: PanelUserDto = Depends(yetki_kontrol("ip_ban")), s: Session = Depends(db)):
+    data = await request.json()
+    ban = s.query(IpBan).filter_by(ip=data["ip"]).first()
+    ban.aktif = False
+    s.commit()
+    istihbarat_raporu(bg_tasks, "IP Banı Kaldırıldı", user.tam_isim, f"Kaldırılan IP: {data['ip']}", request.client.host)
+    return {"mesaj": f"IP banı kaldırıldı."}
+
+# Diğer get metotları (loglar, istatistikler, listeler) aynı kalıyor...
+@app.get("/panel/lisanslar")
+def lisanslar_listele(filtre: str = "hepsi", user: PanelUserDto = Depends(panel_dogrula), s: Session = Depends(db)):
+    # ... [MEVCUT KODLAR BURADA AYNI ŞEKİLDE KALACAK] ...
+    simdi = datetime.datetime.utcnow()
+    liste = s.query(Lisans).order_by(Lisans.olusturma_tar.desc()).all()
+    sonuc = []
+    for l in liste:
+        durum = "aktif" if l.aktif and (not l.bitis_tarihi or simdi <= l.bitis_tarihi) else "iptal" if not l.aktif else "suresi_dolmus"
+        if filtre != "hepsi" and filtre != durum: continue
+        sonuc.append({
+            "lisans_kodu": l.lisans_kodu, "musteri_adi": l.musteri_adi, "musteri_email": l.musteri_email,
+            "tur": l.tur, "aktif": l.aktif, "durum": durum, "hwid": l.hwid or "Yok",
+            "bitis_tarihi": l.bitis_tarihi.strftime("%d.%m.%Y") if l.bitis_tarihi else "Ömür boyu",
+            "son_checkin": l.son_checkin.strftime("%d.%m.%Y") if l.son_checkin else "Hiç",
+            "aktivasyon": l.aktivasyon_tar.strftime("%d.%m.%Y") if l.aktivasyon_tar else "Yok",
+            "notlar": l.notlar or "", "iptal_nedeni": l.iptal_nedeni or ""
+        })
+    return sonuc
+
+@app.get("/panel/talepler")
+def panel_talepler(user: PanelUserDto = Depends(panel_dogrula), s: Session = Depends(db)):
+    return [{"id": t.id, "kullanici_id": t.kullanici_id, "ad_soyad": t.ad_soyad, "email": t.email, "tur": t.tur, "durum": t.durum, "tarih": t.talep_tar.strftime("%d.%m.%Y %H:%M"), "ip": t.ip_adresi, "admin_notu": t.admin_notu or ""} for t in s.query(LisansTalep).order_by(LisansTalep.talep_tar.desc()).all()]
+
+@app.get("/panel/iptal-istatistikleri")
+def iptal_istatistikleri(user: PanelUserDto = Depends(panel_dogrula), s: Session = Depends(db)):
+    return {"ozet": {"toplam": s.query(Lisans).count(), "aktif": 0, "biten": 0, "iptal": 0}, "nedenler": []}
+
+@app.get("/panel/kullanicilar")
+def panel_kullanicilar(user: PanelUserDto = Depends(panel_dogrula), s: Session = Depends(db)):
+    kullanicilar = s.query(Kullanici).order_by(Kullanici.kayit_tar.desc()).all()
+    sonuc = []
+    for k in kullanicilar:
+        l = s.query(Lisans).filter_by(musteri_email=k.email, aktif=True).first()
+        sonuc.append({"id": k.id, "ad_soyad": k.ad_soyad, "email": k.email, "email_dogrulandi": k.email_dogrulandi, "kayit_tar": k.kayit_tar.strftime("%d.%m.%Y"), "son_giris": k.son_giris.strftime("%d.%m.%Y") if k.son_giris else "Hiç", "son_ip": k.son_ip or "-", "lisans_kodu": l.lisans_kodu if l else None, "lisans_tur": l.tur if l else None})
+    return sonuc
+
+@app.delete("/panel/kullanici-sil/{kullanici_id}")
+def kullanici_sil(kullanici_id: str, request: Request, bg_tasks: BackgroundTasks, user: PanelUserDto = Depends(panel_dogrula), s: Session = Depends(db)):
+    k = s.query(Kullanici).filter_by(id=kullanici_id).first()
+    s.query(Lisans).filter_by(musteri_email=k.email).update({"aktif": False})
+    s.delete(k)
+    s.commit()
+    istihbarat_raporu(bg_tasks, "Müşteri Silindi", user.tam_isim, f"Silinen: {k.ad_soyad} ({k.email})", request.client.host)
+    return {"mesaj": f"Kullanıcı silindi."}
+
+@app.post("/panel/uyelik-tur-ekle")
+async def uyelik_tur_ekle(request: Request, bg_tasks: BackgroundTasks, user: PanelUserDto = Depends(yetki_kontrol("uyelik_tur")), s: Session = Depends(db)):
+    data = await request.json()
+    s.add(UyelikTuru(kod=data["kod"], ad=data["ad"], aciklama=data.get("aciklama", ""), sira=data.get("sira", 99)))
+    s.commit()
+    istihbarat_raporu(bg_tasks, "Yeni Üyelik Türü Eklendi", user.tam_isim, f"Tür: {data['ad']} ({data['kod']})", request.client.host)
+    return {"basarili": True}
+
+class GirisIstek(BaseModel):
+    kullanici: str
+    sifre: str
+
+@app.post("/panel/giris")
+def panel_giris_yap(istek: GirisIstek, request: Request, bg_tasks: BackgroundTasks, s: Session = Depends(db)):
+    kadi_gercek, sifre_hash_gercek = get_ana_admin_creds(s)
+    if istek.kullanici == kadi_gercek and sifre_hashle(istek.sifre) == sifre_hash_gercek:
+        istihbarat_raporu(bg_tasks, "Admin Panel Girişi", "Ana Admin", "Sisteme giriş yapıldı.", request.client.host)
+        return {"basarili": True, "is_admin": True, "kullanici_adi": kadi_gercek, "isim_soyad": "Ana Admin", "yetkiler": {}}
+        
+    pk = s.query(PanelKullanici).filter_by(kullanici_adi=istek.kullanici, sifre_hash=sifre_hashle(istek.sifre)).first()
+    if pk:
+        istihbarat_raporu(bg_tasks, "Yetkili Panel Girişi", f"{pk.isim_soyad} ({pk.kullanici_adi})", "Sisteme giriş yapıldı.", request.client.host)
+        pk.son_giris = datetime.datetime.utcnow()
+        s.commit()
+        return {"basarili": True, "is_admin": pk.is_admin, "kullanici_adi": pk.kullanici_adi, "isim_soyad": pk.isim_soyad, "yetkiler": {}}
+    raise HTTPException(status_code=401, detail="Panel kullanici adi veya sifresi yanlis.")
+
+class YetkiliEkleIstek(BaseModel):
+    kullanici_adi: str
+    isim_soyad: str
+    email: str
+    sifre: str
+    yetkiler: dict
+
+@app.post("/panel/yetkili-ekle")
+def panel_yetkili_ekle(istek: YetkiliEkleIstek, request: Request, bg_tasks: BackgroundTasks, user: PanelUserDto = Depends(yetki_kontrol("kullanici_ekle")), s: Session = Depends(db)):
+    y = PanelKullanici(kullanici_adi=istek.kullanici_adi, isim_soyad=istek.isim_soyad, email=istek.email, sifre_hash=sifre_hashle(istek.sifre))
+    s.add(y)
+    s.commit()
+    istihbarat_raporu(bg_tasks, "Yeni Alt Yetkili Eklendi", user.tam_isim, f"Eklenen Yetkili: {istek.isim_soyad} ({istek.kullanici_adi})", request.client.host)
+    return {"basarili": True}
+
+@app.delete("/panel/yetkili-sil/{yetkili_id}")
+def panel_yetkili_sil(yetkili_id: int, request: Request, bg_tasks: BackgroundTasks, user: PanelUserDto = Depends(panel_dogrula), s: Session = Depends(db)):
+    y = s.query(PanelKullanici).filter_by(id=yetkili_id).first()
+    istihbarat_raporu(bg_tasks, "Alt Yetkili Silindi", user.tam_isim, f"Silinen Yetkili: {y.kullanici_adi}", request.client.host)
+    s.delete(y)
+    s.commit()
+    return {"basarili": True}
+
+class OfflineLisansIstek(BaseModel):
+    istek_kodu: str
+    sure_gun: int
+    yetki: str
+
+@app.post("/panel/offline-lisans-uret")
+def offline_lisans_uret(istek: OfflineLisansIstek, request: Request, bg_tasks: BackgroundTasks, user: PanelUserDto = Depends(yetki_kontrol("offline_lisans")), s: Session = Depends(db)):
+    mesaj = f"{istek.istek_kodu}|{istek.sure_gun}|{istek.yetki}".encode("utf-8")
+    imza = hmac.new(OFFLINE_SECRET_KEY, mesaj, hashlib.sha256).hexdigest()[:16].upper()
+    akt_kod = f"ACT-{istek.sure_gun}D-{istek.yetki}-{imza}"
+    
+    detay = f"İstek Kodu: {istek.istek_kodu}\nSüre: {istek.sure_gun} Gün\nYetki: {istek.yetki}\n\nÜretilen Kod: {akt_kod}"
+    istihbarat_raporu(bg_tasks, "Çevrimdışı (Offline) Lisans Üretildi", user.tam_isim, detay, request.client.host)
+    return {"basarili": True, "aktivasyon_kodu": akt_kod, "istek_kodu": istek.istek_kodu, "sure_gun": istek.sure_gun, "yetki": istek.yetki}
+
+PANEL_HTML = r"""<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OPC Gateway — Lisans Paneli</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, sans-serif; background: #0f1117; color: #e0e0e0; min-height: 100vh; }
+a { color: inherit; text-decoration: none; }
+
+/* Login overlay */
+#login-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 999; backdrop-filter: blur(6px); }
+#login-box { background: #1a1d2e; border: 1px solid #2a2d3e; border-radius: 12px; padding: 36px; width: 340px; text-align: center; }
+#login-box h2 { color: #5b8cff; margin-bottom: 24px; font-size: 20px; }
+#login-box input { width: 100%; background: #0f1117; border: 1px solid #2a2d3e; border-radius: 6px; padding: 10px 12px; color: #e0e0e0; font-size: 14px; margin-bottom: 12px; }
+#login-box input:focus { outline: none; border-color: #5b8cff; }
+#login-box button { width: 100%; background: #5b8cff; color: white; border: none; border-radius: 6px; padding: 11px; font-size: 14px; font-weight: 600; cursor: pointer; }
+#login-box button:hover { background: #4a7aff; }
+#login-hata { color: #ff6b6b; font-size: 13px; margin-top: 8px; min-height: 20px; }
+
+/* Layout */
+.sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 220px; background: #1a1d2e; border-right: 1px solid #2a2d3e; padding: 20px 0; display: flex; flex-direction: column; }
+.sidebar-logo { padding: 0 20px 20px; border-bottom: 1px solid #2a2d3e; margin-bottom: 12px; }
+.sidebar-logo h1 { font-size: 15px; font-weight: 700; color: #5b8cff; }
+.sidebar-logo p { font-size: 11px; color: #666; margin-top: 2px; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; font-size: 13px; color: #aaa; cursor: pointer; transition: all 0.15s; position: relative; }
+.nav-item:hover { background: #222540; color: #e0e0e0; }
+.nav-item.active { background: #222540; color: #5b8cff; border-right: 3px solid #5b8cff; }
+.nav-item .badge { background: #ff4757; color: white; border-radius: 10px; padding: 1px 7px; font-size: 11px; font-weight: 700; margin-left: auto; }
+.nav-icon { font-size: 16px; width: 20px; text-align: center; }
+
+.main { margin-left: 220px; padding: 24px; position: relative; }
+.page { display: none; }
+.page.active { display: block; }
+.page-title { font-size: 20px; font-weight: 700; color: #e0e0e0; margin-bottom: 20px; }
+
+/* Greeting */
+#panel-greeting { position: absolute; right: 24px; top: 24px; font-size: 14px; font-weight: 600; color: #8a9bc0; z-index: 10; }
+
+
+/* Cards */
+.card { background: #1a1d2e; border: 1px solid #2a2d3e; border-radius: 10px; padding: 20px; margin-bottom: 16px; }
+.card h3 { font-size: 14px; font-weight: 600; color: #5b8cff; margin-bottom: 14px; }
+
+/* Form elements */
+input[type=text], input[type=email], input[type=number], input[type=password], select, textarea {
+  background: #0f1117; border: 1px solid #2a2d3e; border-radius: 6px; padding: 9px 12px; color: #e0e0e0; font-size: 13px; width: 100%; margin-bottom: 8px;
+}
+input:focus, select:focus, textarea:focus { outline: none; border-color: #5b8cff; }
+textarea { min-height: 80px; resize: vertical; }
+
+/* Buttons */
+.btn { border: none; border-radius: 6px; padding: 8px 18px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px; }
+.btn-primary { background: #5b8cff; color: white; }
+.btn-primary:hover { background: #4a7aff; }
+.btn-danger { background: #c62828; color: white; }
+.btn-danger:hover { background: #b71c1c; }
+.btn-success { background: #2e7d32; color: white; }
+.btn-success:hover { background: #1b5e20; }
+.btn-warning { background: #e65100; color: white; }
+.btn-warning:hover { background: #bf360c; }
+.btn-ghost { background: transparent; border: 1px solid #2a2d3e; color: #aaa; }
+.btn-ghost:hover { border-color: #5b8cff; color: #5b8cff; }
+.btn-sm { padding: 5px 12px; font-size: 12px; }
+.row-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+
+/* Tables */
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th { background: #222540; color: #888; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; padding: 10px 12px; text-align: left; }
+td { padding: 10px 12px; border-bottom: 1px solid #1e2033; vertical-align: middle; color: #ccc; }
+tr:hover td { background: #1e2033; }
+code { font-family: monospace; font-size: 12px; background: #222540; padding: 2px 6px; border-radius: 4px; color: #7eb8ff; }
+
+/* Badges */
+.badge { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+.b-aktif { background: #1b5e2033; color: #4caf50; border: 1px solid #2e7d3255; }
+.b-pasif { background: #b71c1c22; color: #ef9a9a; border: 1px solid #c6282833; }
+.b-beklemede { background: #e65100; color: white; }
+.b-onaylandi { background: #2e7d32; color: white; }
+.b-reddedildi { background: #c62828; color: white; }
+.b-aylik { background: #1565c033; color: #90caf9; border: 1px solid #1565c055; }
+.b-yillik { background: #4a148c33; color: #ce93d8; border: 1px solid #4a148c55; }
+.b-omur { background: #1b5e2033; color: #a5d6a7; border: 1px solid #2e7d3255; }
+.b-deneme { background: #e6510033; color: #ffcc80; border: 1px solid #e6510055; }
+
+/* Terminal / log */
+#log-output { background: #0a0c14; color: #00e676; font-family: monospace; font-size: 11px; padding: 14px; border-radius: 6px; min-height: 120px; max-height: 360px; overflow-y: auto; white-space: pre-wrap; border: 1px solid #1e2033; }
+
+/* Stat cards */
+.stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.stat-card { background: #1a1d2e; border: 1px solid #2a2d3e; border-radius: 10px; padding: 16px; }
+.stat-card .val { font-size: 28px; font-weight: 700; color: #5b8cff; }
+.stat-card .lbl { font-size: 12px; color: #666; margin-top: 4px; }
+
+/* Messages */
+.msg-list { display: flex; flex-direction: column; gap: 8px; max-height: 420px; overflow-y: auto; padding-right: 4px; }
+.msg-bubble { max-width: 80%; padding: 10px 14px; border-radius: 10px; font-size: 13px; line-height: 1.6; }
+.msg-bubble.kullanici { background: #222540; color: #ccc; align-self: flex-start; border-bottom-left-radius: 2px; }
+.msg-bubble.admin { background: #5b8cff22; color: #90caf9; align-self: flex-end; border-bottom-right-radius: 2px; border: 1px solid #5b8cff33; }
+.msg-time { font-size: 10px; color: #555; margin-top: 4px; }
+.msg-sender { display: flex; flex-direction: column; }
+.msg-sender.right { align-items: flex-end; }
+
+/* User detail card */
+.user-detail { background: #0f1117; border: 1px solid #2a2d3e; border-radius: 8px; padding: 14px; margin-bottom: 14px; font-size: 13px; }
+.user-detail .row { display: flex; gap: 24px; flex-wrap: wrap; }
+.user-detail .field { display: flex; flex-direction: column; gap: 3px; }
+.user-detail .field label { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 0.5px; }
+.user-detail .field span { color: #ccc; font-weight: 500; }
+
+/* Konuşma listesi */
+.conv-list { display: flex; flex-direction: column; gap: 2px; }
+.conv-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 8px; cursor: pointer; transition: background 0.15s; border: 1px solid transparent; }
+.conv-item:hover { background: #222540; }
+.conv-item.active { background: #222540; border-color: #5b8cff33; }
+.conv-avatar { width: 38px; height: 38px; border-radius: 50%; background: #5b8cff33; color: #5b8cff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; flex-shrink: 0; }
+.conv-info { flex: 1; min-width: 0; }
+.conv-name { font-size: 13px; font-weight: 600; color: #e0e0e0; }
+.conv-preview { font-size: 12px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.conv-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+.unread-dot { background: #ff4757; color: white; border-radius: 10px; padding: 1px 7px; font-size: 11px; font-weight: 700; }
+
+/* Split layout for messages */
+.msg-split { display: grid; grid-template-columns: 280px 1fr; gap: 16px; height: calc(100vh - 140px); }
+.msg-left { background: #1a1d2e; border: 1px solid #2a2d3e; border-radius: 10px; overflow-y: auto; padding: 12px; }
+.msg-right { background: #1a1d2e; border: 1px solid #2a2d3e; border-radius: 10px; display: flex; flex-direction: column; }
+.msg-right-header { padding: 14px 16px; border-bottom: 1px solid #2a2d3e; }
+.msg-right-body { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.msg-right-footer { padding: 12px 16px; border-top: 1px solid #2a2d3e; display: flex; gap: 8px; }
+.msg-right-footer textarea { margin: 0; flex: 1; min-height: 44px; max-height: 120px; }
+
+/* Notification */
+.notif { position: fixed; bottom: 24px; right: 24px; background: #2e7d32; color: white; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; z-index: 9999; transform: translateY(80px); opacity: 0; transition: all 0.3s; }
+.notif.show { transform: translateY(0); opacity: 1; }
+.notif.error { background: #c62828; }
+
+/* Üyelik türleri */
+.tur-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.tur-card { background: #0f1117; border: 1px solid #2a2d3e; border-radius: 8px; padding: 14px; }
+.tur-card h4 { font-size: 14px; color: #e0e0e0; margin-bottom: 4px; }
+.tur-card .tur-kod { font-size: 11px; color: #5b8cff; font-family: monospace; }
+.tur-card .tur-aciklama { font-size: 12px; color: #666; margin: 8px 0; }
+
+/* Filtre butonları */
+.filtre-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.filtre-btn { border: 1px solid #2a2d3e; background: transparent; color: #888; border-radius: 20px; padding: 5px 16px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px; }
+.filtre-btn:hover { border-color: #5b8cff; color: #e0e0e0; }
+.filtre-btn.aktif { background: #5b8cff22; border-color: #5b8cff; color: #5b8cff; }
+.filtre-btn.aktif-f { background: #22c55e22; border-color: #22c55e; color: #4ade80; }
+.filtre-btn.biten-f { background: #f59e0b22; border-color: #f59e0b; color: #fbbf24; }
+.filtre-btn.iptal-f { background: #ef444422; border-color: #ef4444; color: #f87171; }
+.cnt-badge { font-size: 11px; font-weight: 700; background: rgba(255,255,255,0.08); border-radius: 10px; padding: 1px 7px; }
+
+/* İstatistik kartı */
+.istat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+.istat-card { background: #0f1117; border: 1px solid #2a2d3e; border-radius: 8px; padding: 14px 16px; text-align: center; }
+.istat-card .i-val { font-size: 26px; font-weight: 700; }
+.istat-card .i-lbl { font-size: 11px; color: #555; margin-top: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
+.istat-card.i-green .i-val { color: #4ade80; }
+.istat-card.i-yellow .i-val { color: #fbbf24; }
+.istat-card.i-red .i-val { color: #f87171; }
+.istat-card.i-blue .i-val { color: #7eb8ff; }
+</style>
+</head>
+<body>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+<!-- Login -->
+<div id="login-overlay">
+  <div id="login-box">
+    <h2>🔐 Panel Girişi</h2>
+    <input type="text" id="inp-kullanici" placeholder="Kullanıcı adı" autocomplete="username">
+    <input type="password" id="inp-sifre" placeholder="Şifre" autocomplete="current-password" onkeydown="if(event.key==='Enter')panelGiris()">
+    <button onclick="panelGiris()">Giriş Yap</button>
+    <div id="login-hata"></div>
+  </div>
+</div>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <h1>OPC Gateway</h1>
+    <p>Lisans Yönetim Paneli</p>
+  </div>
+  <div class="nav-item active" onclick="sayfaAc('lisanslar')" id="nav-lisanslar">
+    <span class="nav-icon">🔑</span> Lisanslar
+  </div>
+  <div class="nav-item" onclick="sayfaAc('talepler')" id="nav-talepler">
+    <span class="nav-icon">📋</span> Talepler
+    <span class="badge" id="talep-badge" style="display:none">0</span>
+  </div>
+  <div class="nav-item" onclick="sayfaAc('mesajlar')" id="nav-mesajlar">
+    <span class="nav-icon">💬</span> Mesajlar
+    <span class="badge" id="mesaj-badge" style="display:none">0</span>
+  </div>
+  <div class="nav-item" onclick="sayfaAc('kullanicilar')" id="nav-kullanicilar">
+    <span class="nav-icon">👥</span> Kullanıcılar
+  </div>
+  <div class="nav-item yetki-ip-ban" onclick="sayfaAc('ip-banlar')" id="nav-ip-banlar" style="display:none">
+    <span class="nav-icon">🚫</span> IP Ban
+  </div>
+  <div class="nav-item yetki-uyelik-tur" onclick="sayfaAc('uyelik-turleri')" id="nav-uyelik-turleri" style="display:none">
+    <span class="nav-icon">⚙️</span> Üyelik Türleri
+  </div>
+  <div class="nav-item" onclick="sayfaAc('loglar')" id="nav-loglar">
+    <span class="nav-icon">📜</span> Loglar
+  </div>
+  <div class="nav-item yetki-admin-only" onclick="sayfaAc('yetkililer')" id="nav-yetkililer" style="display:none">
+    <span class="nav-icon">🛡️</span> Yetkililer
+  </div>
+  <div class="nav-item yetki-admin-only" onclick="sayfaAc('panel-loglari')" id="nav-panel-loglari" style="display:none">
+    <span class="nav-icon">📑</span> Kayıtlar
+  </div>
+  <div class="nav-item yetki-offline-lisans" onclick="sayfaAc('offline-lisans')" id="nav-offline-lisans" style="display:none">
+    <span class="nav-icon">🔒</span> Offline Lisans
+  </div>
+  <div class="nav-item" onclick="panelCikis()" style="margin-top:auto;color:#ef4444;border-top:1px solid #2a2d3e;padding-top:14px;">
+    <span class="nav-icon">🚪</span> Çıkış Yap
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+  <div id="panel-greeting"></div>
+
+  <!-- Lisanslar -->
+  <div class="page active" id="page-lisanslar">
+    <div class="page-title">🔑 Lisans Yönetimi</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div class="card">
+        <h3>Yeni Lisans Oluştur</h3>
+        <input type="text" id="l-adi" placeholder="Müşteri adı soyadı *">
+        <input type="email" id="l-email" placeholder="E-posta (teşekkür maili için)">
+        <select id="l-tur">
+          <option value="aylik">Aylık (30 gün)</option>
+          <option value="yillik">Yıllık (365 gün)</option>
+          <option value="omur_boyu">Ömür Boyu</option>
+          <option value="deneme">Deneme</option>
+        </select>
+        <input type="number" id="l-saat" placeholder="Deneme süresi (saat)" value="24" min="1" max="8760">
+        <textarea id="l-not" placeholder="Not"></textarea>
+        <button class="btn btn-primary yetki-lisans-olustur" onclick="lisansOlustur()">✚ Oluştur</button>
+        <div id="l-sonuc" style="margin-top:10px;font-size:13px;color:#4caf50;font-weight:bold;font-family:monospace;"></div>
+      </div>
+      <div class="card">
+        <h3>Lisans İşlemleri</h3>
+        <input type="text" id="l-islem-kod" placeholder="Lisans kodu (AYL-XXXX-XXXX-XXXX)">
+        <input type="number" id="l-uzat-gun" placeholder="Uzatma (gün)" value="30" min="1">
+        <div class="row-btns">
+          <button class="btn btn-danger btn-sm yetki-lisans-sil" onclick="iptalEt()">✖ İptal Et</button>
+          <button class="btn btn-warning btn-sm yetki-hwid-sifirla" onclick="hwIdSifirla()">↺ HWID Sıfırla</button>
+          <button class="btn btn-success btn-sm yetki-sure-uzat" onclick="sureUzat()">+ Süre Uzat</button>
+        </div>
+        <div id="l-islem-sonuc" style="margin-top:10px;font-size:13px;"></div>
+      </div>
+    </div>
+
+    <!-- İstatistik Kartları -->
+    <div class="card" id="istat-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <h3 style="margin:0">📊 Lisans İstatistikleri</h3>
+        <button class="btn btn-ghost btn-sm" onclick="istatistikYukle()">↻ Yenile</button>
+      </div>
+      <div class="istat-grid" id="istat-grid">
+        <div class="istat-card i-blue"><div class="i-val" id="is-toplam">—</div><div class="i-lbl">Toplam</div></div>
+        <div class="istat-card i-green"><div class="i-val" id="is-aktif">—</div><div class="i-lbl">Aktif</div></div>
+        <div class="istat-card i-yellow"><div class="i-val" id="is-biten">—</div><div class="i-lbl">Süresi Dolmuş</div></div>
+        <div class="istat-card i-red"><div class="i-val" id="is-iptal">—</div><div class="i-lbl">İptal</div></div>
+      </div>
+      <!-- İptal Nedenleri -->
+      <div id="neden-bolum" style="display:none;margin-top:16px;">
+        <div style="font-size:12px;color:#555;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">İptal Nedenleri</div>
+        <div style="display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start;">
+          <div id="neden-bars"></div>
+          <div style="width:160px;height:160px;"><canvas id="neden-chart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lisans Tablosu -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <h3 style="margin:0">Tüm Lisanslar</h3>
+        <button class="btn btn-ghost btn-sm" onclick="lisanslariYukle()" style="">↻ Yenile</button>
+      </div>
+      <div class="filtre-bar">
+        <button class="filtre-btn aktif" id="fb-hepsi" onclick="filtreAyarla('hepsi')">Tümü <span class="cnt-badge" id="fb-hepsi-cnt">—</span></button>
+        <button class="filtre-btn aktif-f" id="fb-aktif" onclick="filtreAyarla('aktif')">✓ Aktif <span class="cnt-badge" id="fb-aktif-cnt">—</span></button>
+        <button class="filtre-btn biten-f" id="fb-biten" onclick="filtreAyarla('biten')">⏱ Süresi Dolmuş <span class="cnt-badge" id="fb-biten-cnt">—</span></button>
+        <button class="filtre-btn iptal-f" id="fb-iptal" onclick="filtreAyarla('iptal')">✗ İptal <span class="cnt-badge" id="fb-iptal-cnt">—</span></button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Kod</th><th>Müşteri</th><th>Tür</th><th>Durum</th><th>HWID</th><th>Bitiş</th><th>Son Checkin</th><th>Aktivasyon</th><th>Not / İptal Nedeni</th><th>İşlem</th></tr></thead>
+          <tbody id="l-tablo"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Talepler -->
+  <div class="page" id="page-talepler">
+    <div class="page-title">📋 Lisans Talepleri</div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <h3 style="margin:0">Gelen Talepler</h3>
+        <button class="btn btn-ghost btn-sm" onclick="taleplerYukle()">↻ Yenile</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Tarih</th><th>Ad Soyad</th><th>E-posta</th><th>Tür</th><th>IP</th><th>Durum</th><th>İşlem</th></tr></thead>
+          <tbody id="talep-tablo"></tbody>
+        </table>
+      </div>
+    </div>
+    <!-- Talep işlem modalı -->
+    <div id="talep-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:500;align-items:center;justify-content:center;">
+      <div style="background:#1a1d2e;border:1px solid #2a2d3e;border-radius:12px;padding:28px;width:480px;max-width:95vw;">
+        <h3 style="color:#5b8cff;margin-bottom:16px;">Talep İşlemi</h3>
+        <div id="talep-bilgi" style="background:#0f1117;border-radius:8px;padding:12px;margin-bottom:14px;font-size:13px;color:#ccc;"></div>
+        <textarea id="talep-not" placeholder="Kullanıcıya mesaj (reddedilirse destek mesajı olarak iletilir, onaylanırsa lisans notuna eklenir)" style="margin-bottom:12px;"></textarea>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn-success" onclick="talepIsle('onaylandi')">✔ Onayla</button>
+          <button class="btn btn-danger" onclick="talepIsle('reddedildi')">✖ Reddet</button>
+          <button class="btn btn-ghost" onclick="talepModalKapat()">İptal</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mesajlar -->
+  <div class="page" id="page-mesajlar">
+    <div class="page-title">💬 Mesajlar</div>
+    <div class="msg-split">
+      <div class="msg-left">
+        <div style="font-size:12px;color:#555;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">Konuşmalar</div>
+        <div class="conv-list" id="conv-list"></div>
+      </div>
+      <div class="msg-right" id="msg-right">
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;color:#444;font-size:14px;">
+          Soldan bir konuşma seçin
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Kullanıcılar -->
+  <div class="page" id="page-kullanicilar">
+    <div class="page-title">👥 Kullanıcılar</div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <h3 style="margin:0">Kayıtlı Kullanıcılar</h3>
+        <button class="btn btn-ghost btn-sm" onclick="kullanicilariYukle()">↻ Yenile</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Ad Soyad</th><th>E-posta</th><th>Doğrulandı</th><th>Kayıt</th><th>Son Giriş</th><th>Son IP</th><th>Lisans</th></tr></thead>
+          <tbody id="kullanici-tablo"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- IP Ban -->
+  <div class="page" id="page-ip-banlar">
+    <div class="page-title">🚫 IP Ban Yönetimi</div>
+    <div style="display:grid;grid-template-columns:340px 1fr;gap:16px;">
+      <div class="card">
+        <h3>IP Ban Ekle</h3>
+        <input type="text" id="ban-ip" placeholder="IP adresi (örn: 1.2.3.4)">
+        <textarea id="ban-sebep" placeholder="Ban sebebi (opsiyonel)"></textarea>
+        <button class="btn btn-danger" onclick="ipBanEkle()">🚫 Banla</button>
+      </div>
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <h3 style="margin:0">Banlı IP'ler</h3>
+          <button class="btn btn-ghost btn-sm" onclick="ipBanlariYukle()">↻ Yenile</button>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>IP</th><th>Sebep</th><th>Tarih</th><th>Durum</th><th>İşlem</th></tr></thead>
+            <tbody id="ban-tablo"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Üyelik Türleri -->
+  <div class="page" id="page-uyelik-turleri">
+    <div class="page-title">⚙️ Üyelik Türleri</div>
+    <div style="display:grid;grid-template-columns:320px 1fr;gap:16px;">
+      <div class="card">
+        <h3>Yeni Tür Ekle</h3>
+        <input type="text" id="tur-kod" placeholder="Kod (örn: haftalik) *">
+        <input type="text" id="tur-ad" placeholder="Görünen ad (örn: Haftalık Lisans) *">
+        <textarea id="tur-aciklama" placeholder="Açıklama (opsiyonel)"></textarea>
+        <input type="number" id="tur-sira" placeholder="Sıra (küçük = önce)" value="99">
+        <button class="btn btn-primary" onclick="turEkle()">✚ Ekle</button>
+      </div>
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <h3 style="margin:0">Mevcut Türler</h3>
+          <button class="btn btn-ghost btn-sm" onclick="turleriYukle()">↻ Yenile</button>
+        </div>
+        <div class="tur-grid" id="tur-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loglar -->
+  <div class="page" id="page-loglar">
+    <div class="page-title">📜 İşlem Logları</div>
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+        <button class="btn btn-ghost btn-sm" onclick="logYukle()">↻ Yenile</button>
+        <select id="log-adet" style="width:auto;margin:0;" onchange="logYukle()">
+          <option value="50">Son 50</option>
+          <option value="100" selected>Son 100</option>
+          <option value="250">Son 250</option>
+        </select>
+      </div>
+      <div id="log-output">Loglar yükleniyor...</div>
+    </div>
+  </div>
+
+  <!-- Yetkililer -->
+  <div class="page" id="page-yetkililer">
+    <div class="page-title">🛡️ Panel Yetkilileri</div>
+    
+    <div class="card yetki-admin-only" style="margin-bottom:24px;border-color:#5b8cff44;background:#131828;">
+      <h3 style="color:#5b8cff">🛠️ Ana Admin Bilgilerini Güncelle</h3>
+      <p style="font-size:12px;color:#aaa;margin-bottom:12px;">Sistemin ana yöneticisi (Kurucu) için giriş bilgilerini değiştirin.</p>
+      <div style="display:flex;gap:12px;max-width:500px;">
+        <input type="text" id="a-yeni-kadi" placeholder="Yeni Kullanıcı Adı">
+        <input type="password" id="a-yeni-sifre" placeholder="Yeni Şifre">
+        <button class="btn btn-warning" onclick="adminGuncelle()" style="white-space:nowrap;">Değiştir</button>
+      </div>
+    </div>
+    
+    <div style="display:grid;grid-template-columns:320px 1fr;gap:16px;">
+      <div class="card">
+        <h3>Yeni Yetkili Ekle</h3>
+        <input type="text" id="y-kadi" placeholder="Kullanıcı Adı *">
+        <input type="text" id="y-isim" placeholder="İsim Soyisim *">
+        <input type="email" id="y-email" placeholder="E-posta *">
+        <input type="password" id="y-sifre" placeholder="Şifre *">
+        <div style="margin:14px 0;font-size:12px;color:#ccc;display:flex;flex-direction:column;gap:6px;">
+          <label><input type="checkbox" id="cb-lisans_olustur"> Lisans Oluşturabilme</label>
+          <label><input type="checkbox" id="cb-lisans_sil"> Lisans Silebilme / İptal</label>
+          <label><input type="checkbox" id="cb-hwid_sifirla"> HWID Sıfırlama</label>
+          <label><input type="checkbox" id="cb-sure_uzat"> Lisans Süre Uzatma</label>
+          <label><input type="checkbox" id="cb-talep_onayla"> Lisans Taleplerini Onaylama</label>
+          <label><input type="checkbox" id="cb-kullanici_ekle"> Panel Kullanıcısı (Yetkili) Ekleme</label>
+          <label><input type="checkbox" id="cb-mesaj_yaz"> Mesaj Yazabilme</label>
+          <label><input type="checkbox" id="cb-ip_ban"> IP Banlama & Kaldırma</label>
+          <label><input type="checkbox" id="cb-uyelik_tur"> Üyelik Türleri Yönetimi</label>
+          <label><input type="checkbox" id="cb-offline_lisans"> 🔒 Çevrimdışı Lisans Üretme</label>
+        </div>
+        <button class="btn btn-primary" onclick="yetkiliEkle()">✚ Ekle</button>
+      </div>
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <h3 style="margin:0">Mevcut Yetkililer</h3>
+          <button class="btn btn-ghost btn-sm" onclick="yetkilileriYukle()">↻ Yenile</button>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Kullanıcı Adı</th><th>İsim Soyisim</th><th>Rol</th><th>Yetkiler</th><th>Son Giriş</th><th>Son Çıkış</th><th>İşlem</th></tr></thead>
+            <tbody id="yetkili-tablo"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Kayıtlar (Panel Logları) -->
+  <div class="page" id="page-panel-loglari">
+    <div class="page-title">📑 Panel Kayıtları</div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <h3 style="margin:0">Yetkili İşlem Geçmişi</h3>
+        <button class="btn btn-ghost btn-sm" onclick="panelLoglariYukle()">↻ Yenile</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Tarih</th><th>Yetkili</th><th>İşlem</th><th>Detay</th></tr></thead>
+          <tbody id="panel-log-tablo"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Offline Lisans Üretici -->
+  <div class="page" id="page-offline-lisans">
+    <div class="page-title">🔒 Çevrimdışı Lisans Üretici</div>
+    <div style="display:grid;grid-template-columns:380px 1fr;gap:16px;">
+      <!-- Form -->
+      <div class="card">
+        <h3 style="margin-bottom:14px;">Aktivasyon Kodu Üret</h3>
+        <label style="font-size:11px;color:#666;display:block;margin-bottom:4px;">İstek Kodu (Müşteriden alınan REQ-...):</label>
+        <input type="text" id="ol-istek-kodu" placeholder="REQ-XXXXXXXXXXXXXXXXXXXX" style="font-family:Consolas;letter-spacing:1px;">
+        <label style="font-size:11px;color:#666;display:block;margin:10px 0 4px;">Süre (Gün):</label>
+        <input type="number" id="ol-sure" value="30" min="1" max="365">
+        <label style="font-size:11px;color:#666;display:block;margin:10px 0 4px;">Yetki Seviyesi:</label>
+        <select id="ol-yetki">
+          <option value="FULL">FULL — Tam Erişim</option>
+          <option value="READ">READ — Sadece Okuma</option>
+          <option value="DEMO">DEMO — Demo Modu</option>
+        </select>
+        <button class="btn btn-primary" style="margin-top:14px;width:100%;" onclick="offlineLisansUret()">⚡ Aktivasyon Kodu Üret</button>
+        <div id="ol-hata" style="color:#f87171;font-size:12px;margin-top:8px;display:none;"></div>
+      </div>
+      <!-- Sonuç -->
+      <div class="card" id="ol-sonuc-kart" style="display:none;">
+        <h3 style="color:#4caf50;margin-bottom:12px;">✅ Aktivasyon Kodu Üretildi</h3>
+        <div style="background:#1b5e2022;border:1px solid #4caf5044;border-radius:8px;padding:18px;margin-bottom:14px;">
+          <div style="font-size:10px;color:#666;margin-bottom:6px;">Aktivasyon Kodu (Müşteriye Gönder):</div>
+          <div id="ol-akt-kod" style="font-family:Consolas;font-size:15px;font-weight:bold;color:#00e676;letter-spacing:1px;word-break:break-all;"></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;">
+          <button class="btn btn-success" onclick="olKopyala()" id="ol-kopyala-btn">📋 Kopyala</button>
+          <span id="ol-kopyala-ok" style="font-size:12px;color:#4caf50;align-self:center;display:none;">✓ Kopyalandı!</span>
+        </div>
+        <div style="font-size:12px;color:#888;line-height:1.8;">
+          <div>İstek Kodu: <code id="ol-det-istek" style="color:#7eb8ff;"></code></div>
+          <div>Süre: <b id="ol-det-sure" style="color:#e0e0e0;"></b> Gün &nbsp;|  Yetki: <b id="ol-det-yetki" style="color:#e0e0e0;"></b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- Notification -->
+<div class="notif" id="notif"></div>
+
+<script>
+let TOKEN = "";
+let secilenTalepId = null;
+let secilenKullaniciId = null;
+
+function auth() {
+  return {"Authorization": "Bearer " + TOKEN, "Content-Type": "application/json"};
+}
+
+function notif(msg, hata = false) {
+  const el = document.getElementById("notif");
+  el.textContent = msg;
+  el.className = "notif" + (hata ? " error" : "") + " show";
+  setTimeout(() => el.className = "notif" + (hata ? " error" : ""), 2800);
+}
+
+let _panelPollTimer = null;
+let _aktifSayfa = "lisanslar";
+
+function arayuzuYetkilendir() {
+  if (window.IS_ADMIN) {
+    document.querySelectorAll(".yetki-admin-only").forEach(el => el.style.display = "");
+  }
+  // Buton yetkileri
+  const y = window.YETKILER || {};
+  const goster = (cls, yetki) => {
+    document.querySelectorAll("." + cls).forEach(el => {
+      if (window.IS_ADMIN || y[yetki]) el.style.display = "";
+      else el.style.display = "none";
+    });
+  };
+  goster("yetki-lisans-olustur", "lisans_olustur");
+  goster("yetki-lisans-sil", "lisans_sil");
+  goster("yetki-hwid-sifirla", "hwid_sifirla");
+  goster("yetki-sure-uzat", "sure_uzat");
+  goster("yetki-ip-ban", "ip_ban");
+  goster("yetki-uyelik-tur", "uyelik_tur");
+  goster("yetki-offline-lisans", "offline_lisans");
+  // Talep onayla butonu ve JS içi render kısımlarını ayrıca idare edeceğiz.
+}
+
+function updateGreeting() {
+  const hr = new Date().getHours();
+  let msj = "İyi geceler";
+  if (hr >= 6 && hr < 12) msj = "Günaydın";
+  else if (hr >= 12 && hr < 18) msj = "İyi günler";
+  else if (hr >= 18 && hr < 24) msj = "İyi akşamlar";
+  
+  const el = document.getElementById("panel-greeting");
+  if (!el) return;
+  if (window.IS_ADMIN) {
+    el.innerHTML = `<span style="color:#5b8cff">🛡️ Ana Admin Paneli</span>`;
+  } else {
+    el.innerHTML = `${msj}, <span style="color:#e0e0e0">${window.ISIM_SOYAD || window.KULLANICI_ADI}</span>`;
+  }
+}
+
+function panelGiris() {
+  const k = document.getElementById("inp-kullanici").value;
+  const s = document.getElementById("inp-sifre").value;
+  fetch("/panel/giris", {
+    method:"POST", 
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({kullanici: k, sifre: s})
+  })
+    .then(r => r.json())
+    .then(d => {
+      if (d.basarili) {
+        TOKEN = k + ":" + s;
+        window.IS_ADMIN = d.is_admin;
+        window.YETKILER = d.yetkiler;
+        window.ISIM_SOYAD = d.isim_soyad;
+        window.KULLANICI_ADI = d.kullanici_adi;
+        arayuzuYetkilendir();
+        updateGreeting();
+        
+        document.getElementById("login-overlay").style.display = "none";
+        lisanslariYukle();
+        badgeGuncelle();
+        // Aktif sayfayı 15 saniyede bir otomatik yenile
+        _panelPollTimer = setInterval(() => {
+          panelOtoPoll();
+          badgeGuncelle();
+        }, 15000);
+        istatistikYukle();
+      } else {
+        document.getElementById("login-hata").textContent = d.detail || "Giriş başarısız.";
+      }
+    }).catch(e => {
+       document.getElementById("login-hata").textContent = "Giriş yapılamadı.";
+    });
+}
+
+function panelCikis() {
+  fetch("/panel/cikis", {method:"POST", headers:auth()}).then(()=>{
+    location.reload();
+  });
+}
+
+function panelOtoPoll() {
+  const yukle = {
+    lisanslar:       lisanslariYukle,
+    talepler:        taleplerYukle,
+    mesajlar:        mesajlariYukle,
+    kullanicilar:    kullanicilariYukle,
+    "ip-banlar":     ipBanlariYukle,
+    "uyelik-turleri": turleriYukle,
+    loglar:          logYukle,
+    yetkililer:      yetkilileriYukle,
+    "panel-loglari": panelLoglariYukle,
+    "offline-lisans": () => {
+       document.getElementById("ol-istek-kodu").value = "";
+       document.getElementById("ol-sonuc-kart").style.display = "none";
+       document.getElementById("ol-hata").style.display = "none";
+    },
+  };
+  if (yukle[_aktifSayfa]) yukle[_aktifSayfa]();
+}
+
+function sayfaAc(sayfa) {
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+  document.getElementById("page-" + sayfa).classList.add("active");
+  document.getElementById("nav-" + sayfa).classList.add("active");
+  _aktifSayfa = sayfa;
+
+  const yukle = {
+    lisanslar:       lisanslariYukle,
+    talepler:        taleplerYukle,
+    mesajlar:        mesajlariYukle,
+    kullanicilar:    kullanicilariYukle,
+    "ip-banlar":     ipBanlariYukle,
+    "uyelik-turleri": turleriYukle,
+    loglar:          logYukle,
+    yetkililer:      yetkilileriYukle,
+    "panel-loglari": panelLoglariYukle,
+  };
+  if (yukle[sayfa]) yukle[sayfa]();
+}
+
+async function badgeGuncelle() {
+  // Talepler
+  const tr = await fetch("/panel/talepler", {headers: auth()}).then(r => r.json()).catch(() => []);
+  const bekleyen = tr.filter ? tr.filter(t => t.durum === "beklemede").length : 0;
+  const tb = document.getElementById("talep-badge");
+  tb.textContent = bekleyen;
+  tb.style.display = bekleyen > 0 ? "" : "none";
+
+  // Mesajlar
+  const mr = await fetch("/panel/mesajlar-ozet", {headers: auth()}).then(r => r.json()).catch(() => []);
+  const okunmamis = mr.reduce ? mr.reduce((s, m) => s + m.okunmamis, 0) : 0;
+  const mb = document.getElementById("mesaj-badge");
+  mb.textContent = okunmamis;
+  mb.style.display = okunmamis > 0 ? "" : "none";
+}
+
+// ===== LİSANSLAR =====
+function lisansOlustur() {
+  const b = {
+    musteri_adi: document.getElementById("l-adi").value,
+    musteri_email: document.getElementById("l-email").value,
+    tur: document.getElementById("l-tur").value,
+    deneme_saat: parseInt(document.getElementById("l-saat").value) || 24,
+    notlar: document.getElementById("l-not").value,
+  };
+  if (!b.musteri_adi) { notif("Müşteri adı zorunlu!", true); return; }
+  fetch("/panel/lisans-olustur", {method:"POST", headers:auth(), body:JSON.stringify(b)})
+    .then(r => r.json())
+    .then(d => {
+      if (d.lisans_kodu) {
+        document.getElementById("l-sonuc").textContent = "✅ " + d.lisans_kodu + " | " + d.bitis_tarihi;
+        notif("Lisans oluşturuldu: " + d.lisans_kodu);
+        lisanslariYukle();
+      } else {
+        notif(d.detail || "Hata", true);
+      }
+    });
+}
+
+function iptalEt() {
+  const k = document.getElementById("l-islem-kod").value;
+  if (!k) { notif("Lisans kodu girin!", true); return; }
+  if (!confirm(k + " iptal edilsin mi?")) return;
+  fetch("/panel/iptal?lisans_kodu=" + encodeURIComponent(k), {method:"POST", headers:auth()})
+    .then(r => r.json()).then(d => { notif(d.mesaj || d.detail, !!d.detail); lisanslariYukle(); });
+}
+
+function hwIdSifirla() {
+  const k = document.getElementById("l-islem-kod").value;
+  if (!k) { notif("Lisans kodu girin!", true); return; }
+  fetch("/panel/hwid-sifirla?lisans_kodu=" + encodeURIComponent(k), {method:"POST", headers:auth()})
+    .then(r => r.json()).then(d => { notif(d.mesaj || d.detail, !!d.detail); lisanslariYukle(); });
+}
+
+function sureUzat() {
+  const k = document.getElementById("l-islem-kod").value;
+  const g = document.getElementById("l-uzat-gun").value;
+  if (!k) { notif("Lisans kodu girin!", true); return; }
+  fetch("/panel/sure-uzat?lisans_kodu=" + encodeURIComponent(k) + "&gun=" + g, {method:"POST", headers:auth()})
+    .then(r => r.json()).then(d => { notif(d.mesaj || d.detail, !!d.detail); lisanslariYukle(); });
+}
+
+function lisansSil(lisansKodu) {
+  if (!confirm(lisansKodu + " lisansı kalıcı olarak silinecek. Bu işlem geri alınamaz. Emin misiniz?")) return;
+  fetch("/panel/lisans-sil/" + encodeURIComponent(lisansKodu), {method: "DELETE", headers: auth()})
+    .then(r => r.json())
+    .then(d => { notif(d.mesaj || d.detail, !!d.detail); lisanslariYukle(); istatistikYukle(); });
+}
+
+let _aktifFiltre = "hepsi";
+let _nedenChart = null;
+
+function filtreAyarla(f) {
+  _aktifFiltre = f;
+  // Buton aktif/pasif güncelle
+  ["hepsi","aktif","biten","iptal"].forEach(x => {
+    const el = document.getElementById("fb-" + x);
+    if (!el) return;
+    const baseClass = x === "hepsi" ? "aktif" : x + "-f";
+    if (x === f) el.className = "filtre-btn " + baseClass;
+    else el.className = "filtre-btn";
+  });
+  lisanslariYukle();
+}
+
+function istatistikYukle() {
+  fetch("/panel/iptal-istatistikleri", {headers: auth()}).then(r => r.json()).then(d => {
+    const o = d.ozet;
+    document.getElementById("is-toplam").textContent = o.toplam;
+    document.getElementById("is-aktif").textContent  = o.aktif;
+    document.getElementById("is-biten").textContent  = o.biten;
+    document.getElementById("is-iptal").textContent  = o.iptal;
+    // Filtre sayı badge'ları
+    document.getElementById("fb-hepsi-cnt").textContent = o.toplam;
+    document.getElementById("fb-aktif-cnt").textContent = o.aktif;
+    document.getElementById("fb-biten-cnt").textContent = o.biten;
+    document.getElementById("fb-iptal-cnt").textContent = o.iptal;
+    // İptal nedenleri
+    const nedenler = d.nedenler || [];
+    const bolum = document.getElementById("neden-bolum");
+    if (!nedenler.length) { bolum.style.display = "none"; return; }
+    bolum.style.display = "";
+    const toplam_iptal = nedenler.reduce((s, n) => s + n.sayi, 0);
+    document.getElementById("neden-bars").innerHTML = nedenler.map(n => {
+      const yuzde = Math.round((n.sayi / toplam_iptal) * 100);
+      return `<div style="margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+          <span style="color:#ccc;">${n.neden}</span>
+          <span style="color:#888;">${n.sayi} (${yuzde}%)</span>
+        </div>
+        <div style="background:#1e2033;border-radius:4px;height:6px;">
+          <div style="background:#ef4444;width:${yuzde}%;height:6px;border-radius:4px;transition:width 0.4s;"></div>
+        </div>
+      </div>`;
+    }).join("");
+    // Donut grafik
+    const canvas = document.getElementById("neden-chart");
+    if (_nedenChart) { _nedenChart.destroy(); _nedenChart = null; }
+    _nedenChart = new Chart(canvas, {
+      type: "doughnut",
+      data: {
+        labels: nedenler.map(n => n.neden),
+        datasets: [{ data: nedenler.map(n => n.sayi),
+          backgroundColor: ["#ef4444","#f59e0b","#3b82f6","#8b5cf6","#10b981","#ec4899","#06b6d4"],
+          borderColor: "#0f1117", borderWidth: 2 }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (c) => ` ${c.label}: ${c.raw}` } }
+      }}
+    });
+  }).catch(() => {});
+}
+
+function lisanslariYukle() {
+  fetch("/panel/lisanslar?filtre=" + _aktifFiltre, {headers: auth()}).then(r => r.json()).then(liste => {
+    const turBadge = {aylik:"b-aylik",yillik:"b-yillik",omur_boyu:"b-omur",deneme:"b-deneme"};
+    const durumBadge = {
+      aktif:         '<span class="badge b-aktif">✓ Aktif</span>',
+      suresi_dolmus: '<span class="badge" style="background:#f59e0b22;color:#fbbf24;border:1px solid #f59e0b55;">⏱ Süresi Doldu</span>',
+      iptal:         '<span class="badge b-pasif">✗ İptal</span>',
+    };
+    document.getElementById("l-tablo").innerHTML = liste.map(l => `
+      <tr>
+        <td><code>${l.lisans_kodu}</code></td>
+        <td>${l.musteri_adi}<br><span style="color:#555;font-size:11px;">${l.musteri_email||""}</span></td>
+        <td><span class="badge ${turBadge[l.tur]||""}"> ${l.tur}</span></td>
+        <td>${durumBadge[l.durum] || l.durum}</td>
+        <td style="font-family:monospace;font-size:11px;color:#555;">${(l.hwid||"").substring(0,18)}…</td>
+        <td>${l.bitis_tarihi}</td>
+        <td>${l.son_checkin}</td>
+        <td>${l.aktivasyon}</td>
+        <td style="color:#666;font-size:11px;">${l.notlar||""}${l.iptal_nedeni ? `<br><span style="color:#f87171;">İptal: ${l.iptal_nedeni}</span>` : ""}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="lisansSil('${l.lisans_kodu}')">🗑 Sil</button></td>
+      </tr>`).join("");
+  });
+}
+
+// ===== TALEPLER =====
+function taleplerYukle() {
+  fetch("/panel/talepler", {headers: auth()}).then(r => r.json()).then(liste => {
+    const durumBadge = {beklemede:"b-beklemede",onaylandi:"b-onaylandi",reddedildi:"b-reddedildi"};
+    document.getElementById("talep-tablo").innerHTML = liste.map(t => `
+      <tr>
+        <td>${t.tarih}</td>
+        <td>${t.ad_soyad}</td>
+        <td>${t.email}</td>
+        <td>${t.tur}</td>
+        <td><code>${t.ip||"-"}</code></td>
+        <td><span class="badge ${durumBadge[t.durum]||""}">${t.durum}</span></td>
+        <td>${t.durum==="beklemede" ? `<button class="btn btn-primary btn-sm" onclick="talepModalAc('${t.id}','${t.ad_soyad}','${t.email}','${t.tur}','${t.ip||''}')">İşlem</button>` : (t.admin_notu ? `<span style="color:#666;font-size:11px;">${t.admin_notu.substring(0,40)}</span>` : "—")}</td>
+      </tr>`).join("");
+    badgeGuncelle();
+  });
+}
+
+function talepModalAc(id, ad, email, tur, ip) {
+  secilenTalepId = id;
+  document.getElementById("talep-bilgi").innerHTML = `<b>${ad}</b> &lt;${email}&gt;<br>Tür: <b>${tur}</b> | IP: <code>${ip}</code>`;
+  document.getElementById("talep-not").value = "";
+  const m = document.getElementById("talep-modal");
+  m.style.display = "flex";
+}
+
+function talepModalKapat() {
+  document.getElementById("talep-modal").style.display = "none";
+  secilenTalepId = null;
+}
+
+function talepIsle(durum) {
+  if (!secilenTalepId) return;
+  fetch("/panel/talep-guncelle", {method:"POST", headers:auth(), body:JSON.stringify({
+    talep_id: secilenTalepId,
+    durum: durum,
+    admin_notu: document.getElementById("talep-not").value,
+  })}).then(r => r.json()).then(d => {
+    notif(durum === "onaylandi" ? "Talep onaylandı" : "Talep reddedildi");
+    talepModalKapat();
+    taleplerYukle();
+  });
+}
+
+// ===== MESAJLAR =====
+function mesajlariYukle() {
+  fetch("/panel/mesajlar-ozet", {headers: auth()}).then(r => r.json()).then(liste => {
+    const convList = document.getElementById("conv-list");
+    convList.innerHTML = liste.map(m => `
+      <div class="conv-item ${m.kullanici_id === secilenKullaniciId ? 'active' : ''}"
+           onclick="konusmaSec('${m.kullanici_id}')">
+        <div class="conv-avatar">${m.ad_soyad[0]}</div>
+        <div class="conv-info">
+          <div class="conv-name">${m.ad_soyad}</div>
+          <div class="conv-preview">${m.son_mesaj || "…"}</div>
+        </div>
+        <div class="conv-meta">
+          <span style="font-size:10px;color:#555;">${m.son_mesaj_tar}</span>
+          ${m.okunmamis > 0 ? `<span class="unread-dot">${m.okunmamis}</span>` : ""}
+        </div>
+      </div>`).join("");
+    badgeGuncelle();
+  });
+}
+
+let _konusmaPollTimer = null;
+
+function konusmaSec(kullaniciId) {
+  secilenKullaniciId = kullaniciId;
+  mesajlariYukle();
+  // Önceki konuşma poll'unu temizle
+  if (_konusmaPollTimer) { clearInterval(_konusmaPollTimer); _konusmaPollTimer = null; }
+  _konusmaMesajYukle(kullaniciId);
+  // Açık konuşmayı 5 saniyede bir canlı güncelle
+  _konusmaPollTimer = setInterval(() => {
+    if (secilenKullaniciId === kullaniciId) _konusmaMesajYukle(kullaniciId);
+    else { clearInterval(_konusmaPollTimer); _konusmaPollTimer = null; }
+  }, 5000);
+}
+
+function _konusmaMesajYukle(kullaniciId) {
+  fetch("/panel/kullanici-mesajlar/" + kullaniciId, {headers: auth()}).then(r => r.json()).then(d => {
+    const right = document.getElementById("msg-right");
+    // Eğer kullanıcı mesaj kutusuna yazıyorsa sadece mesaj listesini güncelle
+    const inputMevcut = document.getElementById("admin-msg-inp");
+    const inputDeger = inputMevcut ? inputMevcut.value : null;
+
+    const k = d.kullanici;
+    const l = d.lisans;
+    const lisansBilgi = l ?
+      `<span class="badge b-aktif" style="margin-right:4px;">${l.tur}</span> ${l.kod} — ${l.bitis||"Ömür Boyu"}${l.kalan_gun != null ? ` (${l.kalan_gun} gün)` : ""}` :
+      `<span class="badge b-pasif">Lisans Yok</span>`;
+
+    const mesajlerHtml = d.mesajlar.map(m => `
+      <div class="msg-sender ${m.gonderen==='admin'?'right':''}">
+        <div class="msg-bubble ${m.gonderen}">${m.icerik}</div>
+        <div class="msg-time">${m.gonderen==='admin'?'Siz':'Kullanıcı'} · ${m.tarih}</div>
+      </div>`).join("");
+
+    if (inputMevcut) {
+      // Sadece mesaj listesini güncelle, input ve header dokunma
+      const mesajEl = document.getElementById("aktif-mesajlar");
+      if (mesajEl) {
+        const eskiScroll = mesajEl.scrollHeight - mesajEl.scrollTop;
+        mesajEl.innerHTML = mesajlerHtml;
+        // Kullanıcı en alttaysa otomatik kaydır
+        if (eskiScroll <= mesajEl.clientHeight + 40) mesajEl.scrollTop = mesajEl.scrollHeight;
+      }
+      // Input değerini koru
+      const inp = document.getElementById("admin-msg-inp");
+      if (inp && inputDeger !== null) inp.value = inputDeger;
+    } else {
+      right.innerHTML = `
+        <div class="msg-right-header">
+          <div style="font-size:15px;font-weight:700;color:#e0e0e0;margin-bottom:8px;">${k.ad_soyad}</div>
+          <div class="user-detail">
+            <div class="row">
+              <div class="field"><label>E-posta</label><span>${k.email}</span></div>
+              <div class="field"><label>Son IP</label><span><code>${k.son_ip||"?"}</code></span></div>
+              <div class="field"><label>Kayıt Tarihi</label><span>${k.kayit_tar}</span></div>
+              <div class="field"><label>Lisans</label><span>${lisansBilgi}</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="msg-right-body" id="aktif-mesajlar">
+          ${mesajlerHtml}
+        </div>
+        <div class="msg-right-footer">
+          <textarea id="admin-msg-inp" placeholder="Mesajınızı yazın…" onkeydown="if(event.ctrlKey&&event.key==='Enter')adminMesajGonder()"></textarea>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <button class="btn btn-primary btn-sm" onclick="adminMesajGonder()">Gönder</button>
+          </div>
+        </div>`;
+      setTimeout(() => {
+        const el = document.getElementById("aktif-mesajlar");
+        if (el) el.scrollTop = el.scrollHeight;
+      }, 50);
+    }
+  });
+}
+
+function adminMesajGonder() {
+  if (!secilenKullaniciId) return;
+  const icerik = document.getElementById("admin-msg-inp").value.trim();
+  if (!icerik) return;
+  document.getElementById("admin-msg-inp").value = "";
+  fetch("/panel/admin-mesaj-gonder", {method:"POST", headers:auth(), body:JSON.stringify({
+    kullanici_id: secilenKullaniciId,
+    icerik: icerik,
+  })}).then(r => r.json()).then(() => {
+    notif("Mesaj gönderildi");
+    _konusmaMesajYukle(secilenKullaniciId);
+    mesajlariYukle();
+  });
+}
+
+// ===== KULLANICILAR =====
+function kullanicilariYukle() {
+  fetch("/panel/kullanicilar", {headers: auth()}).then(r => r.json()).then(liste => {
+    document.getElementById("kullanici-tablo").innerHTML = liste.map(k => `
+      <tr>
+        <td>${k.ad_soyad}</td>
+        <td>${k.email}</td>
+        <td><span class="badge ${k.email_dogrulandi?'b-aktif':'b-pasif'}">${k.email_dogrulandi?'✔':'✗'}</span></td>
+        <td>${k.kayit_tar}</td>
+        <td>${k.son_giris}</td>
+        <td><code>${k.son_ip||"-"}</code></td>
+        <td>${k.lisans_kodu ? `<code>${k.lisans_kodu}</code> <span class="badge">${k.lisans_tur||""}</span>` : '<span style="color:#555">Yok</span>'}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="kullaniciSil('${k.id}','${k.ad_soyad}')">Sil</button></td>
+      </tr>`).join("");
+  });
+}
+
+function kullaniciSil(id, ad) {
+  if (!confirm(ad + " adlı kullanıcı ve tüm verileri (talepler, mesajlar) silinecek. Aktif lisansı varsa iptal edilecek. Emin misiniz?")) return;
+  fetch("/panel/kullanici-sil/" + id, {method: "DELETE", headers: auth()})
+    .then(r => r.json())
+    .then(d => { notif(d.mesaj || d.detail, !!d.detail); kullanicilariYukle(); });
+}
+
+// ===== IP BAN =====
+function ipBanEkle() {
+  const ip = document.getElementById("ban-ip").value.trim();
+  const sebep = document.getElementById("ban-sebep").value.trim();
+  if (!ip) { notif("IP adresi girin!", true); return; }
+  fetch("/panel/ip-ban-ekle", {method:"POST", headers:auth(), body:JSON.stringify({ip, sebep})})
+    .then(r => r.json()).then(d => { notif(d.mesaj || d.detail, !!d.detail); ipBanlariYukle(); });
+}
+
+function ipBanKaldir(ip) {
+  fetch("/panel/ip-ban-kaldir", {method:"POST", headers:auth(), body:JSON.stringify({ip})})
+    .then(r => r.json()).then(d => { notif(d.mesaj || d.detail, !!d.detail); ipBanlariYukle(); });
+}
+
+function ipBanlariYukle() {
+  fetch("/panel/ip-banlar", {headers: auth()}).then(r => r.json()).then(liste => {
+    document.getElementById("ban-tablo").innerHTML = liste.map(b => `
+      <tr>
+        <td><code>${b.ip}</code></td>
+        <td style="color:#888;">${b.sebep||"—"}</td>
+        <td>${b.tarih}</td>
+        <td><span class="badge ${b.aktif?'b-pasif':'b-aktif'}">${b.aktif?'Aktif Ban':'Kaldırıldı'}</span></td>
+        <td>${b.aktif ? `<button class="btn btn-success btn-sm" onclick="ipBanKaldir('${b.ip}')">Kaldır</button>` : "—"}</td>
+      </tr>`).join("");
+  });
+}
+
+// ===== ÜYELİK TÜRLERİ =====
+function turEkle() {
+  const kod = document.getElementById("tur-kod").value.trim();
+  const ad  = document.getElementById("tur-ad").value.trim();
+  const aciklama = document.getElementById("tur-aciklama").value.trim();
+  const sira = parseInt(document.getElementById("tur-sira").value) || 99;
+  if (!kod || !ad) { notif("Kod ve ad zorunlu!", true); return; }
+  fetch("/panel/uyelik-tur-ekle", {method:"POST", headers:auth(), body:JSON.stringify({kod, ad, aciklama, sira})})
+    .then(r => r.json()).then(d => { notif(d.basarili ? "Tür eklendi" : d.detail, !d.basarili); turleriYukle(); });
+}
+
+function turSil(id) {
+  if (!confirm("Bu türü silmek istediğinizden emin misiniz?")) return;
+  fetch("/panel/uyelik-tur-sil/" + id, {method:"DELETE", headers:auth()})
+    .then(r => r.json()).then(d => { notif(d.basarili ? "Tür silindi" : d.detail, !d.basarili); turleriYukle(); });
+}
+
+function turToggle(id, aktif) {
+  fetch("/panel/uyelik-tur-guncelle", {method:"POST", headers:auth(), body:JSON.stringify({id, aktif: !aktif})})
+    .then(() => turleriYukle());
+}
+
+function turleriYukle() {
+  fetch("/panel/uyelik-turleri", {headers: auth()}).then(r => r.json()).then(liste => {
+    document.getElementById("tur-grid").innerHTML = liste.map(t => `
+      <div class="tur-card" style="opacity:${t.aktif?1:0.5}">
+        <div class="tur-kod">${t.kod}</div>
+        <h4>${t.ad}</h4>
+        <div class="tur-aciklama">${t.aciklama||"—"}</div>
+        <div class="row-btns" style="margin-top:8px;">
+          <button class="btn btn-ghost btn-sm" onclick="turToggle(${t.id},${t.aktif})">${t.aktif?"Pasif Et":"Aktif Et"}</button>
+          <button class="btn btn-danger btn-sm" onclick="turSil(${t.id})">Sil</button>
+        </div>
+      </div>`).join("");
+  });
+}
+
+// ===== LOGLAR =====
+function logYukle() {
+  const son = document.getElementById("log-adet").value;
+  fetch("/panel/loglar?son=" + son, {headers: auth()}).then(r => r.json()).then(logs => {
+    const renkler = {aktivasyon:"#00e676", kontrol:"#40c4ff", red:"#ff5252"};
+    document.getElementById("log-output").innerHTML = logs.map(l =>
+      `<span style="color:#555">[${l.tarih}]</span> <span style="color:${renkler[l.islem]||'#aaa'}">${l.islem.toUpperCase().padEnd(12)}</span> <span style="color:#7eb8ff">${l.lisans_kodu}</span> <span style="color:#888">IP:${l.ip}</span> ${l.mesaj}`
+    ).join("\n");
+  });
+}
+
+// ===== YETKİLİLER (RBAC) =====
+function adminGuncelle() {
+  const kadi = document.getElementById("a-yeni-kadi").value.trim();
+  const sifre = document.getElementById("a-yeni-sifre").value.trim();
+  if (!kadi || !sifre) { notif("Kullanıcı adı ve şifre boş olamaz!", true); return; }
+  
+  if (!confirm("Ana admin giriş bilgilerini değiştirmek üzeresiniz. Onaylıyor musunuz?")) return;
+  
+  fetch("/panel/admin-guncelle", {
+    method: "POST", headers: auth(), body: JSON.stringify({yeni_kullanici: kadi, yeni_sifre: sifre})
+  }).then(r => r.json()).then(d => {
+    notif(d.mesaj || d.detail, !d.basarili);
+    if(d.basarili) {
+       setTimeout(() => panelCikis(), 1500);
+    }
+  });
+}
+
+function yetkilileriYukle() {
+  fetch("/panel/yetkililer", {headers: auth()}).then(r => r.json()).then(liste => {
+    if(liste.detail) {
+        document.getElementById("yetkili-tablo").innerHTML = `<tr><td colspan="7" style="color:#f87171">${liste.detail}</td></tr>`;
+        return;
+    }
+    const yStr = (y) => Object.entries(y).filter(([k,v]) => v).map(([k,v]) => `<span class="badge b-aktif" style="margin:2px">${k.split('_').join(' ')}</span>`).join("") || '<span style="color:#555">Yok</span>';
+    document.getElementById("yetkili-tablo").innerHTML = liste.map(y => `
+      <tr>
+        <td>${y.kullanici_adi}</td>
+        <td>${y.isim_soyad || "-"}</td>
+        <td><span class="badge ${y.is_admin ? 'b-onay' : 'b-bekl'}">${y.is_admin ? 'Süper Admin' : 'Yetkili'}</span></td>
+        <td style="max-width:200px;line-height:1.8">${y.is_admin ? '<span class="badge b-onay">TÜM YETKİLER</span>' : yStr(y.yetkiler)}</td>
+        <td>${y.son_giris}</td>
+        <td>${y.son_cikis}</td>
+        <td>${!y.is_admin ? `<button class="btn btn-danger btn-sm" onclick="yetkiliSil(${y.id}, '${y.kullanici_adi}')">Sil</button>` : "-"}</td>
+      </tr>`).join("");
+  }).catch(e => {
+      document.getElementById("yetkili-tablo").innerHTML = `<tr><td colspan="7" style="color:#f87171">Yetkiniz yok veya yüklenemedi.</td></tr>`;
+  });
+}
+
+function yetkiliEkle() {
+  const kullanici_adi = document.getElementById("y-kadi").value.trim();
+  const isim_soyad = document.getElementById("y-isim").value.trim();
+  const email = document.getElementById("y-email").value.trim();
+  const sifre = document.getElementById("y-sifre").value.trim();
+  const yetkiler = {
+      lisans_olustur: document.getElementById("cb-lisans_olustur").checked,
+      lisans_sil: document.getElementById("cb-lisans_sil").checked,
+      hwid_sifirla: document.getElementById("cb-hwid_sifirla").checked,
+      sure_uzat: document.getElementById("cb-sure_uzat").checked,
+      talep_onayla: document.getElementById("cb-talep_onayla").checked,
+      kullanici_ekle: document.getElementById("cb-kullanici_ekle").checked,
+      mesaj_yaz: document.getElementById("cb-mesaj_yaz").checked,
+      ip_ban: document.getElementById("cb-ip_ban").checked,
+      uyelik_tur: document.getElementById("cb-uyelik_tur").checked,
+      offline_lisans: document.getElementById("cb-offline_lisans").checked,
+  };
+  
+  if (!kullanici_adi || !email || !sifre || !isim_soyad) { notif("Tüm alanları doldurun!", true); return; }
+  
+  fetch("/panel/yetkili-ekle", {
+      method:"POST", 
+      headers:auth(), 
+      body:JSON.stringify({kullanici_adi, isim_soyad, email, sifre, yetkiler})
+  }).then(r => r.json()).then(d => {
+      if(d.basarili) {
+          notif("Yetkili başarıyla eklendi");
+          document.getElementById("y-kadi").value = "";
+          document.getElementById("y-isim").value = "";
+          document.getElementById("y-email").value = "";
+          document.getElementById("y-sifre").value = "";
+          yetkilileriYukle();
+      } else {
+          notif(d.detail || "Eklenemedi", true);
+      }
+  });
+}
+
+function offlineLisansUret() {
+  const req_kodu = document.getElementById("ol-istek-kodu").value.trim();
+  const sure     = parseInt(document.getElementById("ol-sure").value) || 30;
+  const yetki    = document.getElementById("ol-yetki").value;
+  const hataEl   = document.getElementById("ol-hata");
+
+  hataEl.style.display = "none";
+  if(!req_kodu) {
+     hataEl.textContent = "İstek Kodu girmeniz gerekiyor.";
+     hataEl.style.display = "block";
+     return;
+  }
+  
+  fetch("/panel/offline-lisans-uret", {
+      method:"POST", 
+      headers:auth(),
+      body: JSON.stringify({ istek_kodu: req_kodu, sure_gun: sure, yetki: yetki })
+  }).then(r => r.json()).then(d => {
+      if(d.basarili) {
+          document.getElementById("ol-akt-kod").textContent = d.aktivasyon_kodu;
+          document.getElementById("ol-det-istek").textContent = d.istek_kodu;
+          document.getElementById("ol-det-sure").textContent = d.sure_gun;
+          document.getElementById("ol-det-yetki").textContent = d.yetki;
+          
+          document.getElementById("ol-sonuc-kart").style.display = "block";
+          document.getElementById("ol-kopyala-ok").style.display = "none";
+          document.getElementById("ol-kopyala-btn").textContent = "📋 Kopyala";
+          notif("Aktivasyon kodu üretildi.");
+      } else {
+          hataEl.textContent = d.detail || "Hata oluştu.";
+          hataEl.style.display = "block";
+          document.getElementById("ol-sonuc-kart").style.display = "none";
+      }
+  }).catch(e => {
+      hataEl.textContent = "Sunucu ile iletişim kurulamadı.";
+      hataEl.style.display = "block";
+  });
+}
+
+function olKopyala() {
+  const txt = document.getElementById("ol-akt-kod").textContent;
+  if(!txt) return;
+  navigator.clipboard.writeText(txt).then(() => {
+      document.getElementById("ol-kopyala-btn").textContent = "✓ Kopyalandı";
+      document.getElementById("ol-kopyala-ok").style.display = "inline";
+      setTimeout(() => {
+          document.getElementById("ol-kopyala-btn").textContent = "📋 Kopyala";
+          document.getElementById("ol-kopyala-ok").style.display = "none";
+      }, 2000);
+  });
+}
+
+function yetkiliSil(id, kadi) {
+  if (!confirm(`${kadi} adlı yetkiliyi silmek istediğinize emin misiniz?`)) return;
+  fetch("/panel/yetkili-sil/" + id, {method:"DELETE", headers:auth()})
+    .then(r => r.json()).then(d => {
+        notif(d.mesaj || d.detail, !d.basarili);
+        yetkilileriYukle();
+    });
+}
+
+// ===== PANEL LOGLARI =====
+function panelLoglariYukle() {
+  fetch("/panel/panel-loglari", {headers: auth()}).then(r => r.json()).then(liste => {
+    if(liste.detail) {
+        document.getElementById("panel-log-tablo").innerHTML = `<tr><td colspan="4" style="color:#f87171">${liste.detail}</td></tr>`;
+        return;
+    }
+    document.getElementById("panel-log-tablo").innerHTML = liste.map(l => `
+      <tr>
+        <td style="color:#888">${l.tarih}</td>
+        <td style="font-weight:600;color:#5b8cff">${l.kullanici_adi}</td>
+        <td><span class="badge b-bekl" style="background:#222540;color:#e0e0e0;border-color:#2a2d3e">${l.islem}</span></td>
+        <td style="color:#aaa">${l.detay}</td>
+      </tr>`).join("");
+  }).catch(e => {
+      document.getElementById("panel-log-tablo").innerHTML = `<tr><td colspan="4" style="color:#f87171">Yetkiniz yok veya yüklenemedi.</td></tr>`;
+  });
+}
+
+// Startup
+document.getElementById("inp-kullanici").focus();
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") talepModalKapat();
+});
+</script>
+</body>
+</html>"""
+
+
+@app.get("/panel", response_class=HTMLResponse)
+def panel_html():
+    return HTMLResponse(content=PANEL_HTML)
+
+
+# =====================================================================
+# KULLANICI KAYIT SİTESİ HTML
+# =====================================================================
+
+SITE_CSS = """
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #080b14;
+  --surface: #0e1221;
+  --border: #1a2040;
+  --accent: #3d6fff;
+  --accent2: #00d4ff;
+  --text: #e2e8f8;
+  --muted: #5a6a8a;
+  --success: #22c55e;
+  --danger: #ef4444;
+  --warn: #f59e0b;
+}
+html, body { min-height: 100vh; font-family: 'Sora', sans-serif; background: var(--bg); color: var(--text); }
+body { background-image: radial-gradient(ellipse at 20% 50%, #0d1a4020 0%, transparent 60%), radial-gradient(ellipse at 80% 10%, #0a2a5020 0%, transparent 50%); }
+
+/* Navbar */
+.nav { display: flex; align-items: center; justify-content: space-between; padding: 0 40px; height: 64px; border-bottom: 1px solid var(--border); background: rgba(8,11,20,0.9); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 100; }
+.nav-brand { font-size: 16px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 10px; }
+.nav-brand .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 12px var(--accent); }
+.nav-links { display: flex; align-items: center; gap: 8px; }
+.nav-btn { padding: 7px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; font-family: 'Sora', sans-serif; }
+.nav-btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+.nav-btn-ghost:hover { color: var(--text); border-color: var(--accent); }
+.nav-btn-primary { background: var(--accent); color: white; }
+.nav-btn-primary:hover { background: #5580ff; }
+
+/* Hero */
+.hero { text-align: center; padding: 80px 24px 60px; }
+.hero-badge { display: inline-flex; align-items: center; gap: 6px; background: #3d6fff15; border: 1px solid #3d6fff33; color: var(--accent2); padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 24px; }
+.hero h1 { font-size: clamp(32px, 6vw, 60px); font-weight: 700; line-height: 1.1; margin-bottom: 20px; }
+.hero h1 span { background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.hero p { color: var(--muted); font-size: 17px; max-width: 540px; margin: 0 auto 36px; line-height: 1.7; }
+.hero-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.btn-hero { padding: 13px 28px; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; border: none; font-family: 'Sora', sans-serif; transition: all 0.2s; }
+.btn-hero-primary { background: linear-gradient(135deg, var(--accent), #5b8fff); color: white; box-shadow: 0 0 32px #3d6fff44; }
+.btn-hero-primary:hover { transform: translateY(-2px); box-shadow: 0 0 48px #3d6fff66; }
+.btn-hero-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+.btn-hero-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Features */
+.features { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; max-width: 900px; margin: 0 auto 80px; padding: 0 24px; }
+.feature { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+.feature-icon { font-size: 28px; margin-bottom: 12px; }
+.feature h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+.feature p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+/* Plans */
+.plans-section { padding: 0 24px 80px; max-width: 900px; margin: 0 auto; }
+.section-title { text-align: center; font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+.section-sub { text-align: center; color: var(--muted); font-size: 15px; margin-bottom: 36px; }
+.plans { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+.plan-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 22px; cursor: pointer; transition: all 0.2s; position: relative; }
+.plan-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.plan-card.selected { border-color: var(--accent); background: #3d6fff0d; box-shadow: 0 0 24px #3d6fff22; }
+.plan-card.selected::after { content: '✓'; position: absolute; top: 12px; right: 14px; color: var(--accent); font-weight: 700; font-size: 16px; }
+.plan-name { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+.plan-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+/* Forms */
+.form-container { max-width: 440px; margin: 0 auto; padding: 0 24px 80px; }
+.form-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; }
+.form-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+.form-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+.form-group { margin-bottom: 16px; }
+.form-label { display: block; font-size: 13px; font-weight: 500; color: #8a9bc0; margin-bottom: 7px; }
+.form-input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 11px 14px; color: var(--text); font-size: 14px; font-family: 'Sora', sans-serif; transition: border-color 0.2s; }
+.form-input:focus { outline: none; border-color: var(--accent); }
+.form-btn { width: 100%; background: linear-gradient(135deg, var(--accent), #5b8fff); color: white; border: none; border-radius: 8px; padding: 13px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: 'Sora', sans-serif; transition: all 0.2s; margin-top: 6px; }
+.form-btn:hover { opacity: 0.92; transform: translateY(-1px); }
+.form-alt { text-align: center; font-size: 13px; color: var(--muted); margin-top: 16px; }
+.form-alt a { color: var(--accent); cursor: pointer; font-weight: 600; }
+.form-err { background: #ef444415; border: 1px solid #ef444433; color: #fca5a5; border-radius: 6px; padding: 10px 14px; font-size: 13px; margin-bottom: 14px; display: none; }
+.form-ok { background: #22c55e15; border: 1px solid #22c55e33; color: #86efac; border-radius: 6px; padding: 10px 14px; font-size: 13px; margin-bottom: 14px; display: none; }
+
+/* Dashboard */
+.dashboard { max-width: 800px; margin: 0 auto; padding: 32px 24px; }
+.dash-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+.dash-title { font-size: 22px; font-weight: 700; }
+.dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+.dash-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+.dash-card.full { grid-column: 1 / -1; }
+.dash-card h3 { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+.dash-val { font-size: 20px; font-weight: 700; color: var(--text); }
+.dash-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.license-box { background: var(--bg); border: 1px solid var(--accent); border-radius: 10px; padding: 18px; text-align: center; }
+.license-code { font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 600; color: var(--accent2); letter-spacing: 2px; }
+.license-sub { font-size: 12px; color: var(--muted); margin-top: 6px; }
+.status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.status-active { background: #22c55e15; color: #4ade80; border: 1px solid #22c55e33; }
+.status-none { background: #ef444415; color: #f87171; border: 1px solid #ef444433; }
+.status-pending { background: #f59e0b15; color: #fbbf24; border: 1px solid #f59e0b33; }
+
+/* Mesaj alanı */
+.msg-area { display: flex; flex-direction: column; gap: 10px; max-height: 320px; overflow-y: auto; padding: 4px 0; margin-bottom: 12px; }
+.msg-b { max-width: 80%; padding: 10px 14px; border-radius: 10px; font-size: 13px; line-height: 1.6; }
+.msg-b.benim { background: #3d6fff22; color: #93b4ff; align-self: flex-end; border-bottom-right-radius: 2px; border: 1px solid #3d6fff33; }
+.msg-b.admin { background: var(--bg); color: var(--text); align-self: flex-start; border: 1px solid var(--border); border-bottom-left-radius: 2px; }
+.msg-wrap { display: flex; flex-direction: column; }
+.msg-wrap.right { align-items: flex-end; }
+.msg-t { font-size: 10px; color: var(--muted); margin-top: 3px; }
+.msg-input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-size: 13px; font-family: 'Sora', sans-serif; resize: vertical; min-height: 72px; }
+.msg-input:focus { outline: none; border-color: var(--accent); }
+
+/* Talepler listesi */
+.talep-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; }
+.badge-sm { padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+.b-bekl { background: #f59e0b20; color: #fbbf24; border: 1px solid #f59e0b44; }
+.b-onay { background: #22c55e20; color: #4ade80; border: 1px solid #22c55e44; }
+.b-red  { background: #ef444420; color: #f87171; border: 1px solid #ef444444; }
+
+/* Responsive */
+@media (max-width: 600px) {
+  .nav { padding: 0 16px; }
+  .hero { padding: 48px 16px 40px; }
+  .dash-grid { grid-template-columns: 1fr; }
+  .msg-split { grid-template-columns: 1fr; }
+}
+</style>
+"""
+
+SITE_HTML_TEMPLATE = """<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OPC Gateway — Lisans Sistemi</title>
+{CSS}
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-brand">
+    <div class="dot"></div>
+    OPC Gateway
+  </div>
+  <div class="nav-links" id="nav-links">
+    <button class="nav-btn nav-btn-ghost" onclick="sayfaGoster('giris')">Giriş Yap</button>
+    <button class="nav-btn nav-btn-primary" onclick="sayfaGoster('kayit')">Kayıt Ol</button>
+  </div>
+</nav>
+
+<!-- ANASAYFA -->
+<div id="sayfa-anasayfa">
+  <div class="hero">
+    <div class="hero-badge">⚡ OPC Gateway Lisans Sistemi</div>
+    <h1>Endüstriyel Otomasyon<br><span>Lisans Yönetimi</span></h1>
+    <p>OPC Gateway yazılımı için güvenli, hızlı ve kolay lisans aktivasyon sistemi.</p>
+    <div class="hero-btns">
+      <button class="btn-hero btn-hero-primary" onclick="sayfaGoster('kayit')">Hemen Başla →</button>
+      <button class="btn-hero btn-hero-ghost" onclick="sayfaGoster('planlar')">Planları İncele</button>
+    </div>
+  </div>
+
+  <div class="features">
+    <div class="feature">
+      <div class="feature-icon">🔐</div>
+      <h3>Güvenli Aktivasyon</h3>
+      <p>HWID tabanlı lisans sistemi ile yazılımınızı yetkisiz kullanıma karşı koruyun.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">⚡</div>
+      <h3>Anında Aktivasyon</h3>
+      <p>Lisans kodunu aldıktan sonra saniyeler içinde programınızı aktive edin.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">💬</div>
+      <h3>7/24 Destek</h3>
+      <p>Hesabınızdaki destek sistemi üzerinden doğrudan ekibimize ulaşın.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🔄</div>
+      <h3>Esnek Planlar</h3>
+      <p>Aylık, yıllık veya ömür boyu seçeneklerden ihtiyacınıza uygun planı seçin.</p>
+    </div>
+  </div>
+</div>
+
+<!-- PLANLAR -->
+<div id="sayfa-planlar" style="display:none">
+  <div style="height:48px;"></div>
+  <div class="plans-section">
+    <div class="section-title">Lisans Planları</div>
+    <div class="section-sub">İhtiyacınıza göre bir plan seçin</div>
+    <div class="plans" id="plan-listesi">
+      <div style="text-align:center;color:var(--muted);grid-column:1/-1;padding:40px;">Planlar yükleniyor...</div>
+    </div>
+    <div style="text-align:center;margin-top:32px;">
+      <button class="btn-hero btn-hero-primary" onclick="sayfaGoster('kayit')">Kayıt Ol ve Talep Gönder →</button>
+    </div>
+  </div>
+</div>
+
+<!-- KAYIT -->
+<div id="sayfa-kayit" style="display:none">
+  <div style="height:48px;"></div>
+  <div class="form-container">
+    <div class="form-card">
+      <div class="form-title">Hesap Oluştur</div>
+      <div class="form-sub">Zaten hesabınız var mı? <a onclick="sayfaGoster('giris')">Giriş yapın</a></div>
+      <div class="form-err" id="kayit-hata"></div>
+      <div class="form-ok" id="kayit-ok"></div>
+      <div class="form-group">
+        <label class="form-label">Ad Soyad</label>
+        <input class="form-input" type="text" id="r-ad" placeholder="Adınız Soyadınız">
+      </div>
+      <div class="form-group">
+        <label class="form-label">E-posta</label>
+        <input class="form-input" type="email" id="r-email" placeholder="ornek@email.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Şifre</label>
+        <input class="form-input" type="password" id="r-sifre" placeholder="En az 6 karakter">
+      </div>
+      <button class="form-btn" onclick="kayitOl()">Hesap Oluştur</button>
+      <div class="form-alt">Kayıt olarak <a href="#" style="color:var(--accent)">kullanım koşullarını</a> kabul etmiş olursunuz.</div>
+    </div>
+  </div>
+</div>
+
+<!-- GİRİŞ -->
+<div id="sayfa-giris" style="display:none">
+  <div style="height:48px;"></div>
+  <div class="form-container">
+    <div class="form-card">
+      <div class="form-title">Giriş Yap</div>
+      <div class="form-sub">Hesabınız yok mu? <a onclick="sayfaGoster('kayit')">Kayıt olun</a></div>
+      <div class="form-err" id="giris-hata"></div>
+      <div class="form-ok" id="giris-ok"></div>
+      <div class="form-group">
+        <label class="form-label">E-posta</label>
+        <input class="form-input" type="email" id="g-email" placeholder="ornek@email.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Şifre</label>
+        <input class="form-input" type="password" id="g-sifre" placeholder="Şifreniz" onkeydown="if(event.key==='Enter')girisYap()">
+      </div>
+      <button class="form-btn" onclick="girisYap()">Giriş Yap</button>
+      <div class="form-alt">Hesabınız yok mu? <a onclick="sayfaGoster('kayit')">Kayıt olun</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="sayfa-dashboard" style="display:none">
+  <div class="dashboard">
+    <div class="dash-header">
+      <div class="dash-title" id="dash-hosgeldin">Hoş Geldiniz</div>
+      <button class="nav-btn nav-btn-ghost" onclick="cikisYap()" style="font-size:13px;">Çıkış</button>
+    </div>
+
+    <div class="dash-grid" id="dash-grid">
+      <!-- JS ile doldurulacak -->
+    </div>
+
+    <!-- Lisans Talebi -->
+    <div class="dash-card full" id="talep-section">
+      <h3>Lisans Talebi</h3>
+      <div id="talep-icerik"></div>
+    </div>
+
+    <!-- Lisans Geçmişi -->
+    <div class="dash-card full" id="gecmis-section">
+      <h3 style="display:flex;align-items:center;justify-content:space-between;">
+        <span>📋 Lisans Geçmişi</span>
+        <button onclick="lisansGecmisiniYukle()" style="background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;">↻ Yenile</button>
+      </h3>
+      <div id="gecmis-icerik"><div style="color:var(--muted);font-size:13px;">Yükleniyor…</div></div>
+    </div>
+
+    <!-- Mesajlar -->
+    <div class="dash-card full">
+      <h3>Destek / Mesajlar</h3>
+      <div class="msg-area" id="msg-area"></div>
+      <textarea class="msg-input" id="msg-yaz" placeholder="Mesajınızı yazın… (Ctrl+Enter ile gönder)" onkeydown="if(event.ctrlKey&&event.key==='Enter')mesajGonder()"></textarea>
+      <button class="form-btn" style="margin-top:8px;padding:10px;" onclick="mesajGonder()">Gönder</button>
+    </div>
+
+    <!-- Şifre Değiştirme -->
+    <div style="margin-top:32px; padding-top:16px; border-top:1px solid var(--border); text-align:center;">
+      <div style="display:flex; justify-content:center; align-items:center; gap:8px;">
+        <input type="password" id="k-yeni-sifre" placeholder="Yeni şifreniz (en az 6 karakter)" style="background:transparent; border:1px solid var(--border); border-radius:6px; padding:6px 12px; font-size:12px; color:var(--text); width:200px;">
+        <button onclick="kullaniciSifreDegistir()" style="background:transparent; border:1px solid var(--border); color:var(--muted); padding:6px 12px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:600;">Şifremi Değiştir</button>
+      </div>
+      <div style="font-size:10px; color:var(--muted); margin-top:6px;">Hesabınızın şifresini eski şifrenizi girmeden hızlıca değiştirebilirsiniz.</div>
+    </div>
+  </div>
+</div>
+
+<!-- İPTAL MODALı -->
+<div id="iptal-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(6px);">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px;width:480px;max-width:95vw;">
+    <div style="font-size:18px;font-weight:700;color:#f87171;margin-bottom:6px;">⚠️ Lisansı İptal Et</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">Bu işlem geri alınamaz. Lisansınız iptal edildikten sonra programı kullanamazsınız.</div>
+    <div style="font-size:13px;font-weight:500;margin-bottom:8px;color:#8a9bc0;">Neden iptal ediyorsunuz?</div>
+    <select id="iptal-neden-sec" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;font-family:'Sora',sans-serif;margin-bottom:8px;">
+      <option value="">-- Neden seçin --</option>
+      <option value="Artık kullanmıyorum">Artık kullanmıyorum</option>
+      <option value="Fiyatı çok yüksek">Fiyatı çok yüksek</option>
+      <option value="Başka bir yazılıma geçtim">Başka bir yazılıma geçtim</option>
+      <option value="Teknik sorunlar">Teknik sorunlar</option>
+      <option value="Geçici iptal">Geçici iptal</option>
+      <option value="Diğer">Diğer</option>
+    </select>
+    <textarea id="iptal-aciklama" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;font-family:'Sora',sans-serif;min-height:60px;resize:vertical;margin-bottom:16px;" placeholder="Ek açıklama (isteğe bağlı)"></textarea>
+    <div id="iptal-hata" style="color:#f87171;font-size:13px;margin-bottom:12px;display:none;"></div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="lisansImIptalEt()" style="flex:1;background:linear-gradient(135deg,#ef4444,#b91c1c);color:white;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif;">Evet, İptal Et</button>
+      <button onclick="iptalModalKapat()" style="flex:1;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Sora',sans-serif;">Vazgeç</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let planlar = [];
+
+// ===== SAYFA YÖNETİMİ =====
+function sayfaGoster(ad) {
+  ["anasayfa","planlar","kayit","giris","dashboard"].forEach(s => {
+    document.getElementById("sayfa-" + s).style.display = s === ad ? "" : "none";
+  });
+  if (ad === "planlar") planlariYukle();
+  if (ad === "dashboard") dashboardYukle();
+}
+
+// ===== PLANLAR =====
+async function planlariYukle() {
+  const r = await fetch("/api/uyelik-turleri-public");
+  planlar = await r.json();
+  const el = document.getElementById("plan-listesi");
+  if (!planlar.length) { el.innerHTML = '<div style="text-align:center;color:var(--muted);grid-column:1/-1;padding:40px;">Henüz plan eklenmemiş.</div>'; return; }
+  el.innerHTML = planlar.map(p => `
+    <div class="plan-card" id="plan-${p.kod}" onclick="planSec('${p.kod}')">
+      <div class="plan-name">${p.ad}</div>
+      <div class="plan-desc">${p.aciklama||""}</div>
+    </div>`).join("");
+}
+
+let secilenPlan = null;
+function planSec(kod) {
+  secilenPlan = kod;
+  document.querySelectorAll(".plan-card").forEach(c => c.classList.remove("selected"));
+  const el = document.getElementById("plan-" + kod);
+  if (el) el.classList.add("selected");
+}
+
+// ===== KAYIT =====
+async function kayitOl() {
+  const ad    = document.getElementById("r-ad").value.trim();
+  const email = document.getElementById("r-email").value.trim();
+  const sifre = document.getElementById("r-sifre").value;
+  mesajGizle("kayit-hata"); mesajGizle("kayit-ok");
+
+  if (!ad || !email || !sifre) {
+    mesajGoster("kayit-hata", "⚠️ Tüm alanları doldurun.");
+    return;
+  }
+
+  // Butonu devre dışı bırak
+  const btn = document.querySelector("#sayfa-kayit .form-btn");
+  if (btn) { btn.disabled = true; btn.textContent = "Kayıt yapılıyor…"; }
+
+  const r = await fetch("/api/kayit", {method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({ad_soyad: ad, email, sifre})});
+  const d = await r.json();
+
+  if (btn) { btn.disabled = false; btn.textContent = "Hesap Oluştur"; }
+
+  if (r.ok) {
+    // Geri sayımlı yönlendirme
+    let saniye = 3;
+    mesajGoster("kayit-ok", `✅ Kayıt başarılı! Giriş sayfasına yönlendiriliyorsunuz (${saniye})…`);
+    const sayac = setInterval(() => {
+      saniye--;
+      if (saniye <= 0) {
+        clearInterval(sayac);
+        mesajGizle("kayit-ok");
+        sayfaGoster("giris");
+      } else {
+        mesajGoster("kayit-ok", `✅ Kayıt başarılı! Giriş sayfasına yönlendiriliyorsunuz (${saniye})…`);
+      }
+    }, 1000);
+  } else {
+    const hata = d.detail || "Bir hata oluştu.";
+    mesajGoster("kayit-hata", "❌ " + hata);
+  }
+}
+
+// ===== GİRİŞ =====
+async function girisYap() {
+  const email = document.getElementById("g-email").value.trim();
+  const sifre = document.getElementById("g-sifre").value;
+  mesajGizle("giris-hata"); mesajGizle("giris-ok");
+
+  if (!email || !sifre) {
+    mesajGoster("giris-hata", "⚠️ Lütfen e-posta ve şifrenizi girin.");
+    return;
+  }
+
+  const btn = document.querySelector("#sayfa-giris .form-btn");
+  if (btn) { btn.disabled = true; btn.textContent = "Giriş yapılıyor…"; }
+
+  const r = await fetch("/api/giris", {method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({email, sifre})});
+  const d = await r.json();
+
+  if (btn) { btn.disabled = false; btn.textContent = "Giriş Yap"; }
+
+  if (r.ok) {
+    mesajGoster("giris-ok", "✅ Giriş başarılı! Yönlendiriliyorsunuz…");
+    setTimeout(() => {
+      mesajGizle("giris-ok");
+      sayfaGoster("dashboard");
+      dashboardYukle();
+    }, 1200);
+  } else {
+    // Kullanıcı dostu hata mesajları
+    let hata = d.detail || "";
+    if (!hata || hata.toLowerCase().includes("e-posta") || hata.toLowerCase().includes("sifre") || hata.toLowerCase().includes("şifre") || r.status === 401) {
+      hata = "❌ E-posta adresi veya şifre yanlış. Lütfen tekrar deneyin.";
+    } else {
+      hata = "❌ " + hata;
+    }
+    mesajGoster("giris-hata", hata);
+    // Yanlış girişte şifre alanını temizle ve odaklan
+    document.getElementById("g-sifre").value = "";
+    document.getElementById("g-sifre").focus();
+  }
+}
+
+// ===== ÇIKIŞ & AYARLAR =====
+async function kullaniciSifreDegistir() {
+  const ys = document.getElementById("k-yeni-sifre").value.trim();
+  if (!ys || ys.length < 6) { alert("Şifre en az 6 karakter olmalıdır."); return; }
+  if (!confirm("Şifrenizi değiştirmek istediğinize emin misiniz?")) return;
+  try {
+    const r = await fetch("/api/sifre-degistir", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({yeni_sifre: ys})
+    });
+    if (r.ok) {
+      alert("Şifreniz başarıyla değiştirildi.");
+      document.getElementById("k-yeni-sifre").value = "";
+    } else {
+      const d = await r.json();
+      alert("Hata: " + (d.detail || "İşlem başarısız."));
+    }
+  } catch(e) { alert("Sunucuyla iletişim kurulamadı."); }
+}
+
+async function cikisYap() {
+  await fetch("/api/cikis", {method:"POST"});
+  location.reload();
+}
+
+// ===== DASHBOARD =====
+function lisansGridRender(p, grid) {
+  if (!grid) return;
+  const l = p.lisans;
+  if (!l) {
+    grid.innerHTML = `
+      <div class="dash-card full">
+        <h3>Lisans Durumu</h3>
+        <span class="status-badge status-none">● Lisans Yok</span>
+        <div class="dash-sub" style="margin-top:8px;">Aşağıdan lisans talebinde bulunabilirsiniz.</div>
+      </div>`;
+    return;
+  }
+  if (l.durum === "aktif") {
+    grid.innerHTML = `
+      <div class="dash-card">
+        <h3>Lisans Durumu</h3>
+        <span class="status-badge status-active">● Aktif</span>
+        <div class="dash-sub" style="margin-top:8px;">${l.tur}</div>
+      </div>
+      <div class="dash-card">
+        <h3>Kalan Süre</h3>
+        <div class="dash-val">${l.kalan_gun != null ? l.kalan_gun + " gün" : "Ömür Boyu"}</div>
+        <div class="dash-sub">Bitiş: ${l.bitis}</div>
+      </div>
+      <div class="dash-card full">
+        <h3>Lisans Kodunuz</h3>
+        <div class="license-box">
+          <div class="license-code">${l.kod}</div>
+          <div class="license-sub">Bu kodu program aktivasyonunda kullanın</div>
+        </div>
+      </div>
+      ${p.indirme_linki ? `
+      <div class="dash-card full" style="text-align:center;">
+        <h3>Program İndir</h3>
+        <div class="dash-sub" style="margin-bottom:16px;">Lisansınız aktif. Programı indirip lisans kodunuzla aktive edebilirsiniz.</div>
+        <a href="${p.indirme_linki}" target="_blank" style="display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--success),#16a34a);color:white;padding:14px 32px;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;box-shadow:0 0 24px #22c55e33;transition:all 0.2s;">
+          ⬇ OPC Gateway'i İndir
+        </a>
+      </div>` : ''}
+      <div class="dash-card full" style="text-align:center;padding-top:8px;">
+        <button onclick="iptalModalAc()" style="background:transparent;border:1px solid #ef444455;color:#f87171;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Sora',sans-serif;transition:all 0.2s;" onmouseover="this.style.background='#ef444415'" onmouseout="this.style.background='transparent'">
+          ⚠️ Lisansı İptal Et
+        </button>
+      </div>`;
+  } else if (l.durum === "suresi_dolmus") {
+    grid.innerHTML = `
+      <div class="dash-card full">
+        <h3>Lisans Durumu</h3>
+        <span class="status-badge" style="background:#f59e0b15;color:#fbbf24;border:1px solid #f59e0b33;">● Süresi Dolmuş</span>
+        <div class="dash-sub" style="margin-top:8px;">${l.tur} · Bitiş: ${l.bitis}</div>
+        <div class="dash-sub" style="margin-top:6px;color:#7eb8ff;">Lisans kodunuz: <strong style="font-family:monospace;">${l.kod}</strong></div>
+        <div class="dash-sub" style="margin-top:8px;">Süreniz dolmuş. Yenilemek için aşağıdan yeni bir talep gönderin.</div>
+      </div>`;
+  } else if (l.durum === "iptal") {
+    grid.innerHTML = `
+      <div class="dash-card full">
+        <h3>Lisans Durumu</h3>
+        <span class="status-badge status-none">● İptal Edildi</span>
+        <div class="dash-sub" style="margin-top:8px;">${l.tur} · Lisans kodunuz: <strong style="font-family:monospace;">${l.kod}</strong></div>
+        ${l.iptal_nedeni ? `<div class="dash-sub" style="margin-top:6px;">Neden: ${l.iptal_nedeni}</div>` : ''}
+        <div class="dash-sub" style="margin-top:8px;">Yeni lisans için aşağıdan talep gönderebilirsiniz.</div>
+      </div>`;
+  }
+}
+
+async function dashboardYukle() {
+  const r = await fetch("/api/profil");
+  if (!r.ok) { sayfaGoster("giris"); return; }
+  const p = await r.json();
+  document.getElementById("dash-hosgeldin").textContent = "Merhaba, " + p.ad_soyad + " 👋";
+  document.getElementById("nav-links").innerHTML = `<span style="font-size:13px;color:var(--muted);margin-right:8px;">${p.email}</span><button class="nav-btn nav-btn-ghost" onclick="cikisYap()">Cıkış</button>`;
+  lisansGridRender(p, document.getElementById("dash-grid"));
+  taleplerYukle();
+  lisansGecmisiniYukle();
+  mesajlariYukle();
+}
+
+// Dashboard lisans kartını sessizce güncelle
+async function lisansKartiGuncelle() {
+  const r = await fetch("/api/profil");
+  if (!r.ok) return;
+  const p = await r.json();
+  lisansGridRender(p, document.getElementById("dash-grid"));
+}
+
+function iptalModalAc() {
+  document.getElementById("iptal-neden-sec").value = "";
+  document.getElementById("iptal-aciklama").value = "";
+  const hataEl = document.getElementById("iptal-hata");
+  if (hataEl) hataEl.style.display = "none";
+  const m = document.getElementById("iptal-modal");
+  m.style.display = "flex";
+}
+
+function iptalModalKapat() {
+  document.getElementById("iptal-modal").style.display = "none";
+}
+
+async function lisansImIptalEt() {
+  const sec = document.getElementById("iptal-neden-sec").value;
+  const aciklama = document.getElementById("iptal-aciklama").value.trim();
+  const hataEl = document.getElementById("iptal-hata");
+  if (!sec) {
+    hataEl.textContent = "⚠️ Lütfen bir neden seçin.";
+    hataEl.style.display = "block";
+    return;
+  }
+  const neden = aciklama ? `${sec} — ${aciklama}` : sec;
+  const r = await fetch("/api/lisansimi-iptal-et", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({neden})
+  });
+  const d = await r.json();
+  if (r.ok) {
+    iptalModalKapat();
+    // Kartı ve geçmişi güncelle
+    lisansKartiGuncelle();
+    lisansGecmisiniYukle();
+    taleplerYukle();
+  } else {
+    hataEl.textContent = "❌ " + (d.detail || "Bir hata oluştu.");
+    hataEl.style.display = "block";
+  }
+}
+
+async function taleplerYukle() {
+  const r = await fetch("/api/benim-taleplerim");
+  const talepler = await r.json();
+  const durumBadge = {beklemede:"b-bekl",onaylandi:"b-onay",reddedildi:"b-red"};
+  const durumYazi = {beklemede:"Beklemede",onaylandi:"Onaylandı",reddedildi:"Reddedildi"};
+  let html = "";
+  talepler.forEach(t => {
+    html += `<div class="talep-item">
+      <div>
+        <div style="font-size:14px;font-weight:600;">${t.tur}</div>
+        <div style="font-size:12px;color:var(--muted);">${t.tarih}${t.admin_notu ? " · " + t.admin_notu : ""}</div>
+      </div>
+      <span class="badge-sm ${durumBadge[t.durum]||""}">${durumYazi[t.durum]||t.durum}</span>
+    </div>`;
+  });
+
+  // Yeni talep formu (lisans yoksa ve bekleyen talep yoksa)
+  const bekleyen = talepler.find(t => t.durum === "beklemede");
+  if (!bekleyen) {
+    const planlarResp = await fetch("/api/uyelik-turleri-public");
+    const planlarData = await planlarResp.json();
+    html += `<div style="margin-top:16px;">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Yeni lisans talep edin:</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+        ${planlarData.map(p => `<div class="plan-card" id="dp-${p.kod}" onclick="dashPlanSec('${p.kod}')" style="padding:12px 16px;min-width:140px;cursor:pointer;">
+          <div style="font-size:13px;font-weight:600;">${p.ad}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:3px;">${p.aciklama||""}</div>
+        </div>`).join("")}
+      </div>
+      <button class="form-btn" style="max-width:200px;padding:10px;" onclick="talepGonder()">Talep Gönder</button>
+      <div class="form-err" id="talep-hata" style="margin-top:10px;"></div>
+      <div class="form-ok" id="talep-ok" style="margin-top:10px;"></div>
+    </div>`;
+  }
+  document.getElementById("talep-icerik").innerHTML = html;
+}
+
+let dashSecilenPlan = null;
+function dashPlanSec(kod) {
+  dashSecilenPlan = kod;
+  document.querySelectorAll("[id^='dp-']").forEach(c => c.classList.remove("selected"));
+  const el = document.getElementById("dp-" + kod);
+  if (el) el.classList.add("selected");
+}
+
+async function talepGonder() {
+  if (!dashSecilenPlan) { mesajGoster("talep-hata", "Lütfen bir plan seçin."); return; }
+  mesajGizle("talep-hata"); mesajGizle("talep-ok");
+  const r = await fetch("/api/talep-olustur", {method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({tur: dashSecilenPlan})});
+  const d = await r.json();
+  if (r.ok) {
+    mesajGoster("talep-ok", "✅ " + d.mesaj);
+    taleplerYukle();
+  } else {
+    mesajGoster("talep-hata", d.detail || "Hata.");
+  }
+}
+
+async function lisansGecmisiniYukle() {
+  const r = await fetch("/api/lisans-gecmisim");
+  if (!r.ok) return;
+  const liste = await r.json();
+  const el = document.getElementById("gecmis-icerik");
+  if (!liste.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:13px;">Henüz lisans kaydı yok.</div>';
+    return;
+  }
+  const durumBilgi = {
+    aktif:          { cls: 'b-onay',  yazi: '✓ Aktif' },
+    suresi_dolmus:  { cls: 'b-red',   yazi: '✗ Süresi Doldu' },
+    iptal:          { cls: 'b-red',   yazi: '✗ İptal Edildi' },
+  };
+  const turIkon = { aylik: '🗓', yillik: '📅', omur_boyu: '♾', deneme: '🔬' };
+  el.innerHTML = `<div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:0.5px;">
+          <th style="padding:8px 12px;text-align:left;">Lisans Kodu</th>
+          <th style="padding:8px 12px;text-align:left;">Tür</th>
+          <th style="padding:8px 12px;text-align:left;">Durum</th>
+          <th style="padding:8px 12px;text-align:left;">Oluşturulma</th>
+          <th style="padding:8px 12px;text-align:left;">Bitiş</th>
+          <th style="padding:8px 12px;text-align:left;">Aktivasyon</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${liste.map(l => {
+          const d = durumBilgi[l.durum] || { cls: '', yazi: l.durum };
+          const ikon = turIkon[l.tur] || '🔑';
+          const kalanTxt = l.kalan_gun != null ? ` · ${l.kalan_gun} gün kaldı` : '';
+          return `<tr style="border-top:1px solid var(--border);">
+            <td style="padding:10px 12px;"><code style="font-family:monospace;font-size:12px;background:var(--bg);padding:3px 8px;border-radius:4px;color:#7eb8ff;">${l.kod}</code></td>
+            <td style="padding:10px 12px;">${ikon} ${l.tur.replace('_',' ')}</td>
+            <td style="padding:10px 12px;"><span class="badge-sm ${d.cls}" style="white-space:nowrap;">${d.yazi}${kalanTxt}</span></td>
+            <td style="padding:10px 12px;color:var(--muted);">${l.olusturma}</td>
+            <td style="padding:10px 12px;color:${l.durum==='suresi_dolmus'?'#f87171':'var(--muted)'}">${l.bitis}</td>
+            <td style="padding:10px 12px;color:var(--muted);">${l.aktivasyon || '—'}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+async function mesajlariYukle() {
+  const r = await fetch("/api/mesajlarim");
+  if (!r.ok) return;
+  const mesajlar = await r.json();
+  const el = document.getElementById("msg-area");
+  if (!el) return;
+  // Kullanıcı en alttaysa otomatik kaydır; yazarken konumunu koruma
+  const altaYakin = (el.scrollHeight - el.scrollTop) <= (el.clientHeight + 60);
+  el.innerHTML = mesajlar.map(m => `
+    <div class="msg-wrap ${m.gonderen==='kullanici'?'right':''}">
+      <div class="msg-b ${m.gonderen==='kullanici'?'benim':'admin'}">${m.icerik}</div>
+      <div class="msg-t">${m.gonderen==='kullanici'?'Siz':'Destek'} · ${m.tarih}</div>
+    </div>`).join("");
+  if (altaYakin) el.scrollTop = el.scrollHeight;
+}
+
+async function mesajGonder() {
+  const icerik = document.getElementById("msg-yaz").value.trim();
+  if (!icerik) return;
+  const r = await fetch("/api/mesaj-gonder", {method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({icerik})});
+  if (r.ok) {
+    document.getElementById("msg-yaz").value = "";
+    mesajlariYukle();
+  }
+}
+
+// ===== YARDIMCI =====
+function mesajGoster(id, txt) {
+  const el = document.getElementById(id);
+  if (el) { el.textContent = txt; el.style.display = "block"; }
+}
+function mesajGizle(id) {
+  const el = document.getElementById(id);
+  if (el) el.style.display = "none";
+}
+
+// Sayfa yüklenince oturum kontrolü
+let _sitePollTimer = null;
+(async function() {
+  const r = await fetch("/api/profil");
+  if (r.ok) {
+    sayfaGoster("dashboard");
+    const p = await r.json();
+    document.getElementById("nav-links").innerHTML = `<span style="font-size:13px;color:var(--muted);margin-right:8px;">${p.email}</span><button class="nav-btn nav-btn-ghost" onclick="cikisYap()">Cıkış</button>`;
+    // 20 saniyede bir sessizce yenile
+    _sitePollTimer = setInterval(async () => {
+      const isDash = document.getElementById("sayfa-dashboard") &&
+                     document.getElementById("sayfa-dashboard").style.display !== "none";
+      if (!isDash) return;
+      lisansKartiGuncelle();
+      taleplerYukle();
+      lisansGecmisiniYukle();
+      mesajlariYukle();
+    }, 20000);
+  }
+})();
+</script>
+</body>
+</html>"""
+
+# =====================================================================
+# HTML ARAYÜZLERİ (Buralar Kesinlikle Aynı Kalacak)
+# =====================================================================
+
+@app.get("/panel", response_class=HTMLResponse)
+def panel_html():
+    return HTMLResponse(content=PANEL_HTML)
+
+@app.get("/", response_class=HTMLResponse)
+def anasayfa():
+    html = SITE_HTML_TEMPLATE.replace("{CSS}", SITE_CSS)
+    return HTMLResponse(content=html)
+
+@app.get("/kayit", response_class=HTMLResponse)
+def kayit_sayfasi():
+    return HTMLResponse(content=SITE_HTML_TEMPLATE.replace("{CSS}", SITE_CSS) + "<script>sayfaGoster('kayit');</script>")
+
+@app.get("/giris", response_class=HTMLResponse)
+def giris_sayfasi():
+    return HTMLResponse(content=SITE_HTML_TEMPLATE.replace("{CSS}", SITE_CSS) + "<script>sayfaGoster('giris');</script>")
+
+@app.get("/dashboard", response_class=HTMLResponse)
+def dashboard_sayfasi():
+    return HTMLResponse(content=SITE_HTML_TEMPLATE.replace("{CSS}", SITE_CSS) + "<script>sayfaGoster('dashboard');</script>")
+
+@app.get("/planlar", response_class=HTMLResponse)
+def planlar_sayfasi():
+    return HTMLResponse(content=SITE_HTML_TEMPLATE.replace("{CSS}", SITE_CSS) + "<script>sayfaGoster('planlar');</script>")

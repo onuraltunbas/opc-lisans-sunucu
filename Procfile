@@ -1,0 +1,1 @@
+web: uvicorn lisans_sunucu:app --host 0.0.0.0 --port $PORT
