@@ -582,6 +582,7 @@ class LisansOlusturIstek(BaseModel):
     musteri_email: Optional[str] = None
     tur: str
     deneme_saat: Optional[int] = 24
+    ozel_gun: Optional[int] = None
     notlar: Optional[str] = None
 
 @app.post("/panel/lisans-olustur")
@@ -589,7 +590,15 @@ def lisans_olustur(istek: LisansOlusturIstek, request: Request, bg_tasks: Backgr
     u_tur = s.query(UyelikTuru).filter_by(kod=istek.tur).first()
     prefix = u_tur.prefix if u_tur and hasattr(u_tur, 'prefix') and u_tur.prefix else "STD"
     kod = lisans_kodu_uret(prefix)
-    bitis = bitis_tarihi_hesapla(istek.tur, s, istek.deneme_saat)
+    
+    if istek.ozel_gun is not None:
+        if istek.ozel_gun == 0:
+            bitis = None
+        else:
+            bitis = datetime.datetime.utcnow() + datetime.timedelta(days=istek.ozel_gun)
+    else:
+        bitis = bitis_tarihi_hesapla(istek.tur, s, istek.deneme_saat)
+        
     s.add(Lisans(lisans_kodu=kod, musteri_adi=istek.musteri_adi, musteri_email=istek.musteri_email, tur=istek.tur, bitis_tarihi=bitis, notlar=istek.notlar))
     s.commit()
     istihbarat_raporu(bg_tasks, "Online Lisans Üretildi", user.tam_isim, f"Müşteri: {istek.musteri_adi}\nTür: {istek.tur}\nKod: {kod}", request.client.host)
@@ -1229,11 +1238,11 @@ code { font-family: monospace; font-size: 12px; background: #222540; padding: 2p
         <input type="email" id="l-email" placeholder="E-posta (teşekkür maili için)">
         <select id="l-tur">
           <option value="aylik">Aylık (30 gün)</option>
-          <option value="yillik">Yıllık (365 gün)</option>
-          <option value="omur_boyu">Ömür Boyu</option>
-          <option value="deneme">Deneme</option>
         </select>
-        <input type="number" id="l-saat" placeholder="Deneme süresi (saat)" value="24" min="1" max="8760">
+        <div style="display:flex;gap:8px;">
+          <input type="number" id="l-ozel-gun" placeholder="Özel gün sayısı (Opsiyonel)" min="0" style="flex:1;">
+          <input type="number" id="l-saat" placeholder="Deneme (saat)" value="24" min="1" max="8760" style="flex:1;">
+        </div>
         <textarea id="l-not" placeholder="Not"></textarea>
         <button class="btn btn-primary yetki-lisans-olustur" onclick="lisansOlustur()">✚ Oluştur</button>
         <div id="l-sonuc" style="margin-top:10px;font-size:13px;color:#4caf50;font-weight:bold;font-family:monospace;"></div>
@@ -1610,6 +1619,7 @@ function panelGiris() {
         updateGreeting();
         
         document.getElementById("login-overlay").style.display = "none";
+        turleriYukle();
         lisanslariYukle();
         badgeGuncelle();
         // Aktif sayfayı 15 saniyede bir otomatik yenile
@@ -1691,11 +1701,13 @@ async function badgeGuncelle() {
 
 // ===== LİSANSLAR =====
 function lisansOlustur() {
+  const ozel_val = document.getElementById("l-ozel-gun").value;
   const b = {
     musteri_adi: document.getElementById("l-adi").value,
     musteri_email: document.getElementById("l-email").value,
     tur: document.getElementById("l-tur").value,
     deneme_saat: parseInt(document.getElementById("l-saat").value) || 24,
+    ozel_gun: ozel_val !== "" ? parseInt(ozel_val) : null,
     notlar: document.getElementById("l-not").value,
   };
   if (!b.musteri_adi) { notif("Müşteri adı zorunlu!", true); return; }
@@ -2043,7 +2055,9 @@ function turEkle() {
   const kod = document.getElementById("tur-kod").value.trim();
   const ad  = document.getElementById("tur-ad").value.trim();
   const aciklama = document.getElementById("tur-aciklama").value.trim();
-  const sure_gun = parseInt(document.getElementById("tur-sure").value) || 0;
+  const sure_val = document.getElementById("tur-sure").value;
+  if (sure_val === "") { notif("Süre (Gün) zorunludur! Sınırsız için 0 girin.", true); return; }
+  const sure_gun = parseInt(sure_val) || 0;
   const prefix = document.getElementById("tur-prefix").value.trim() || "STD";
   const sira = parseInt(document.getElementById("tur-sira").value) || 99;
   if (!kod || !ad) { notif("Kod ve ad zorunlu!", true); return; }
@@ -2075,6 +2089,11 @@ function turleriYukle() {
           <button class="btn btn-danger btn-sm" onclick="turSil(${t.id})">Sil</button>
         </div>
       </div>`).join("");
+      
+    const ltur = document.getElementById("l-tur");
+    if (ltur) {
+      ltur.innerHTML = liste.filter(t => t.aktif).map(t => `<option value="${t.kod}">${t.ad} (${t.sure_gun === 0 ? 'Ömür Boyu' : t.sure_gun + ' Gün'})</option>`).join("");
+    }
   });
 }
 
