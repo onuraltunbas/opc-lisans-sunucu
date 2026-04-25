@@ -272,12 +272,30 @@ def lisans_kodu_uret(tur_prefix="STD"):
 
 def bitis_tarihi_hesapla(tur: str, s: Session, saat: Optional[int] = None) -> Optional[datetime.datetime]:
     simdi = datetime.datetime.utcnow()
+    
     if tur == "deneme" and saat:
         return simdi + datetime.timedelta(hours=saat)
+        
     u_tur = s.query(UyelikTuru).filter_by(kod=tur).first()
-    if not u_tur or getattr(u_tur, 'sure_gun', 0) == 0:
+    
+    # Güvenlik önlemi: Tür bulunamazsa, herkese ömür boyu (None) vermek büyük bir açıktır.
+    if not u_tur:
+        if tur == "omur_boyu":
+            return None
+        if tur == "deneme":
+            return simdi + datetime.timedelta(hours=24)
+        # Diğer bilinmeyen türler için varsayılan olarak 30 gün ver
+        return simdi + datetime.timedelta(days=30)
+        
+    sure = getattr(u_tur, 'sure_gun', 0)
+    
+    # Eğer süre None veya 0 ise, bu ancak açıkça ömür boyu olanlar için geçerli olmalı
+    if sure is None or sure == 0:
+        if tur == "deneme":
+            return simdi + datetime.timedelta(hours=24)
         return None
-    return simdi + datetime.timedelta(days=u_tur.sure_gun)
+        
+    return simdi + datetime.timedelta(days=sure)
 
 def log_yaz(s: Session, islem, lisans_kodu, hwid, ip, mesaj):
     s.add(Log(islem=islem, lisans_kodu=lisans_kodu, hwid=hwid, ip=ip, mesaj=mesaj))
@@ -605,6 +623,11 @@ def hwid_sifirla(lisans_kodu: str, request: Request, bg_tasks: BackgroundTasks, 
 @app.post("/panel/sure-uzat")
 def sure_uzat(lisans_kodu: str, gun: int, request: Request, bg_tasks: BackgroundTasks, user: PanelUserDto = Depends(yetki_kontrol("sure_uzat")), s: Session = Depends(db)):
     lisans = s.query(Lisans).filter_by(lisans_kodu=lisans_kodu.upper()).first()
+    if not lisans:
+        raise HTTPException(status_code=404, detail="Lisans bulunamadı.")
+    if lisans.bitis_tarihi is None:
+        raise HTTPException(status_code=400, detail="Ömür boyu lisansların süresi uzatılamaz.")
+        
     lisans.bitis_tarihi = max(lisans.bitis_tarihi, datetime.datetime.utcnow()) + datetime.timedelta(days=gun)
     lisans.aktif = True
     s.commit()
