@@ -2705,6 +2705,7 @@ async function girisYap() {
       mesajGizle("giris-ok");
       sayfaGoster("dashboard");
       dashboardYukle();
+      baslatSitePoll();
     }, 1200);
   } else {
     // Kullanıcı dostu hata mesajları
@@ -2897,7 +2898,7 @@ async function taleplerYukle() {
     html += `<div style="margin-top:16px;">
       <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Yeni lisans talep edin:</div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
-        ${planlarData.map(p => `<div class="plan-card" id="dp-${p.kod}" onclick="dashPlanSec('${p.kod}')" style="padding:12px 16px;min-width:140px;cursor:pointer;">
+        ${planlarData.map(p => `<div class="plan-card ${dashSecilenPlan === p.kod ? 'selected' : ''}" id="dp-${p.kod}" onclick="dashPlanSec('${p.kod}')" style="padding:12px 16px;min-width:140px;cursor:pointer;">
           <div style="font-size:13px;font-weight:600;">${p.ad}</div>
           <div style="font-size:11px;color:var(--muted);margin-top:3px;">${p.aciklama||""}</div>
         </div>`).join("")}
@@ -3015,6 +3016,19 @@ function mesajGizle(id) {
   if (el) el.style.display = "none";
 }
 
+function baslatSitePoll() {
+  if (_sitePollTimer) return;
+  _sitePollTimer = setInterval(async () => {
+    const isDash = document.getElementById("sayfa-dashboard") &&
+                   document.getElementById("sayfa-dashboard").style.display !== "none";
+    if (!isDash) return;
+    lisansKartiGuncelle();
+    taleplerYukle();
+    lisansGecmisiniYukle();
+    mesajlariYukle();
+  }, 2000);
+}
+
 // Sayfa yüklenince oturum kontrolü
 let _sitePollTimer = null;
 (async function() {
@@ -3023,16 +3037,7 @@ let _sitePollTimer = null;
     sayfaGoster("dashboard");
     const p = await r.json();
     document.getElementById("nav-links").innerHTML = `<span style="font-size:13px;color:var(--muted);margin-right:8px;">${p.email}</span><button class="nav-btn nav-btn-ghost" onclick="cikisYap()">Cıkış</button>`;
-    // 2 saniyede bir sessizce yenile (anlık güncelleme hissi için)
-    _sitePollTimer = setInterval(async () => {
-      const isDash = document.getElementById("sayfa-dashboard") &&
-                     document.getElementById("sayfa-dashboard").style.display !== "none";
-      if (!isDash) return;
-      lisansKartiGuncelle();
-      taleplerYukle();
-      lisansGecmisiniYukle();
-      mesajlariYukle();
-    }, 2000);
+    baslatSitePoll();
   }
 })();
 </script>
