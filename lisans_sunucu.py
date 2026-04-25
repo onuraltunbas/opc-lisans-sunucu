@@ -752,6 +752,205 @@ def offline_lisans_uret(istek: OfflineLisansIstek, request: Request, bg_tasks: B
     istihbarat_raporu(bg_tasks, "Çevrimdışı (Offline) Lisans Üretildi", user.tam_isim, detay, request.client.host)
     return {"basarili": True, "aktivasyon_kodu": akt_kod, "istek_kodu": istek.istek_kodu, "sure_gun": istek.sure_gun, "yetki": istek.yetki}
 
+@app.get("/panel/loglar")
+def loglar(son: int = 100, user: PanelUserDto = Depends(panel_dogrula), s: Session = Depends(db)):
+    logs = s.query(Log).order_by(Log.tarih.desc()).limit(son).all()
+    return [{"tarih": l.tarih.strftime("%d.%m.%Y %H:%M:%S"), "islem": l.islem, "lisans_kodu": l.lisans_kodu, "hwid": l.hwid, "ip": l.ip, "mesaj": l.mesaj} for l in logs]
+
+@app.get("/panel/mesajlar-ozet")
+def panel_mesajlar_ozet(user: PanelUserDto = Depends(panel_dogrula), s: Session = Depends(db)):
+    """Her kullanıcı için son mesaj ve okunmamış sayısı"""
+    kullanicilar = s.query(Kullanici).all()
+    sonuc = []
+    for k in kullanicilar:
+        toplam = s.query(Mesaj).filter_by(kullanici_id=k.id).count()
+        if toplam == 0:
+            continue
+        okunmamis = s.query(Mesaj).filter_by(kullanici_id=k.id, gonderen="kullanici", okundu=False).count()
+        son_mesaj = s.query(Mesaj).filter_by(kullanici_id=k.id).order_by(Mesaj.tarih.desc()).first()
+        lisans = s.query(Lisans).filter_by(musteri_email=k.email, aktif=True).order_by(Lisans.olusturma_tar.desc()).first()
+        kalan = None
+        if lisans and lisans.bitis_tarihi:
+            kalan = max(0, (lisans.bitis_tarihi - datetime.datetime.utcnow()).days)
+        sonuc.append({
+            "kullanici_id": k.id,
+            "ad_soyad": k.ad_soyad,
+            "email": k.email,
+            "son_ip": k.son_ip,
+            "okunmamis": okunmamis,
+            "son_mesaj": son_mesaj.icerik[:60] if son_mesaj else "",
+            "son_mesaj_tar": son_mesaj.tarih.strftime("%d.%m.%Y %H:%M") if son_mesaj else "",
+            "lisans_kodu": lisans.lisans_kodu if lisans else None,
+            "lisans_tur": lisans.tur if lisans else None,
+            "lisans_bitis": lisans.bitis_tarihi.strftime("%d.%m.%Y") if (lisans and lisans.bitis_tarihi) else ("Ömür Boyu" if lisans else None),
+            "kalan_gun": kalan,
+        })
+    sonuc.sort(key=lambda x: x["okunmamis"], reverse=True)
+    return sonuc
+
+@app.get("/panel/kullanici-mesajlar/{kullanici_id}")
+def kullanici_mesajlari(kullanici_id: str, user: PanelUserDto = Depends(panel_dogrula), s: Session = Depends(db)):
+    s.query(Mesaj).filter_by(kullanici_id=kullanici_id, gonderen="kullanici", okundu=False).update({"okundu": True})
+    s.commit()
+    mesajlar = s.query(Mesaj).filter_by(kullanici_id=kullanici_id).order_by(Mesaj.tarih.asc()).all()
+    k = s.query(Kullanici).filter_by(id=kullanici_id).first()
+    lisans = s.query(Lisans).filter_by(musteri_email=k.email if k else "", aktif=True).order_by(Lisans.olusturma_tar.desc()).first()
+    kalan = None
+    if lisans and lisans.bitis_tarihi:
+        kalan = max(0, (lisans.bitis_tarihi - datetime.datetime.utcnow()).days)
+    return {
+        "kullanici": {
+            "id": k.id if k else kullanici_id,
+            "ad_soyad": k.ad_soyad if k else "?",
+            "email": k.email if k else "?",
+            "son_ip": k.son_ip if k else "?",
+            "kayit_tar": k.kayit_tar.strftime("%d.%m.%Y") if k else "?",
+        },
+        "lisans": {
+            "kod": lisans.lisans_kodu if lisans else None,
+            "tur": lisans.tur if lisans else None,
+            "bitis": lisans.bitis_tarihi.strftime("%d.%m.%Y") if (lisans and lisans.bitis_tarihi) else ("Ömür Boyu" if lisans else None),
+            "kalan_gun": kalan,
+            "aktif": lisans.aktif if lisans else False,
+        } if lisans else None,
+        "mesajlar": [{"id": m.id, "gonderen": m.gonderen, "icerik": m.icerik, "tarih": m.tarih.strftime("%d.%m.%Y %H:%M")} for m in mesajlar],
+    }
+
+@app.get("/panel/ip-banlar")
+def ip_banlar(user: PanelUserDto = Depends(yetki_kontrol("ip_ban")), s: Session = Depends(db)):
+    banlar = s.query(IpBan).order_by(IpBan.tarih.desc()).all()
+    return [{"id": b.id, "ip": b.ip, "sebep": b.sebep or "", "tarih": b.tarih.strftime("%d.%m.%Y %H:%M"), "aktif": b.aktif} for b in banlar]
+
+@app.get("/panel/uyelik-turleri")
+def panel_uyelik_turleri(user: PanelUserDto = Depends(yetki_kontrol("uyelik_tur")), s: Session = Depends(db)):
+    turler = s.query(UyelikTuru).order_by(UyelikTuru.sira).all()
+    return [{"id": t.id, "kod": t.kod, "ad": t.ad, "aciklama": t.aciklama, "aktif": t.aktif, "sira": t.sira} for t in turler]
+
+@app.post("/panel/uyelik-tur-guncelle")
+async def uyelik_tur_guncelle(request: Request, user: PanelUserDto = Depends(yetki_kontrol("uyelik_tur")), s: Session = Depends(db)):
+    data = await request.json()
+    t = s.query(UyelikTuru).filter_by(id=data["id"]).first()
+    if not t:
+        raise HTTPException(status_code=404, detail="Tür bulunamadı.")
+    if "aktif" in data:
+        t.aktif = data["aktif"]
+    s.commit()
+    panel_log_yaz(s, user.kullanici_adi, "Üyelik Türü Güncellendi", f"ID: {data['id']}")
+    return {"basarili": True}
+
+@app.delete("/panel/uyelik-tur-sil/{tur_id}")
+def uyelik_tur_sil(tur_id: int, user: PanelUserDto = Depends(yetki_kontrol("uyelik_tur")), s: Session = Depends(db)):
+    t = s.query(UyelikTuru).filter_by(id=tur_id).first()
+    if not t:
+        raise HTTPException(status_code=404, detail="Tür bulunamadı.")
+    panel_log_yaz(s, user.kullanici_adi, "Üyelik Türü Silindi", f"Kod: {t.kod}")
+    s.delete(t)
+    s.commit()
+    return {"basarili": True}
+
+@app.get("/panel/yetkililer")
+def panel_yetkililer_getir(user: PanelUserDto = Depends(panel_dogrula), s: Session = Depends(db)):
+    if not user.is_admin:
+        raise HTTPException(status_code=403, detail="Yalnızca admin görebilir.")
+    pk = s.query(PanelKullanici).all()
+    return [{
+        "id": p.id,
+        "kullanici_adi": p.kullanici_adi,
+        "isim_soyad": p.isim_soyad,
+        "email": p.email,
+        "is_admin": p.is_admin,
+        "son_giris": p.son_giris.strftime("%d.%m.%Y %H:%M") if p.son_giris else "-",
+        "son_cikis": p.son_cikis.strftime("%d.%m.%Y %H:%M") if p.son_cikis else "-",
+        "yetkiler": {
+            "lisans_olustur": p.yetki_lisans_olustur,
+            "lisans_sil": p.yetki_lisans_sil,
+            "hwid_sifirla": p.yetki_hwid_sifirla,
+            "sure_uzat": p.yetki_sure_uzat,
+            "talep_onayla": p.yetki_talep_onayla,
+            "kullanici_ekle": p.yetki_kullanici_ekle,
+            "mesaj_yaz": p.yetki_mesaj_yaz,
+            "ip_ban": p.yetki_ip_ban,
+            "uyelik_tur": p.yetki_uyelik_tur,
+            "offline_lisans": p.yetki_offline_lisans,
+        }
+    } for p in pk]
+
+@app.get("/panel/panel-loglari")
+def panel_loglari_getir(user: PanelUserDto = Depends(panel_dogrula), s: Session = Depends(db)):
+    if not user.is_admin:
+        raise HTTPException(status_code=403, detail="Yalnızca admin görebilir.")
+    plogs = s.query(PanelLog).order_by(PanelLog.tarih.desc()).limit(200).all()
+    return [{
+        "tarih": pl.tarih.strftime("%d.%m.%Y %H:%M:%S"),
+        "kullanici_adi": pl.kullanici_adi,
+        "islem": pl.islem,
+        "detay": pl.detay or ""
+    } for pl in plogs]
+
+@app.post("/panel/cikis")
+def panel_cikis_yap(user: PanelUserDto = Depends(panel_dogrula), s: Session = Depends(db)):
+    if not user.is_admin and user.kullanici_adi != PANEL_KULLANICI:
+        pk = s.query(PanelKullanici).filter_by(kullanici_adi=user.kullanici_adi).first()
+        if pk:
+            pk.son_cikis = datetime.datetime.utcnow()
+            s.commit()
+    panel_log_yaz(s, user.kullanici_adi, "Çıkış Yaptı")
+    return {"basarili": True}
+
+@app.put("/panel/yetkili-guncelle/{yetkili_id}")
+async def panel_yetkili_guncelle(
+    yetkili_id: int,
+    request: Request,
+    user: PanelUserDto = Depends(panel_dogrula),
+    s: Session = Depends(db)
+):
+    if not user.is_admin:
+        raise HTTPException(status_code=403, detail="Yalnızca admin güncelleyebilir.")
+    data = await request.json()
+    y = s.query(PanelKullanici).filter_by(id=yetkili_id).first()
+    if not y:
+        raise HTTPException(status_code=404, detail="Yetkili bulunamadı.")
+    yetki_map = {
+        "lisans_olustur": "yetki_lisans_olustur",
+        "lisans_sil":     "yetki_lisans_sil",
+        "hwid_sifirla":   "yetki_hwid_sifirla",
+        "sure_uzat":      "yetki_sure_uzat",
+        "talep_onayla":   "yetki_talep_onayla",
+        "kullanici_ekle": "yetki_kullanici_ekle",
+        "mesaj_yaz":      "yetki_mesaj_yaz",
+        "ip_ban":         "yetki_ip_ban",
+        "uyelik_tur":     "yetki_uyelik_tur",
+        "offline_lisans": "yetki_offline_lisans",
+    }
+    yetkiler = data.get("yetkiler", {})
+    for key, col in yetki_map.items():
+        if key in yetkiler:
+            setattr(y, col, bool(yetkiler[key]))
+    s.commit()
+    panel_log_yaz(s, user.kullanici_adi, "Yetkili Güncelledi", f"ID: {yetkili_id}")
+    return {"basarili": True}
+
+class AdminGuncelleIstek(BaseModel):
+    yeni_kullanici: str
+    yeni_sifre: str
+
+@app.post("/panel/admin-guncelle")
+def admin_guncelle(istek: AdminGuncelleIstek, user: PanelUserDto = Depends(panel_dogrula), s: Session = Depends(db)):
+    if not user.is_admin:
+        raise HTTPException(status_code=403, detail="Yalnızca ana admin değiştirebilir.")
+
+    ayar = s.query(Ayarlar).first()
+    if not ayar:
+        ayar = Ayarlar()
+        s.add(ayar)
+
+    ayar.admin_kullanici = istek.yeni_kullanici
+    ayar.admin_sifre_hash = sifre_hashle(istek.yeni_sifre)
+    s.commit()
+    panel_log_yaz(s, user.kullanici_adi, "Admin Bilgilerini Değiştirdi")
+    return {"basarili": True, "mesaj": "Admin bilgileri güncellendi. Lütfen tekrar giriş yapın."}
+
+
 PANEL_HTML = r"""<!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -2757,7 +2956,7 @@ let _sitePollTimer = null;
     sayfaGoster("dashboard");
     const p = await r.json();
     document.getElementById("nav-links").innerHTML = `<span style="font-size:13px;color:var(--muted);margin-right:8px;">${p.email}</span><button class="nav-btn nav-btn-ghost" onclick="cikisYap()">Cıkış</button>`;
-    // 20 saniyede bir sessizce yenile
+    // 2 saniyede bir sessizce yenile (anlık güncelleme hissi için)
     _sitePollTimer = setInterval(async () => {
       const isDash = document.getElementById("sayfa-dashboard") &&
                      document.getElementById("sayfa-dashboard").style.display !== "none";
@@ -2766,7 +2965,7 @@ let _sitePollTimer = null;
       taleplerYukle();
       lisansGecmisiniYukle();
       mesajlariYukle();
-    }, 20000);
+    }, 2000);
   }
 })();
 </script>
