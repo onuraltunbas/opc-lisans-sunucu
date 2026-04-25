@@ -1,6 +1,11 @@
 fastapi
-uvicorn[standard]
+uvicorn
 sqlalchemy
 python-jose
 passlib
 bcrypt
+python-multipart
+aiosmtplib
+jinja2
+email-validator
+psycopg2-binary
