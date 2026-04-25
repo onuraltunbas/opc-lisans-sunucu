@@ -434,7 +434,7 @@ def aktive_et(istek: AktivasoyonIstek, request: Request, s: Session = Depends(db
     lisans.son_checkin = datetime.datetime.utcnow()
     s.commit()
     log_yaz(s, "aktivasyon", kod, hwid, ip, "Basarili aktivasyon")
-    return {"basarili": True, "mesaj": f"Hoş geldiniz, {lisans.musteri_adi}!", "tur": lisans.tur, "bitis_tarihi": lisans.bitis_tarihi.isoformat() if lisans.bitis_tarihi else None}
+    return {"basarili": True, "mesaj": f"Hoş geldiniz, {lisans.musteri_adi}!", "tur": lisans.tur, "bitis_tarihi": lisans.bitis_tarihi.isoformat() if lisans.bitis_tarihi else None, "musteri_adi": lisans.musteri_adi}
 
 @app.post("/api/kontrol", dependencies=[Depends(app_sirri_dogrula)])
 def kontrol(istek: KontrolIstek, request: Request, s: Session = Depends(db)):
@@ -448,7 +448,7 @@ def kontrol(istek: KontrolIstek, request: Request, s: Session = Depends(db)):
     if lisans.bitis_tarihi and datetime.datetime.utcnow() > lisans.bitis_tarihi: return {"gecerli": False, "mesaj": "Süre dolmuştur."}
     lisans.son_checkin = datetime.datetime.utcnow()
     s.commit()
-    return {"gecerli": True, "tur": lisans.tur, "bitis_tarihi": lisans.bitis_tarihi.isoformat() if lisans.bitis_tarihi else None}
+    return {"gecerli": True, "tur": lisans.tur, "bitis_tarihi": lisans.bitis_tarihi.isoformat() if lisans.bitis_tarihi else None, "musteri_adi": lisans.musteri_adi}
 
 # =====================================================================
 # KULLANICI KAYIT/GİRİŞ API
