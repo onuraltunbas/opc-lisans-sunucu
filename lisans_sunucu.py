@@ -134,6 +134,8 @@ class UyelikTuru(Base):
     aciklama    = Column(Text, nullable=True)
     aktif       = Column(Boolean, default=True)
     sira        = Column(Integer, default=0)
+    sure_gun    = Column(Integer, default=30)
+    prefix      = Column(String, default="STD")
 
 class PanelKullanici(Base):
     __tablename__ = "panel_kullanicilari"
@@ -178,10 +180,17 @@ class OfflineLisansAyarlari(Base):
 Base.metadata.create_all(engine)
 
 def _db_migrate():
-    if not DATABASE_URL.startswith("sqlite"): return
     with engine.connect() as conn:
         try:
-            conn.execute(__import__("sqlalchemy").text("ALTER TABLE panel_kullanicilari ADD COLUMN yetki_offline_lisans BOOLEAN DEFAULT 0"))
+            conn.execute(__import__("sqlalchemy").text("ALTER TABLE panel_kullanicilari ADD COLUMN yetki_offline_lisans BOOLEAN DEFAULT false"))
+            conn.commit()
+        except Exception: pass
+        try:
+            conn.execute(__import__("sqlalchemy").text("ALTER TABLE uyelik_turleri ADD COLUMN sure_gun INTEGER DEFAULT 30"))
+            conn.commit()
+        except Exception: pass
+        try:
+            conn.execute(__import__("sqlalchemy").text("ALTER TABLE uyelik_turleri ADD COLUMN prefix VARCHAR(10) DEFAULT 'STD'"))
             conn.commit()
         except Exception: pass
 
@@ -192,10 +201,10 @@ def varsayilan_turleri_ekle():
     try:
         if s.query(UyelikTuru).count() == 0:
             turler = [
-                UyelikTuru(kod="aylik", ad="Aylık Lisans", aciklama="30 gün geçerli", sira=1),
-                UyelikTuru(kod="yillik", ad="Yıllık Lisans", aciklama="365 gün geçerli", sira=2),
-                UyelikTuru(kod="omur_boyu", ad="Ömür Boyu Lisans", aciklama="Süresiz geçerli", sira=3),
-                UyelikTuru(kod="deneme", ad="Deneme Sürümü", aciklama="24 saat ücretsiz deneme", sira=4),
+                UyelikTuru(kod="aylik", ad="Aylık Lisans", aciklama="30 gün geçerli", sira=1, sure_gun=30, prefix="AYL"),
+                UyelikTuru(kod="yillik", ad="Yıllık Lisans", aciklama="365 gün geçerli", sira=2, sure_gun=365, prefix="YIL"),
+                UyelikTuru(kod="omur_boyu", ad="Ömür Boyu Lisans", aciklama="Süresiz geçerli", sira=3, sure_gun=0, prefix="OBY"),
+                UyelikTuru(kod="deneme", ad="Deneme Sürümü", aciklama="24 saat ücretsiz deneme", sira=4, sure_gun=1, prefix="DEN"),
             ]
             for t in turler: s.add(t)
             s.commit()
@@ -261,13 +270,14 @@ def lisans_kodu_uret(tur_prefix="STD"):
     parca = secrets.token_hex(6).upper()
     return f"{tur_prefix}-{parca[:4]}-{parca[4:8]}-{parca[8:12]}"
 
-def bitis_tarihi_hesapla(tur: str, saat: Optional[int] = None) -> Optional[datetime.datetime]:
+def bitis_tarihi_hesapla(tur: str, s: Session, saat: Optional[int] = None) -> Optional[datetime.datetime]:
     simdi = datetime.datetime.utcnow()
-    if tur == "aylik": return simdi + datetime.timedelta(days=30)
-    elif tur == "yillik": return simdi + datetime.timedelta(days=365)
-    elif tur == "deneme": return simdi + datetime.timedelta(hours=saat or 24)
-    elif tur == "omur_boyu": return None
-    return None
+    if tur == "deneme" and saat:
+        return simdi + datetime.timedelta(hours=saat)
+    u_tur = s.query(UyelikTuru).filter_by(kod=tur).first()
+    if not u_tur or getattr(u_tur, 'sure_gun', 0) == 0:
+        return None
+    return simdi + datetime.timedelta(days=u_tur.sure_gun)
 
 def log_yaz(s: Session, islem, lisans_kodu, hwid, ip, mesaj):
     s.add(Log(islem=islem, lisans_kodu=lisans_kodu, hwid=hwid, ip=ip, mesaj=mesaj))
@@ -558,9 +568,10 @@ class LisansOlusturIstek(BaseModel):
 
 @app.post("/panel/lisans-olustur")
 def lisans_olustur(istek: LisansOlusturIstek, request: Request, bg_tasks: BackgroundTasks, user: PanelUserDto = Depends(yetki_kontrol("lisans_olustur")), s: Session = Depends(db)):
-    prefix_map = {"aylik": "AYL", "yillik": "YIL", "omur_boyu": "OBY", "deneme": "DEN"}
-    kod = lisans_kodu_uret(prefix_map[istek.tur])
-    bitis = bitis_tarihi_hesapla(istek.tur, istek.deneme_saat)
+    u_tur = s.query(UyelikTuru).filter_by(kod=istek.tur).first()
+    prefix = u_tur.prefix if u_tur and hasattr(u_tur, 'prefix') and u_tur.prefix else "STD"
+    kod = lisans_kodu_uret(prefix)
+    bitis = bitis_tarihi_hesapla(istek.tur, s, istek.deneme_saat)
     s.add(Lisans(lisans_kodu=kod, musteri_adi=istek.musteri_adi, musteri_email=istek.musteri_email, tur=istek.tur, bitis_tarihi=bitis, notlar=istek.notlar))
     s.commit()
     istihbarat_raporu(bg_tasks, "Online Lisans Üretildi", user.tam_isim, f"Müşteri: {istek.musteri_adi}\nTür: {istek.tur}\nKod: {kod}", request.client.host)
@@ -611,8 +622,10 @@ async def talep_guncelle(request: Request, bg_tasks: BackgroundTasks, user: Pane
     istihbarat_raporu(bg_tasks, f"Talep {durum_str}", user.tam_isim, f"Müşteri: {talep.ad_soyad} ({talep.email})\nTalep Türü: {talep.tur}\nNot: {data.get('admin_notu','')}", request.client.host)
 
     if data["durum"] == "onaylandi":
-        kod = lisans_kodu_uret("STD")
-        s.add(Lisans(lisans_kodu=kod, musteri_adi=talep.ad_soyad, musteri_email=talep.email, tur=talep.tur, bitis_tarihi=bitis_tarihi_hesapla(talep.tur)))
+        u_tur = s.query(UyelikTuru).filter_by(kod=talep.tur).first()
+        prefix = u_tur.prefix if u_tur and hasattr(u_tur, 'prefix') and u_tur.prefix else "STD"
+        kod = lisans_kodu_uret(prefix)
+        s.add(Lisans(lisans_kodu=kod, musteri_adi=talep.ad_soyad, musteri_email=talep.email, tur=talep.tur, bitis_tarihi=bitis_tarihi_hesapla(talep.tur, s)))
         s.commit()
     return {"basarili": True}
 
@@ -690,7 +703,7 @@ def kullanici_sil(kullanici_id: str, request: Request, bg_tasks: BackgroundTasks
 @app.post("/panel/uyelik-tur-ekle")
 async def uyelik_tur_ekle(request: Request, bg_tasks: BackgroundTasks, user: PanelUserDto = Depends(yetki_kontrol("uyelik_tur")), s: Session = Depends(db)):
     data = await request.json()
-    s.add(UyelikTuru(kod=data["kod"], ad=data["ad"], aciklama=data.get("aciklama", ""), sira=data.get("sira", 99)))
+    s.add(UyelikTuru(kod=data["kod"], ad=data["ad"], aciklama=data.get("aciklama", ""), sira=data.get("sira", 99), sure_gun=data.get("sure_gun", 30), prefix=data.get("prefix", "STD").upper()[:10]))
     s.commit()
     istihbarat_raporu(bg_tasks, "Yeni Üyelik Türü Eklendi", user.tam_isim, f"Tür: {data['ad']} ({data['kod']})", request.client.host)
     return {"basarili": True}
@@ -824,7 +837,7 @@ def ip_banlar(user: PanelUserDto = Depends(yetki_kontrol("ip_ban")), s: Session 
 @app.get("/panel/uyelik-turleri")
 def panel_uyelik_turleri(user: PanelUserDto = Depends(yetki_kontrol("uyelik_tur")), s: Session = Depends(db)):
     turler = s.query(UyelikTuru).order_by(UyelikTuru.sira).all()
-    return [{"id": t.id, "kod": t.kod, "ad": t.ad, "aciklama": t.aciklama, "aktif": t.aktif, "sira": t.sira} for t in turler]
+    return [{"id": t.id, "kod": t.kod, "ad": t.ad, "aciklama": t.aciklama, "aktif": t.aktif, "sira": t.sira, "sure_gun": getattr(t, 'sure_gun', 30), "prefix": getattr(t, 'prefix', 'STD')} for t in turler]
 
 @app.post("/panel/uyelik-tur-guncelle")
 async def uyelik_tur_guncelle(request: Request, user: PanelUserDto = Depends(yetki_kontrol("uyelik_tur")), s: Session = Depends(db)):
@@ -834,6 +847,10 @@ async def uyelik_tur_guncelle(request: Request, user: PanelUserDto = Depends(yet
         raise HTTPException(status_code=404, detail="Tür bulunamadı.")
     if "aktif" in data:
         t.aktif = data["aktif"]
+    if "sure_gun" in data:
+        t.sure_gun = int(data["sure_gun"])
+    if "prefix" in data:
+        t.prefix = str(data["prefix"]).upper()[:10]
     s.commit()
     panel_log_yaz(s, user.kullanici_adi, "Üyelik Türü Güncellendi", f"ID: {data['id']}")
     return {"basarili": True}
@@ -1351,6 +1368,8 @@ code { font-family: monospace; font-size: 12px; background: #222540; padding: 2p
         <input type="text" id="tur-kod" placeholder="Kod (örn: haftalik) *">
         <input type="text" id="tur-ad" placeholder="Görünen ad (örn: Haftalık Lisans) *">
         <textarea id="tur-aciklama" placeholder="Açıklama (opsiyonel)"></textarea>
+        <input type="number" id="tur-sure" placeholder="Süre Gün (Sınırsız için 0) *" value="30">
+        <input type="text" id="tur-prefix" placeholder="Lisans Ön Eki (örn: VIP) *" value="STD">
         <input type="number" id="tur-sira" placeholder="Sıra (küçük = önce)" value="99">
         <button class="btn btn-primary" onclick="turEkle()">✚ Ekle</button>
       </div>
@@ -2001,9 +2020,11 @@ function turEkle() {
   const kod = document.getElementById("tur-kod").value.trim();
   const ad  = document.getElementById("tur-ad").value.trim();
   const aciklama = document.getElementById("tur-aciklama").value.trim();
+  const sure_gun = parseInt(document.getElementById("tur-sure").value) || 0;
+  const prefix = document.getElementById("tur-prefix").value.trim() || "STD";
   const sira = parseInt(document.getElementById("tur-sira").value) || 99;
   if (!kod || !ad) { notif("Kod ve ad zorunlu!", true); return; }
-  fetch("/panel/uyelik-tur-ekle", {method:"POST", headers:auth(), body:JSON.stringify({kod, ad, aciklama, sira})})
+  fetch("/panel/uyelik-tur-ekle", {method:"POST", headers:auth(), body:JSON.stringify({kod, ad, aciklama, sira, sure_gun, prefix})})
     .then(r => r.json()).then(d => { notif(d.basarili ? "Tür eklendi" : d.detail, !d.basarili); turleriYukle(); });
 }
 
@@ -2025,6 +2046,7 @@ function turleriYukle() {
         <div class="tur-kod">${t.kod}</div>
         <h4>${t.ad}</h4>
         <div class="tur-aciklama">${t.aciklama||"—"}</div>
+        <div style="font-size:11px;color:#888;margin-top:6px;">Süre: ${t.sure_gun===0 ? 'Ömür Boyu' : t.sure_gun + ' Gün'} | Ön Ek: ${t.prefix}</div>
         <div class="row-btns" style="margin-top:8px;">
           <button class="btn btn-ghost btn-sm" onclick="turToggle(${t.id},${t.aktif})">${t.aktif?"Pasif Et":"Aktif Et"}</button>
           <button class="btn btn-danger btn-sm" onclick="turSil(${t.id})">Sil</button>
