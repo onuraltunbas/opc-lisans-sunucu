@@ -543,7 +543,10 @@ def profil(request: Request, s: Session = Depends(db)):
     l_bilgi = None
     if lisans:
         durum = "aktif" if lisans.aktif and (not lisans.bitis_tarihi or datetime.datetime.utcnow() <= lisans.bitis_tarihi) else "iptal" if not lisans.aktif else "suresi_dolmus"
-        l_bilgi = {"kod": lisans.lisans_kodu, "tur": lisans.tur, "bitis": lisans.bitis_tarihi.strftime("%d.%m.%Y") if lisans.bitis_tarihi else "Ömür Boyu", "aktif": lisans.aktif, "durum": durum}
+        kalan = (lisans.bitis_tarihi - datetime.datetime.utcnow()).days if lisans.bitis_tarihi else None
+        if kalan is not None and kalan < 0:
+            kalan = 0
+        l_bilgi = {"kod": lisans.lisans_kodu, "tur": lisans.tur, "bitis": lisans.bitis_tarihi.strftime("%d.%m.%Y") if lisans.bitis_tarihi else "Ömür Boyu", "kalan_gun": kalan, "aktif": lisans.aktif, "durum": durum}
     return {"ad_soyad": k.ad_soyad, "email": k.email, "kayit_tar": k.kayit_tar.strftime("%d.%m.%Y"), "lisans": l_bilgi, "indirme_linki": INDIRME_LINKI if (l_bilgi and l_bilgi["durum"]=="aktif") else None}
 
 @app.post("/api/lisansimi-iptal-et")
