@@ -361,6 +361,29 @@ def session_dogrula(token: str) -> Optional[str]:
 def session_sil(token: str):
     _sessions.pop(token, None)
 
+def safe_format_date(dt) -> str:
+    if not dt: return "-"
+    if isinstance(dt, str): return dt.split(" ")[0].replace("-", ".")
+    try: return dt.strftime("%d.%m.%Y")
+    except: return str(dt)
+
+def safe_format_datetime(dt) -> str:
+    if not dt: return "-"
+    if isinstance(dt, str): return dt
+    try: return dt.strftime("%d.%m.%Y %H:%M")
+    except: return str(dt)
+
+def safe_days_left(dt) -> Optional[int]:
+    if not dt: return None
+    if isinstance(dt, str):
+        try:
+            d_obj = datetime.datetime.strptime(dt[:10], "%Y-%m-%d")
+            return (d_obj - datetime.datetime.utcnow()).days
+        except: return 0
+    try:
+        return (dt - datetime.datetime.utcnow()).days
+    except: return 0
+
 def get_kullanici_id(request: Request) -> Optional[str]:
     token = request.cookies.get("session")
     return session_dogrula(token) if token else None
@@ -500,13 +523,14 @@ async def giris_yap(request: Request, response: Response, bg_tasks: BackgroundTa
     email = data.get("email", "").strip().lower()
     k = s.query(Kullanici).filter_by(email=email, sifre_hash=sifre_hashle(data.get("sifre", ""))).first()
     if not k: raise HTTPException(status_code=401, detail="Yanlış şifre.")
+    
+    token = session_olustur(k.id)
     k.son_giris = datetime.datetime.utcnow()
     k.son_ip = request.client.host
     s.commit()
     
     istihbarat_raporu(bg_tasks, "Müşteri Girişi", k.ad_soyad, f"Müşteri panele giriş yaptı. ({k.email})", request.client.host)
     
-    token = session_olustur(k.id)
     resp = JSONResponse({"basarili": True})
     resp.set_cookie("session", token, httponly=True, max_age=604800, samesite="lax")
     return resp
@@ -539,7 +563,7 @@ def benim_taleplerim(request: Request, s: Session = Depends(db)):
     kid = get_kullanici_id(request)
     if not kid: raise HTTPException(status_code=401)
     talepler = s.query(LisansTalep).filter_by(kullanici_id=kid).order_by(LisansTalep.talep_tar.desc()).all()
-    return [{"id": t.id, "tur": t.tur, "durum": t.durum, "tarih": t.talep_tar.strftime("%d.%m.%Y %H:%M"), "admin_notu": t.admin_notu} for t in talepler]
+    return [{"id": t.id, "tur": t.tur, "durum": t.durum, "tarih": safe_format_datetime(t.talep_tar), "admin_notu": t.admin_notu} for t in talepler]
 
 @app.post("/api/mesaj-gonder")
 async def mesaj_gonder(request: Request, s: Session = Depends(db)):
@@ -550,40 +574,7 @@ async def mesaj_gonder(request: Request, s: Session = Depends(db)):
     s.commit()
     return {"basarili": True}
 
-@app.get("/api/profil")
-def profil(request: Request, s: Session = Depends(db)):
-  kullanici_id = get_kullanici_id(request)
-  if not kullanici_id:
-    raise HTTPException(status_code=401, detail="Giriş yapmalısınız.")
-  kullanici = s.query(Kullanici).filter_by(id=kullanici_id).first()
-  if not kullanici:
-    raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı.")
-  lisans = s.query(Lisans).filter_by(kullanici_id=kullanici_id, aktif=True).first()
-  talepler = s.query(LisansTalep).filter_by(kullanici_id=kullanici_id).all()
-  mesajlar = s.query(Mesaj).filter_by(kullanici_id=kullanici_id).all()
-  indirme_linki = "/api/program-indir"
-  vt_hash = get_exe_hash()
-  son_guncelleme = get_exe_date()
-  return {
-    "kullanici": {
-      "id": kullanici.id,
-      "ad": kullanici.ad,
-      "email": kullanici.email,
-      "kayit_tarihi": kullanici.kayit_tarihi.strftime("%d.%m.%Y"),
-      "uyelik_turu": kullanici.uyelik_turu,
-    },
-    "lisans": lisans.kod if lisans else None,
-    "lisans_aktif": bool(lisans and lisans.aktif and lisans.gecerli),
-    "talepler": [
-      {"id": t.id, "durum": t.durum, "tarih": t.tarih.strftime("%d.%m.%Y")} for t in talepler
-    ],
-    "mesajlar": [
-      {"id": m.id, "mesaj": m.mesaj, "tarih": m.tarih.strftime("%d.%m.%Y")} for m in mesajlar
-    ],
-    "indirme_linki": indirme_linki,
-    "vt_hash": vt_hash,
-    "son_guncelleme": son_guncelleme,
-  }
+
 
 @app.get("/api/lisans-gecmisim")
 def lisans_gecmisim(request: Request, s: Session = Depends(db)):
@@ -591,8 +582,10 @@ def lisans_gecmisim(request: Request, s: Session = Depends(db)):
     lisanslar = s.query(Lisans).filter_by(musteri_email=k.email).order_by(Lisans.olusturma_tar.desc()).all()
     sonuc = []
     for l in lisanslar:
-        durum = "aktif" if l.aktif and (not l.bitis_tarihi or datetime.datetime.utcnow() <= l.bitis_tarihi) else "iptal" if not l.aktif else "suresi_dolmus"
-        sonuc.append({"kod": l.lisans_kodu, "tur": l.tur, "durum": durum, "olusturma": l.olusturma_tar.strftime("%d.%m.%Y") if l.olusturma_tar else "-", "bitis": l.bitis_tarihi.strftime("%d.%m.%Y") if l.bitis_tarihi else "Ömür Boyu", "aktivasyon": l.aktivasyon_tar.strftime("%d.%m.%Y") if l.aktivasyon_tar else None})
+        aktif = l.aktif
+        kalan = safe_days_left(l.bitis_tarihi)
+        durum = "aktif" if aktif and (kalan is None or kalan >= 0) else "iptal" if not aktif else "suresi_dolmus"
+        sonuc.append({"kod": l.lisans_kodu, "tur": l.tur, "durum": durum, "olusturma": safe_format_date(l.olusturma_tar), "bitis": safe_format_date(l.bitis_tarihi) if l.bitis_tarihi else "Ömür Boyu", "aktivasyon": safe_format_date(l.aktivasyon_tar) if l.aktivasyon_tar else None})
     return sonuc
 
 @app.get("/api/uyelik-turleri-public")
@@ -715,7 +708,6 @@ async def ip_ban_kaldir(request: Request, bg_tasks: BackgroundTasks, user: Panel
 # Diğer get metotları (loglar, istatistikler, listeler) aynı kalıyor...
 @app.get("/panel/lisanslar")
 def lisanslar_listele(filtre: str = "hepsi", user: PanelUserDto = Depends(panel_dogrula), s: Session = Depends(db)):
-    # ... [MEVCUT KODLAR BURADA AYNI ŞEKİLDE KALACAK] ...
     simdi = datetime.datetime.utcnow()
     liste = s.query(Lisans).order_by(Lisans.olusturma_tar.desc()).all()
     sonuc = []
@@ -2727,7 +2719,6 @@ async function girisYap() {
     setTimeout(() => {
       mesajGizle("giris-ok");
       sayfaGoster("dashboard");
-      dashboardYukle();
       baslatSitePoll();
     }, 1200);
   } else {
