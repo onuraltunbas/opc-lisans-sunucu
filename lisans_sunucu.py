@@ -41,23 +41,7 @@ def get_exe_date() -> str:
 # =====================================================================
 # İSTEMCİ API (EXE kullanır)
 # =====================================================================
-from fastapi import status
-@app.get("/api/program-indir")
-def program_indir(request: Request, s: Session = Depends(db)):
-  # Kullanıcı doğrulama ve lisans kontrolü
-  kullanici_id = get_kullanici_id(request)
-  if not kullanici_id:
-    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Giriş yapmalısınız.")
-  kullanici = s.query(Kullanici).filter_by(id=kullanici_id).first()
-  if not kullanici:
-    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Kullanıcı bulunamadı.")
-  lisans = s.query(Lisans).filter_by(kullanici_id=kullanici_id, aktif=True).first()
-  if not lisans or not lisans.gecerli:
-    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Aktif ve geçerli lisansınız yok.")
-  exe_path = os.path.join("dosyalar", "OPC_Gateway_Pro.exe")
-  if not os.path.isfile(exe_path):
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dosya bulunamadı.")
-  return FileResponse(exe_path, filename="OPC_Gateway_Pro.exe", media_type="application/octet-stream")
+
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
 from sqlalchemy import (
