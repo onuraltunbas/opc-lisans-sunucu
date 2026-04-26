@@ -58,7 +58,7 @@ SECRET_KEY         = os.getenv("SECRET_KEY", "BURAYA-GIZLI-ANAHTARINIZI-YAZIN")
 PANEL_KULLANICI    = os.getenv("PANEL_KULLANICI", "admin")
 PANEL_SIFRE        = os.getenv("PANEL_SIFRE", "admin123")
 DATABASE_URL       = os.getenv("DATABASE_URL", "sqlite:///./lisanslar.db")
-INDIRME_LINKI      = os.getenv("INDIRME_LINKI", "https://your-download-link.com")
+INDIRME_LINKI      = os.getenv("INDIRME_LINKI", "/api/program-indir")
 
 # TELEGRAM İSTİHBARAT AYARLARI
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
@@ -625,6 +625,27 @@ def lisans_gecmisim(request: Request, s: Session = Depends(db)):
 @app.get("/api/uyelik-turleri-public")
 def uyelik_turleri_public(s: Session = Depends(db)):
     return [{"kod": t.kod, "ad": t.ad, "aciklama": t.aciklama} for t in s.query(UyelikTuru).filter_by(aktif=True).order_by(UyelikTuru.sira).all()]
+
+@app.get("/api/program-indir")
+def program_indir(request: Request, s: Session = Depends(db)):
+    kid = get_kullanici_id(request)
+    if not kid: raise HTTPException(status_code=401, detail="Giriş yapmalısınız.")
+    k = s.query(Kullanici).filter_by(id=kid).first()
+    if not k: raise HTTPException(status_code=401, detail="Geçersiz kullanıcı.")
+    
+    lisans = s.query(Lisans).filter_by(musteri_email=k.email).order_by(Lisans.olusturma_tar.desc()).first()
+    
+    kalan = safe_days_left(lisans.bitis_tarihi) if lisans else None
+    aktif_mi = bool(lisans and lisans.aktif and (kalan is None or kalan >= 0))
+    
+    if not aktif_mi:
+        raise HTTPException(status_code=403, detail="Aktif lisansınız bulunmuyor.")
+        
+    exe_path = os.path.join("dosyalar", "OPC_Gateway_Pro.exe")
+    if not os.path.exists(exe_path):
+        raise HTTPException(status_code=404, detail="Program dosyası sunucuda bulunamadı.")
+        
+    return FileResponse(exe_path, media_type="application/vnd.microsoft.portable-executable", filename="OPC_Gateway_Pro.exe")
 
 
 # =====================================================================
