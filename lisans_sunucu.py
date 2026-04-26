@@ -600,13 +600,6 @@ def profil(request: Request, s: Session = Depends(db)):
     "vt_hash": vt_hash,
     "son_guncelleme": son_guncelleme,
   }
-    lisans = s.query(Lisans).filter_by(musteri_email=k.email, aktif=True).first()
-    if not lisans: raise HTTPException(status_code=404)
-    lisans.aktif = False
-    lisans.iptal_nedeni = data.get("neden", "")
-    s.commit()
-    istihbarat_raporu(bg_tasks, "Müşteri Lisansını İptal Etti", k.ad_soyad, f"İptal Edilen Kod: {lisans.lisans_kodu}\nNeden: {lisans.iptal_nedeni}", request.client.host)
-    return {"basarili": True}
 
 @app.get("/api/lisans-gecmisim")
 def lisans_gecmisim(request: Request, s: Session = Depends(db)):
