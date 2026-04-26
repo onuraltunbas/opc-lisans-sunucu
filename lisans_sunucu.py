@@ -603,8 +603,33 @@ def profil(request: Request, s: Session = Depends(db)):
         "email": k.email, 
         "kayit_tar": safe_format_date(k.kayit_tar), 
         "lisans": l_bilgi, 
-        "indirme_linki": INDIRME_LINKI if (l_bilgi and l_bilgi["durum"]=="aktif") else None
+        "indirme_linki": INDIRME_LINKI if (l_bilgi and l_bilgi["durum"]=="aktif") else None,
+        "vt_hash": get_exe_hash(),
+        "son_guncelleme": get_exe_date()
     }
+
+@app.post("/api/lisansimi-iptal-et")
+async def lisansimi_iptal_et(request: Request, bg_tasks: BackgroundTasks, s: Session = Depends(db)):
+    kid = get_kullanici_id(request)
+    if not kid: raise HTTPException(status_code=401, detail="Giriş yapmalısınız.")
+    k = s.query(Kullanici).filter_by(id=kid).first()
+    if not k: raise HTTPException(status_code=401, detail="Geçersiz kullanıcı.")
+    
+    data = await request.json()
+    neden = data.get("neden", "Belirtilmedi")
+    
+    lisans = s.query(Lisans).filter_by(musteri_email=k.email, aktif=True).order_by(Lisans.olusturma_tar.desc()).first()
+    if not lisans:
+        raise HTTPException(status_code=404, detail="İptal edilecek aktif lisans bulunamadı.")
+        
+    lisans.aktif = False
+    lisans.iptal_nedeni = neden
+    lisans.iptal_tarihi = datetime.datetime.utcnow()
+    s.commit()
+    
+    istihbarat_raporu(bg_tasks, "KULLANICI LİSANS İPTALİ", k.ad_soyad, f"Kod: {lisans.lisans_kodu} | Neden: {neden}", request.client.host)
+    
+    return {"basarili": True, "mesaj": "Lisansınız iptal edildi."}
 
 @app.get("/api/lisans-gecmisim")
 def lisans_gecmisim(request: Request, s: Session = Depends(db)):
