@@ -574,11 +574,45 @@ async def mesaj_gonder(request: Request, s: Session = Depends(db)):
     s.commit()
     return {"basarili": True}
 
-
+@app.get("/api/profil")
+def profil(request: Request, s: Session = Depends(db)):
+    kid = get_kullanici_id(request)
+    if not kid: raise HTTPException(status_code=401)
+    k = s.query(Kullanici).filter_by(id=kid).first()
+    if not k: raise HTTPException(status_code=401)
+    
+    lisans = s.query(Lisans).filter_by(musteri_email=k.email).order_by(Lisans.olusturma_tar.desc()).first()
+    l_bilgi = None
+    if lisans:
+        aktif = lisans.aktif
+        kalan = safe_days_left(lisans.bitis_tarihi)
+        durum = "aktif" if aktif and (kalan is None or kalan >= 0) else "iptal" if not aktif else "suresi_dolmus"
+        if kalan is not None and kalan < 0:
+            kalan = 0
+        l_bilgi = {
+            "kod": lisans.lisans_kodu, 
+            "tur": lisans.tur, 
+            "bitis": safe_format_date(lisans.bitis_tarihi) if lisans.bitis_tarihi else "Ömür Boyu", 
+            "kalan_gun": kalan, 
+            "aktif": aktif, 
+            "durum": durum
+        }
+        
+    return {
+        "ad_soyad": k.ad_soyad, 
+        "email": k.email, 
+        "kayit_tar": safe_format_date(k.kayit_tar), 
+        "lisans": l_bilgi, 
+        "indirme_linki": INDIRME_LINKI if (l_bilgi and l_bilgi["durum"]=="aktif") else None
+    }
 
 @app.get("/api/lisans-gecmisim")
 def lisans_gecmisim(request: Request, s: Session = Depends(db)):
-    k = s.query(Kullanici).filter_by(id=get_kullanici_id(request)).first()
+    kid = get_kullanici_id(request)
+    if not kid: raise HTTPException(status_code=401)
+    k = s.query(Kullanici).filter_by(id=kid).first()
+    if not k: raise HTTPException(status_code=401)
+    
     lisanslar = s.query(Lisans).filter_by(musteri_email=k.email).order_by(Lisans.olusturma_tar.desc()).all()
     sonuc = []
     for l in lisanslar:
