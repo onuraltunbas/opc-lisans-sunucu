@@ -1,0 +1,20 @@
+name: VirusTotal Otomatik Tarama
+
+on:
+  push:
+    paths:
+      - 'dosyalar/OPC_Gateway_Pro.exe'
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repoyu Çek
+        uses: actions/checkout@v4
+
+      - name: VirusTotal'e Fırlat ve Tara
+        uses: crazy-max/ghaction-virustotal@v4
+        with:
+          vt_api_key: ${{ secrets.VT_API_KEY }}
+          files: |
+            dosyalar/OPC_Gateway_Pro.exe
