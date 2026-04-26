@@ -9,12 +9,44 @@ jobs:
   scan:
     runs-on: ubuntu-latest
     steps:
-      - name: Repoyu Çek
+      - name: Kodları Çek
         uses: actions/checkout@v4
 
-      - name: VirusTotal'e Fırlat ve Tara
-        uses: crazy-max/ghaction-virustotal@v4
-        with:
-          vt_api_key: ${{ secrets.VT_API_KEY }}
-          files: |
-            dosyalar/OPC_Gateway_Pro.exe
+      - name: Gerekli Kütüphaneleri Kur
+        run: pip install requests
+
+      - name: Sınırları Aşan (650MB) Yükleme Robotu
+        env:
+          VT_API_KEY: ${{ secrets.VT_API_KEY }}
+        run: |
+          python -c "
+          import os, requests, sys
+          
+          api_key = os.environ.get('VT_API_KEY')
+          file_path = 'dosyalar/OPC_Gateway_Pro.exe'
+
+          if not os.path.exists(file_path):
+              print('❌ Dosya bulunamadı!')
+              sys.exit(1)
+
+          file_size = os.path.getsize(file_path)
+          print(f'📦 Dosya boyutu: {file_size / (1024*1024):.2f} MB')
+
+          if file_size > 32 * 1024 * 1024:
+              print('⚠️ 32MB sınırı aşıldı! VirusTotal VIP kapısı (Upload URL) açılıyor...')
+              headers = {'x-apikey': api_key}
+              url_res = requests.get('https://www.virustotal.com/api/v3/files/upload_url', headers=headers)
+              upload_url = url_res.json().get('data')
+          else:
+              upload_url = 'https://www.virustotal.com/api/v3/files'
+
+          print(f'🚀 Dosya {upload_url} adresine fırlatılıyor...')
+          with open(file_path, 'rb') as f:
+              upload_res = requests.post(upload_url, headers={'x-apikey': api_key}, files={'file': f})
+
+          if upload_res.status_code == 200:
+              print('✅ BAŞARILI! Dosya VirusTotal veritabanına işlendi. Müşteriler artık raporu görebilir.')
+          else:
+              print('❌ HATA:', upload_res.text)
+              sys.exit(1)
+          "
