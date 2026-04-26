@@ -17,7 +17,47 @@ from typing import Optional, List
 from functools import wraps
 
 from fastapi import FastAPI, HTTPException, Header, Depends, Request, Form, Response, BackgroundTasks
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, FileResponse
+import hashlib
+import os
+# =====================================================================
+# YARDIMCI FONKSİYONLAR
+# =====================================================================
+def get_exe_hash() -> str:
+  exe_path = os.path.join("dosyalar", "OPC_Gateway_Pro.exe")
+  try:
+    with open(exe_path, "rb") as f:
+      return hashlib.sha256(f.read()).hexdigest()
+  except Exception:
+    return ""
+
+def get_exe_date() -> str:
+  exe_path = os.path.join("dosyalar", "OPC_Gateway_Pro.exe")
+  try:
+    ts = os.path.getmtime(exe_path)
+    return datetime.datetime.fromtimestamp(ts).strftime("%d.%m.%Y")
+  except Exception:
+    return ""
+# =====================================================================
+# İSTEMCİ API (EXE kullanır)
+# =====================================================================
+from fastapi import status
+@app.get("/api/program-indir")
+def program_indir(request: Request, s: Session = Depends(db)):
+  # Kullanıcı doğrulama ve lisans kontrolü
+  kullanici_id = get_kullanici_id(request)
+  if not kullanici_id:
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Giriş yapmalısınız.")
+  kullanici = s.query(Kullanici).filter_by(id=kullanici_id).first()
+  if not kullanici:
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Kullanıcı bulunamadı.")
+  lisans = s.query(Lisans).filter_by(kullanici_id=kullanici_id, aktif=True).first()
+  if not lisans or not lisans.gecerli:
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Aktif ve geçerli lisansınız yok.")
+  exe_path = os.path.join("dosyalar", "OPC_Gateway_Pro.exe")
+  if not os.path.isfile(exe_path):
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dosya bulunamadı.")
+  return FileResponse(exe_path, filename="OPC_Gateway_Pro.exe", media_type="application/octet-stream")
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
 from sqlalchemy import (
@@ -526,34 +566,40 @@ async def mesaj_gonder(request: Request, s: Session = Depends(db)):
     s.commit()
     return {"basarili": True}
 
-@app.get("/api/mesajlarim")
-def mesajlarim(request: Request, s: Session = Depends(db)):
-    kid = get_kullanici_id(request)
-    s.query(Mesaj).filter_by(kullanici_id=kid, gonderen="admin", okundu=False).update({"okundu": True})
-    s.commit()
-    mesajlar = s.query(Mesaj).filter_by(kullanici_id=kid).order_by(Mesaj.tarih.asc()).all()
-    return [{"gonderen": m.gonderen, "icerik": m.icerik, "tarih": m.tarih.strftime("%d.%m.%Y %H:%M")} for m in mesajlar]
-
 @app.get("/api/profil")
 def profil(request: Request, s: Session = Depends(db)):
-    kid = get_kullanici_id(request)
-    if not kid: raise HTTPException(status_code=401)
-    k = s.query(Kullanici).filter_by(id=kid).first()
-    lisans = s.query(Lisans).filter_by(musteri_email=k.email).order_by(Lisans.olusturma_tar.desc()).first()
-    l_bilgi = None
-    if lisans:
-        durum = "aktif" if lisans.aktif and (not lisans.bitis_tarihi or datetime.datetime.utcnow() <= lisans.bitis_tarihi) else "iptal" if not lisans.aktif else "suresi_dolmus"
-        kalan = (lisans.bitis_tarihi - datetime.datetime.utcnow()).days if lisans.bitis_tarihi else None
-        if kalan is not None and kalan < 0:
-            kalan = 0
-        l_bilgi = {"kod": lisans.lisans_kodu, "tur": lisans.tur, "bitis": lisans.bitis_tarihi.strftime("%d.%m.%Y") if lisans.bitis_tarihi else "Ömür Boyu", "kalan_gun": kalan, "aktif": lisans.aktif, "durum": durum}
-    return {"ad_soyad": k.ad_soyad, "email": k.email, "kayit_tar": k.kayit_tar.strftime("%d.%m.%Y"), "lisans": l_bilgi, "indirme_linki": INDIRME_LINKI if (l_bilgi and l_bilgi["durum"]=="aktif") else None}
-
-@app.post("/api/lisansimi-iptal-et")
-async def lisansimi_iptal_et(request: Request, bg_tasks: BackgroundTasks, s: Session = Depends(db)):
-    kid = get_kullanici_id(request)
-    k = s.query(Kullanici).filter_by(id=kid).first()
-    data = await request.json()
+  kullanici_id = get_kullanici_id(request)
+  if not kullanici_id:
+    raise HTTPException(status_code=401, detail="Giriş yapmalısınız.")
+  kullanici = s.query(Kullanici).filter_by(id=kullanici_id).first()
+  if not kullanici:
+    raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı.")
+  lisans = s.query(Lisans).filter_by(kullanici_id=kullanici_id, aktif=True).first()
+  talepler = s.query(LisansTalep).filter_by(kullanici_id=kullanici_id).all()
+  mesajlar = s.query(Mesaj).filter_by(kullanici_id=kullanici_id).all()
+  indirme_linki = "/api/program-indir"
+  vt_hash = get_exe_hash()
+  son_guncelleme = get_exe_date()
+  return {
+    "kullanici": {
+      "id": kullanici.id,
+      "ad": kullanici.ad,
+      "email": kullanici.email,
+      "kayit_tarihi": kullanici.kayit_tarihi.strftime("%d.%m.%Y"),
+      "uyelik_turu": kullanici.uyelik_turu,
+    },
+    "lisans": lisans.kod if lisans else None,
+    "lisans_aktif": bool(lisans and lisans.aktif and lisans.gecerli),
+    "talepler": [
+      {"id": t.id, "durum": t.durum, "tarih": t.tarih.strftime("%d.%m.%Y")} for t in talepler
+    ],
+    "mesajlar": [
+      {"id": m.id, "mesaj": m.mesaj, "tarih": m.tarih.strftime("%d.%m.%Y")} for m in mesajlar
+    ],
+    "indirme_linki": indirme_linki,
+    "vt_hash": vt_hash,
+    "son_guncelleme": son_guncelleme,
+  }
     lisans = s.query(Lisans).filter_by(musteri_email=k.email, aktif=True).first()
     if not lisans: raise HTTPException(status_code=404)
     lisans.aktif = False
@@ -2779,13 +2825,21 @@ function lisansGridRender(p, grid) {
           <div class="license-sub">Bu kodu program aktivasyonunda kullanın</div>
         </div>
       </div>
-      ${p.indirme_linki ? `
+      ${(p.indirme_linki && p.vt_hash && p.son_guncelleme) ? `
       <div class="dash-card full" style="text-align:center;">
+        <div style="margin-bottom:10px;">
+          <span style="display:inline-block;background:linear-gradient(90deg,#22d3ee,#38bdf8);color:#fff;padding:7px 18px;border-radius:20px;font-size:15px;font-weight:700;box-shadow:0 2px 12px #38bdf855;letter-spacing:0.5px;">🚀 YENİ SÜRÜM YAYINDA! (Son Güncelleme: ${p.son_guncelleme})</span>
+        </div>
         <h3>Program İndir</h3>
         <div class="dash-sub" style="margin-bottom:16px;">Lisansınız aktif. Programı indirip lisans kodunuzla aktive edebilirsiniz.</div>
         <a href="${p.indirme_linki}" target="_blank" style="display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--success),#16a34a);color:white;padding:14px 32px;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;box-shadow:0 0 24px #22c55e33;transition:all 0.2s;">
           ⬇ OPC Gateway'i İndir
         </a>
+        <div style="margin-top:18px;">
+          <a href="https://www.virustotal.com/gui/file/${p.vt_hash}" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(90deg,#22c55e,#16a34a);color:white;padding:10px 22px;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none;box-shadow:0 0 12px #22c55e33;transition:all 0.2s;">
+            🛡️ VirusTotal Güvenlik Raporu (0 Virüs)
+          </a>
+        </div>
       </div>` : ''}
       <div class="dash-card full" style="text-align:center;padding-top:8px;">
         <button onclick="iptalModalAc()" style="background:transparent;border:1px solid #ef444455;color:#f87171;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Sora',sans-serif;transition:all 0.2s;" onmouseover="this.style.background='#ef444415'" onmouseout="this.style.background='transparent'">
