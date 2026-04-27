@@ -220,6 +220,7 @@ class Ayarlar(Base):
     admin_kullanici = Column(String, nullable=True)
     admin_sifre_hash = Column(String, nullable=True)
     son_exe_hash = Column(String, nullable=True)
+    son_surum_tarihi = Column(DateTime, nullable=True)
 
 class OfflineLisansAyarlari(Base):
     __tablename__ = "offline_lisans_ayarlari"
@@ -244,6 +245,10 @@ def _db_migrate():
         except Exception: pass
         try:
             conn.execute(__import__("sqlalchemy").text("ALTER TABLE ayarlar ADD COLUMN son_exe_hash VARCHAR(100)"))
+            conn.commit()
+        except Exception: pass
+        try:
+            conn.execute(__import__("sqlalchemy").text("ALTER TABLE ayarlar ADD COLUMN son_surum_tarihi TIMESTAMP"))
             conn.commit()
         except Exception: pass
         try:
@@ -451,29 +456,34 @@ async def global_exception_handler(request: Request, exc: Exception):
 @app.on_event("startup")
 async def startup_event():
     # Deploy Başarılı Bildirimi
-    telegram_bildirim_gonder("🚀 <b>Sistem Yayında!</b>\nDeploy işlemi başarıyla tamamlandı ve sunucu aktif.")
-    
+    telegram_bildirim_gonder("🚀 <b>Deploy Başarılı!</b>\nSunucu ayağa kalktı ve aktif durumda.")
+
     # Yeni Program Sürümü Yayınlandı Bildirimi (Hash Kontrolü)
     s = Session_()
     try:
         current_hash = get_exe_hash()
         if current_hash:
-            ayar = s.query(Ayarlar).first()
-            if not ayar:
-                ayar = Ayarlar(son_exe_hash=current_hash)
-                s.add(ayar)
-                s.commit()
-            elif ayar.son_exe_hash != current_hash:
-                ayar.son_exe_hash = current_hash
-                s.commit()
-                telegram_bildirim_gonder(f"🆕 <b>Yeni Program Sürümü Yayınlandı!</b>\n\nOPC Gateway Pro programı güncellendi.\n<b>Tarih:</b> {get_exe_date()}\n<b>Hash:</b> {current_hash[:16]}...")
+            try:
+                ayar = s.query(Ayarlar).first()
+                if not ayar:
+                    ayar = Ayarlar(son_exe_hash=current_hash, son_surum_tarihi=datetime.datetime.utcnow())
+                    s.add(ayar)
+                    s.commit()
+                elif ayar.son_exe_hash != current_hash:
+                    ayar.son_exe_hash = current_hash
+                    ayar.son_surum_tarihi = datetime.datetime.utcnow()
+                    s.commit()
+                    telegram_bildirim_gonder(f"🆕 <b>Yeni Program Sürümü Yayınlandı!</b>\n\nOPC Gateway Pro programı güncellendi.\n<b>Tarih:</b> {get_exe_date()}\n<b>Hash:</b> {current_hash[:16]}...")
+            except Exception as e:
+                s.rollback()
+                telegram_bildirim_gonder(f"⚠️ <b>Startup DB Uyarısı</b>\nAyarlar sorgusu başarısız: {str(e)[:200]}")
     finally:
         s.close()
 
 @app.on_event("shutdown")
 def shutdown_event():
-    # Site Bakımda Bildirimi
-    telegram_bildirim_gonder("🚧 <b>Sistem Bakımda</b>\nSunucu kapatılıyor veya yeni bir deploy işlemi başlatıldı.")
+    # Site Bakımda / Deploy Başlıyor Bildirimi
+    telegram_bildirim_gonder("🚧 <b>Sistem Kapanıyor</b>\nSunucu kapatılıyor — yeni deploy başlıyor olabilir.")
 
 def app_sirri_dogrula(request: Request):
     gelen = request.headers.get("x-app-secret") or request.headers.get("x_app_secret") or ""
@@ -660,6 +670,16 @@ async def mesaj_gonder(request: Request, s: Session = Depends(db)):
     s.commit()
     return {"basarili": True}
 
+@app.get("/api/mesajlarim")
+def mesajlarim(request: Request, s: Session = Depends(db)):
+    kid = get_kullanici_id(request)
+    if not kid: raise HTTPException(status_code=401)
+    # Okunmamış admin mesajlarını okundu yap
+    s.query(Mesaj).filter_by(kullanici_id=kid, gonderen="admin", okundu=False).update({"okundu": True})
+    s.commit()
+    mesajlar = s.query(Mesaj).filter_by(kullanici_id=kid).order_by(Mesaj.tarih.asc()).all()
+    return [{"id": m.id, "gonderen": m.gonderen, "icerik": m.icerik, "tarih": safe_format_datetime(m.tarih)} for m in mesajlar]
+
 @app.get("/api/profil")
 def profil(request: Request, s: Session = Depends(db)):
     kid = get_kullanici_id(request)
@@ -683,16 +703,25 @@ def profil(request: Request, s: Session = Depends(db)):
             "aktif": aktif, 
             "durum": durum
         }
-        
+    # Yeni sürüm banner: DB'deki son_surum_tarihi üzerinden 1 gün kontrol
+    try:
+        _ayar = s.query(Ayarlar).first()
+        _yeni_surum = bool(
+            _ayar and _ayar.son_surum_tarihi and
+            (datetime.datetime.utcnow() - _ayar.son_surum_tarihi).total_seconds() < 86400
+        )
+    except Exception:
+        _yeni_surum = False
+
     return {
-        "ad_soyad": k.ad_soyad, 
-        "email": k.email, 
-        "kayit_tar": safe_format_date(k.kayit_tar), 
-        "lisans": l_bilgi, 
+        "ad_soyad": k.ad_soyad,
+        "email": k.email,
+        "kayit_tar": safe_format_date(k.kayit_tar),
+        "lisans": l_bilgi,
         "indirme_linki": "/api/program-indir" if (l_bilgi and l_bilgi["durum"]=="aktif") else None,
         "vt_hash": get_exe_hash(),
         "son_guncelleme": get_exe_date(),
-        "yeni_surum_banner": is_exe_new()
+        "yeni_surum_banner": _yeni_surum
     }
 
 @app.post("/api/lisansimi-iptal-et")
@@ -2625,6 +2654,7 @@ SITE_HTML_TEMPLATE = """<!DOCTYPE html>
     OPC Gateway
   </div>
   <div class="nav-links" id="nav-links">
+    <button class="nav-btn nav-btn-ghost" onclick="sayfaGoster('offline')" style="border-color:#3d6fff44;color:#7eb8ff;">🔒 Offline Aktivasyon</button>
     <button class="nav-btn nav-btn-ghost" onclick="sayfaGoster('giris')">Giriş Yap</button>
     <button class="nav-btn nav-btn-primary" onclick="sayfaGoster('kayit')">Kayıt Ol</button>
   </div>
@@ -2677,6 +2707,37 @@ SITE_HTML_TEMPLATE = """<!DOCTYPE html>
     </div>
     <div style="text-align:center;margin-top:32px;">
       <button class="btn-hero btn-hero-primary" onclick="sayfaGoster('kayit')">Kayıt Ol ve Talep Gönder →</button>
+    </div>
+  </div>
+</div>
+
+<!-- OFFLİNE AKTİVASYON -->
+<div id="sayfa-offline" style="display:none">
+  <div style="height:48px;"></div>
+  <div class="form-container" style="max-width:520px;">
+    <div class="form-card">
+      <div class="form-title">🔒 Offline Aktivasyon Talebi</div>
+      <div class="form-sub">İnternet bağlantısı olmayan sistemler için lisans talebinde bulunun. Giriş yapmış olmanız gerekir.</div>
+      <div class="form-err" id="offline-hata"></div>
+      <div class="form-ok" id="offline-ok"></div>
+      <div id="offline-giris-uyari" style="display:none;background:#f59e0b15;border:1px solid #f59e0b44;color:#fbbf24;border-radius:8px;padding:12px 16px;font-size:13px;margin-bottom:16px;">
+        ⚠️ Offline aktivasyon talebi göndermek için önce <a onclick="sayfaGoster('giris')" style="color:#3d6fff;cursor:pointer;font-weight:600;">giriş yapmalısınız</a>.
+      </div>
+      <div id="offline-form-icerik">
+        <div class="form-group">
+          <label class="form-label">Lisans Türü</label>
+          <select class="form-input" id="off-tur-sec"><option value="">Yükleniyor...</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Gateway İstek Kodu (REQ-...)</label>
+          <input class="form-input" type="text" id="off-req-kod" placeholder="REQ-XXXXXXXXXXXXXXXXXXXX" style="font-family:monospace;letter-spacing:1px;" oninput="offReqKodKontrol()">
+          <div id="off-req-durum" style="font-size:12px;margin-top:4px;"></div>
+        </div>
+        <div style="background:#3d6fff0a;border:1px solid #3d6fff22;border-radius:8px;padding:12px 14px;font-size:12px;color:#8a9bc0;margin-bottom:16px;line-height:1.7;">
+          📌 İstek kodunu almak için <b>OPC Gateway Pro</b> programını açıp <b>Offline Aktivasyon → İstek Kodu Oluştur</b> seçeneğini kullanın.
+        </div>
+        <button class="form-btn" id="off-talep-btn" onclick="offlineTalepGonder()">Offline Lisans Talebi Gönder</button>
+      </div>
     </div>
   </div>
 </div>
@@ -2806,11 +2867,12 @@ let planlar = [];
 
 // ===== SAYFA YÖNETİMİ =====
 function sayfaGoster(ad) {
-  ["anasayfa","planlar","kayit","giris","dashboard"].forEach(s => {
+  ["anasayfa","planlar","kayit","giris","dashboard","offline"].forEach(s => {
     document.getElementById("sayfa-" + s).style.display = s === ad ? "" : "none";
   });
   if (ad === "planlar") planlariYukle();
   if (ad === "dashboard") dashboardYukle();
+  if (ad === "offline") offlineSayfasiYukle();
 }
 
 // ===== PLANLAR =====
@@ -3150,6 +3212,63 @@ function dashPlanSec(kod) {
   if (el) el.classList.add("selected");
 }
 
+// ===== OFFLİNE AKTİVASYON SAYFASI =====
+async function offlineSayfasiYukle() {
+  // Oturum kontrolü
+  const r = await fetch("/api/profil");
+  const uyariEl = document.getElementById("offline-giris-uyari");
+  const formEl  = document.getElementById("offline-form-icerik");
+  if (!r.ok) {
+    if (uyariEl) uyariEl.style.display = "";
+    if (formEl)  formEl.style.display  = "none";
+    return;
+  }
+  if (uyariEl) uyariEl.style.display = "none";
+  if (formEl)  formEl.style.display  = "";
+  // Plan listesini doldur
+  const pr = await fetch("/api/uyelik-turleri-public");
+  const planlarData = await pr.json();
+  const sel = document.getElementById("off-tur-sec");
+  if (sel) sel.innerHTML = planlarData.map(p => `<option value="${p.kod}">${p.ad} — ${p.aciklama||""}</option>`).join("");
+}
+
+function offReqKodKontrol() {
+  const val = (document.getElementById("off-req-kod").value || "").trim().toUpperCase();
+  const durumEl = document.getElementById("off-req-durum");
+  if (!val) { durumEl.textContent = ""; return; }
+  if (!val.startsWith("REQ-")) {
+    durumEl.style.color = "#f87171";
+    durumEl.textContent = "⚠️ Geçersiz format. REQ- ile başlamalıdır.";
+  } else {
+    durumEl.style.color = "#4ade80";
+    durumEl.textContent = "✓ Format geçerli görünüyor.";
+  }
+}
+
+async function offlineTalepGonder() {
+  mesajGizle("offline-hata"); mesajGizle("offline-ok");
+  const tur       = document.getElementById("off-tur-sec")  ? document.getElementById("off-tur-sec").value.trim()  : "";
+  const istek_kodu = (document.getElementById("off-req-kod").value || "").trim().toUpperCase();
+  if (!tur)        { mesajGoster("offline-hata", "⚠️ Lütfen bir lisans türü seçin."); return; }
+  if (!istek_kodu) { mesajGoster("offline-hata", "⚠️ İstek kodu zorunludur."); return; }
+  if (!istek_kodu.startsWith("REQ-")) { mesajGoster("offline-hata", "❌ Geçersiz istek kodu. REQ- ile başlamalıdır."); return; }
+  const btn = document.getElementById("off-talep-btn");
+  if (btn) { btn.disabled = true; btn.textContent = "Gönderiliyor…"; }
+  const r = await fetch("/api/talep-olustur", {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({tur, talep_tipi:"offline", istek_kodu})
+  });
+  const d = await r.json();
+  if (btn) { btn.disabled = false; btn.textContent = "Offline Lisans Talebi Gönder"; }
+  if (r.ok) {
+    mesajGoster("offline-ok", "✅ Talebiniz alındı! Onaylandığında aktivasyon kodunuz e-posta ile bildirilecektir. Dashboard üzerinden de takip edebilirsiniz.");
+    document.getElementById("off-req-kod").value = "";
+    document.getElementById("off-req-durum").textContent = "";
+  } else {
+    mesajGoster("offline-hata", "❌ " + (d.detail || "Bir hata oluştu."));
+  }
+}
+
 async function talepGonder() {
   if (!dashSecilenPlan) { mesajGoster("talep-hata", "Lütfen bir plan seçin."); return; }
   mesajGizle("talep-hata"); mesajGizle("talep-ok");
@@ -3279,7 +3398,7 @@ let _sitePollTimer = null;
   if (r.ok) {
     sayfaGoster("dashboard");
     const p = await r.json();
-    document.getElementById("nav-links").innerHTML = `<span style="font-size:13px;color:var(--muted);margin-right:8px;">${p.email}</span><button class="nav-btn nav-btn-ghost" onclick="cikisYap()">Cıkış</button>`;
+    document.getElementById("nav-links").innerHTML = `<span style="font-size:13px;color:var(--muted);margin-right:8px;">${p.email}</span><button class="nav-btn nav-btn-ghost" onclick="sayfaGoster('offline')" style="border-color:#3d6fff44;color:#7eb8ff;">🔒 Offline</button><button class="nav-btn nav-btn-ghost" onclick="cikisYap()">Cıkış</button>`;
     baslatSitePoll();
   }
 })();
@@ -3315,3 +3434,21 @@ def dashboard_sayfasi():
 @app.get("/planlar", response_class=HTMLResponse)
 def planlar_sayfasi():
     return HTMLResponse(content=SITE_HTML_TEMPLATE.replace("{CSS}", SITE_CSS) + "<script>sayfaGoster('planlar');</script>")
+
+@app.get("/offline-aktivasyon", response_class=HTMLResponse)
+def offline_aktivasyon_sayfasi():
+    return HTMLResponse(content=SITE_HTML_TEMPLATE.replace("{CSS}", SITE_CSS) + "<script>sayfaGoster('offline');</script>")
+
+@app.post("/api/sifre-degistir")
+async def sifre_degistir(request: Request, s: Session = Depends(db)):
+    kid = get_kullanici_id(request)
+    if not kid: raise HTTPException(status_code=401, detail="Giriş yapmalısınız.")
+    data = await request.json()
+    yeni_sifre = data.get("yeni_sifre", "").strip()
+    if not yeni_sifre or len(yeni_sifre) < 6:
+        raise HTTPException(status_code=400, detail="Şifre en az 6 karakter olmalıdır.")
+    k = s.query(Kullanici).filter_by(id=kid).first()
+    if not k: raise HTTPException(status_code=401)
+    k.sifre_hash = sifre_hashle(yeni_sifre)
+    s.commit()
+    return {"basarili": True, "mesaj": "Şifre başarıyla güncellendi."}
