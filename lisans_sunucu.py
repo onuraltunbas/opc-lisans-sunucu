@@ -38,6 +38,27 @@ def get_exe_date() -> str:
     return datetime.datetime.fromtimestamp(ts).strftime("%d.%m.%Y")
   except Exception:
     return ""
+
+def is_exe_new() -> bool:
+  """EXE dosyası son 24 saat içinde mi güncellendi?"""
+  exe_path = os.path.join("dosyalar", "OPC_Gateway_Pro.exe")
+  try:
+    ts = os.path.getmtime(exe_path)
+    diff = datetime.datetime.now() - datetime.datetime.fromtimestamp(ts)
+    return diff.total_seconds() < 86400  # 24 saat
+  except Exception:
+    return False
+
+def telegram_bildirim_gonder(mesaj: str):
+    """Genel sistem bildirimleri için Telegram fonksiyonu"""
+    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID: return
+    try:
+        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+        data = urllib.parse.urlencode({"chat_id": TELEGRAM_CHAT_ID, "text": mesaj, "parse_mode": "HTML"}).encode("utf-8")
+        req = urllib.request.Request(url, data=data)
+        urllib.request.urlopen(req, timeout=4)
+    except Exception:
+        pass
 # =====================================================================
 # İSTEMCİ API (EXE kullanır)
 # =====================================================================
@@ -132,6 +153,9 @@ class LisansTalep(Base):
     islem_tar   = Column(DateTime, nullable=True)
     ip_adresi   = Column(String, nullable=True)
     admin_notu  = Column(Text, nullable=True)
+    talep_tipi  = Column(String, default="online")
+    istek_kodu  = Column(String, nullable=True)
+    aktivasyon_kodu = Column(String, nullable=True)
 
 class Mesaj(Base):
     __tablename__ = "mesajlar"
@@ -195,6 +219,7 @@ class Ayarlar(Base):
     id = Column(Integer, primary_key=True)
     admin_kullanici = Column(String, nullable=True)
     admin_sifre_hash = Column(String, nullable=True)
+    son_exe_hash = Column(String, nullable=True)
 
 class OfflineLisansAyarlari(Base):
     __tablename__ = "offline_lisans_ayarlari"
@@ -215,6 +240,22 @@ def _db_migrate():
         except Exception: pass
         try:
             conn.execute(__import__("sqlalchemy").text("ALTER TABLE uyelik_turleri ADD COLUMN prefix VARCHAR(10) DEFAULT 'STD'"))
+            conn.commit()
+        except Exception: pass
+        try:
+            conn.execute(__import__("sqlalchemy").text("ALTER TABLE ayarlar ADD COLUMN son_exe_hash VARCHAR(100)"))
+            conn.commit()
+        except Exception: pass
+        try:
+            conn.execute(__import__("sqlalchemy").text("ALTER TABLE lisans_talepler ADD COLUMN talep_tipi VARCHAR(20) DEFAULT 'online'"))
+            conn.commit()
+        except Exception: pass
+        try:
+            conn.execute(__import__("sqlalchemy").text("ALTER TABLE lisans_talepler ADD COLUMN istek_kodu VARCHAR(100)"))
+            conn.commit()
+        except Exception: pass
+        try:
+            conn.execute(__import__("sqlalchemy").text("ALTER TABLE lisans_talepler ADD COLUMN aktivasyon_kodu VARCHAR(100)"))
             conn.commit()
         except Exception: pass
 
@@ -400,6 +441,40 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    # Kritik hataları (Crash vb.) Telegram'a bildir
+    error_msg = f"❌ <b>SUNUCU HATASI (CRASH)</b>\n\n<b>Endpoint:</b> {request.url}\n<b>Hata:</b> {str(exc)}"
+    telegram_bildirim_gonder(error_msg)
+    return JSONResponse(status_code=500, content={"detail": "Sunucu hatası oluştu, yöneticiye bildirildi."})
+
+@app.on_event("startup")
+async def startup_event():
+    # Deploy Başarılı Bildirimi
+    telegram_bildirim_gonder("🚀 <b>Sistem Yayında!</b>\nDeploy işlemi başarıyla tamamlandı ve sunucu aktif.")
+    
+    # Yeni Program Sürümü Yayınlandı Bildirimi (Hash Kontrolü)
+    s = Session_()
+    try:
+        current_hash = get_exe_hash()
+        if current_hash:
+            ayar = s.query(Ayarlar).first()
+            if not ayar:
+                ayar = Ayarlar(son_exe_hash=current_hash)
+                s.add(ayar)
+                s.commit()
+            elif ayar.son_exe_hash != current_hash:
+                ayar.son_exe_hash = current_hash
+                s.commit()
+                telegram_bildirim_gonder(f"🆕 <b>Yeni Program Sürümü Yayınlandı!</b>\n\nOPC Gateway Pro programı güncellendi.\n<b>Tarih:</b> {get_exe_date()}\n<b>Hash:</b> {current_hash[:16]}...")
+    finally:
+        s.close()
+
+@app.on_event("shutdown")
+def shutdown_event():
+    # Site Bakımda Bildirimi
+    telegram_bildirim_gonder("🚧 <b>Sistem Bakımda</b>\nSunucu kapatılıyor veya yeni bir deploy işlemi başlatıldı.")
+
 def app_sirri_dogrula(request: Request):
     gelen = request.headers.get("x-app-secret") or request.headers.get("x_app_secret") or ""
     if gelen != SECRET_KEY:
@@ -550,12 +625,23 @@ async def talep_olustur(request: Request, bg_tasks: BackgroundTasks, s: Session 
     if not kullanici_id: raise HTTPException(status_code=401)
     data = await request.json()
     k = s.query(Kullanici).filter_by(id=kullanici_id).first()
+    
+    talep_tipi = data.get("talep_tipi", "online")
+    istek_kodu = data.get("istek_kodu", "").strip().upper()
+    if talep_tipi == "offline":
+        if not istek_kodu.startswith("REQ-"):
+            raise HTTPException(status_code=400, detail="Geçersiz istek kodu formatı. (REQ- ile başlamalıdır)")
+        if s.query(LisansTalep).filter_by(istek_kodu=istek_kodu).first():
+            raise HTTPException(status_code=409, detail="Bu istek kodu daha önce kullanılmış.")
+
     if s.query(LisansTalep).filter_by(kullanici_id=kullanici_id, durum="beklemede").first():
         raise HTTPException(status_code=409, detail="Zaten bekleyen talep var.")
         
-    s.add(LisansTalep(kullanici_id=k.id, ad_soyad=k.ad_soyad, email=k.email, tur=data.get("tur"), ip_adresi=k.son_ip))
+    s.add(LisansTalep(kullanici_id=k.id, ad_soyad=k.ad_soyad, email=k.email, tur=data.get("tur"), ip_adresi=k.son_ip, talep_tipi=talep_tipi, istek_kodu=istek_kodu if talep_tipi=="offline" else None))
     s.commit()
-    istihbarat_raporu(bg_tasks, "YENİ LİSANS TALEBİ", k.ad_soyad, f"Talep Edilen Tür: {data.get('tur')} | E-posta: {k.email}", request.client.host)
+    tip_str = "OFFLINE" if talep_tipi == "offline" else "ONLINE"
+    ek_bilgi = f"\nİstek Kodu: {istek_kodu}" if talep_tipi == "offline" else ""
+    istihbarat_raporu(bg_tasks, f"YENİ {tip_str} LİSANS TALEBİ", k.ad_soyad, f"Talep Edilen Tür: {data.get('tur')} | E-posta: {k.email}{ek_bilgi}", request.client.host)
     return {"basarili": True}
 
 @app.get("/api/benim-taleplerim")
@@ -563,7 +649,7 @@ def benim_taleplerim(request: Request, s: Session = Depends(db)):
     kid = get_kullanici_id(request)
     if not kid: raise HTTPException(status_code=401)
     talepler = s.query(LisansTalep).filter_by(kullanici_id=kid).order_by(LisansTalep.talep_tar.desc()).all()
-    return [{"id": t.id, "tur": t.tur, "durum": t.durum, "tarih": safe_format_datetime(t.talep_tar), "admin_notu": t.admin_notu} for t in talepler]
+    return [{"id": t.id, "tur": t.tur, "durum": t.durum, "tarih": safe_format_datetime(t.talep_tar), "admin_notu": t.admin_notu, "talep_tipi": t.talep_tipi, "istek_kodu": t.istek_kodu, "aktivasyon_kodu": t.aktivasyon_kodu} for t in talepler]
 
 @app.post("/api/mesaj-gonder")
 async def mesaj_gonder(request: Request, s: Session = Depends(db)):
@@ -605,7 +691,8 @@ def profil(request: Request, s: Session = Depends(db)):
         "lisans": l_bilgi, 
         "indirme_linki": "/api/program-indir" if (l_bilgi and l_bilgi["durum"]=="aktif") else None,
         "vt_hash": get_exe_hash(),
-        "son_guncelleme": get_exe_date()
+        "son_guncelleme": get_exe_date(),
+        "yeni_surum_banner": is_exe_new()
     }
 
 @app.post("/api/lisansimi-iptal-et")
@@ -747,17 +834,31 @@ async def talep_guncelle(request: Request, bg_tasks: BackgroundTasks, user: Pane
     data = await request.json()
     talep = s.query(LisansTalep).filter_by(id=data["talep_id"]).first()
     talep.durum = data["durum"]
-    s.commit()
+    talep.admin_notu = data.get('admin_notu', '')
     
-    durum_str = "ONAYLANDI" if data["durum"] == "onaylandi" else "REDDEDİLDİ"
-    istihbarat_raporu(bg_tasks, f"Talep {durum_str}", user.tam_isim, f"Müşteri: {talep.ad_soyad} ({talep.email})\nTalep Türü: {talep.tur}\nNot: {data.get('admin_notu','')}", request.client.host)
-
     if data["durum"] == "onaylandi":
         u_tur = s.query(UyelikTuru).filter_by(kod=talep.tur).first()
         prefix = u_tur.prefix if u_tur and hasattr(u_tur, 'prefix') and u_tur.prefix else "STD"
-        kod = lisans_kodu_uret(prefix)
-        s.add(Lisans(lisans_kodu=kod, musteri_adi=talep.ad_soyad, musteri_email=talep.email, tur=talep.tur, bitis_tarihi=bitis_tarihi_hesapla(talep.tur, s)))
+        sure = getattr(u_tur, 'sure_gun', 30) or 30
+        
+        if talep.talep_tipi == "offline":
+            # Çevrimdışı (Offline) aktivasyon kodu üretimi
+            mesaj = f"{talep.istek_kodu}|{sure}|FULL".encode("utf-8")
+            imza = hmac.new(OFFLINE_SECRET_KEY, mesaj, hashlib.sha256).hexdigest()[:16].upper()
+            akt_kod = f"ACT-{sure}D-FULL-{imza}"
+            talep.aktivasyon_kodu = akt_kod
+            s.commit()
+            istihbarat_raporu(bg_tasks, "Offline Talep Onaylandı", user.tam_isim, f"Müşteri: {talep.ad_soyad}\nİstek Kodu: {talep.istek_kodu}\nAktivasyon Kodu: {akt_kod}", request.client.host)
+        else:
+            # Çevrimiçi (Online) lisans kaydı
+            kod = lisans_kodu_uret(prefix)
+            s.add(Lisans(lisans_kodu=kod, musteri_adi=talep.ad_soyad, musteri_email=talep.email, tur=talep.tur, bitis_tarihi=bitis_tarihi_hesapla(talep.tur, s)))
+            s.commit()
+            istihbarat_raporu(bg_tasks, "Online Talep Onaylandı", user.tam_isim, f"Müşteri: {talep.ad_soyad} ({talep.email})\nTalep Türü: {talep.tur}\nNot: {talep.admin_notu}", request.client.host)
+    else:
         s.commit()
+        istihbarat_raporu(bg_tasks, "Talep REDDEDİLDİ", user.tam_isim, f"Müşteri: {talep.ad_soyad} ({talep.email})\nTalep Türü: {talep.tur}\nNot: {talep.admin_notu}", request.client.host)
+
     return {"basarili": True}
 
 @app.post("/panel/admin-mesaj-gonder")
@@ -806,7 +907,7 @@ def lisanslar_listele(filtre: str = "hepsi", user: PanelUserDto = Depends(panel_
 
 @app.get("/panel/talepler")
 def panel_talepler(user: PanelUserDto = Depends(panel_dogrula), s: Session = Depends(db)):
-    return [{"id": t.id, "kullanici_id": t.kullanici_id, "ad_soyad": t.ad_soyad, "email": t.email, "tur": t.tur, "durum": t.durum, "tarih": t.talep_tar.strftime("%d.%m.%Y %H:%M"), "ip": t.ip_adresi, "admin_notu": t.admin_notu or ""} for t in s.query(LisansTalep).order_by(LisansTalep.talep_tar.desc()).all()]
+    return [{"id": t.id, "kullanici_id": t.kullanici_id, "ad_soyad": t.ad_soyad, "email": t.email, "tur": t.tur, "durum": t.durum, "tarih": t.talep_tar.strftime("%d.%m.%Y %H:%M"), "ip": t.ip_adresi, "admin_notu": t.admin_notu or "", "talep_tipi": t.talep_tipi, "istek_kodu": t.istek_kodu, "aktivasyon_kodu": t.aktivasyon_kodu} for t in s.query(LisansTalep).order_by(LisansTalep.talep_tar.desc()).all()]
 
 @app.get("/panel/iptal-istatistikleri")
 def iptal_istatistikleri(user: PanelUserDto = Depends(panel_dogrula), s: Session = Depends(db)):
@@ -1950,18 +2051,19 @@ function taleplerYukle() {
         <td>${t.tarih}</td>
         <td>${t.ad_soyad}</td>
         <td>${t.email}</td>
-        <td>${t.tur}</td>
+        <td>${t.tur} ${t.talep_tipi === "offline" ? `<br><span style="font-size:10px;padding:2px 6px;border-radius:4px;background:#3d6fff22;color:#3d6fff;border:1px solid #3d6fff44;">OFFLINE</span>` : ""}</td>
         <td><code>${t.ip||"-"}</code></td>
         <td><span class="badge ${durumBadge[t.durum]||""}">${t.durum}</span></td>
-        <td>${t.durum==="beklemede" ? `<button class="btn btn-primary btn-sm" onclick="talepModalAc('${t.id}','${t.ad_soyad}','${t.email}','${t.tur}','${t.ip||''}')">İşlem</button>` : (t.admin_notu ? `<span style="color:#666;font-size:11px;">${t.admin_notu.substring(0,40)}</span>` : "—")}</td>
+        <td>${t.durum==="beklemede" ? `<button class="btn btn-primary btn-sm" onclick="talepModalAc('${t.id}','${t.ad_soyad}','${t.email}','${t.tur}','${t.ip||''}','${t.talep_tipi||'online'}','${t.istek_kodu||''}')">İşlem</button>` : (t.admin_notu ? `<span style="color:#666;font-size:11px;">${t.admin_notu.substring(0,40)}</span>` : "—")}</td>
       </tr>`).join("");
     badgeGuncelle();
   });
 }
 
-function talepModalAc(id, ad, email, tur, ip) {
+function talepModalAc(id, ad, email, tur, ip, tip, istekKodu) {
   secilenTalepId = id;
-  document.getElementById("talep-bilgi").innerHTML = `<b>${ad}</b> &lt;${email}&gt;<br>Tür: <b>${tur}</b> | IP: <code>${ip}</code>`;
+  let ekOfflineBilgi = tip === "offline" ? `<div style="background:#3d6fff11;border:1px solid #3d6fff33;padding:8px;border-radius:6px;margin-top:8px;font-size:13px;"><b style="color:#3d6fff;">OFFLINE TALEP</b><br>İstek Kodu: <code style="color:#fff;">${istekKodu}</code><br><span style="color:#888;font-size:11px;">Onaylandığında otomatik aktivasyon kodu üretilecektir.</span></div>` : "";
+  document.getElementById("talep-bilgi").innerHTML = `<b>${ad}</b> &lt;${email}&gt;<br>Tür: <b>${tur}</b> | IP: <code>${ip}</code>${ekOfflineBilgi}`;
   document.getElementById("talep-not").value = "";
   const m = document.getElementById("talep-modal");
   m.style.display = "flex";
@@ -2873,11 +2975,12 @@ function lisansGridRender(p, grid) {
           <div class="license-sub">Bu kodu program aktivasyonunda kullanın</div>
         </div>
       </div>
-      ${(p.indirme_linki && p.vt_hash && p.son_guncelleme) ? `
+      ${(p.indirme_linki && p.vt_hash) ? `
       <div class="dash-card full" style="text-align:center;">
-        <div style="margin-bottom:10px;">
-          <span style="display:inline-block;background:linear-gradient(90deg,#22d3ee,#38bdf8);color:#fff;padding:7px 18px;border-radius:20px;font-size:15px;font-weight:700;box-shadow:0 2px 12px #38bdf855;letter-spacing:0.5px;">🚀 YENİ SÜRÜM YAYINDA! (Son Güncelleme: ${p.son_guncelleme})</span>
-        </div>
+        ${(p.yeni_surum_banner && p.son_guncelleme) ? `
+        <div style="margin-bottom:14px;">
+          <span style="display:inline-block;background:linear-gradient(90deg,#22d3ee,#38bdf8);color:#fff;padding:8px 20px;border-radius:20px;font-size:14px;font-weight:700;box-shadow:0 4px 12px #38bdf844;letter-spacing:0.5px;border:1px solid #ffffff33;">🚀 YENİ SÜRÜM YAYINDA! (${p.son_guncelleme})</span>
+        </div>` : ''}
         <h3>Program İndir</h3>
         <div class="dash-sub" style="margin-bottom:16px;">Lisansınız aktif. Programı indirip lisans kodunuzla aktive edebilirsiniz.</div>
         <a href="${p.indirme_linki}" target="_blank" style="display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--success),#16a34a);color:white;padding:14px 32px;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;box-shadow:0 0 24px #22c55e33;transition:all 0.2s;">
@@ -2983,10 +3086,12 @@ async function taleplerYukle() {
   const durumYazi = {beklemede:"Beklemede",onaylandi:"Onaylandı",reddedildi:"Reddedildi"};
   let html = "";
   talepler.forEach(t => {
+    let aktGosterim = (t.talep_tipi === 'offline' && t.aktivasyon_kodu) ? `<div style="font-size:11px;margin-top:6px;color:#4ade80;font-family:monospace;background:#22c55e15;padding:6px 10px;border-radius:4px;display:inline-block;border:1px solid #22c55e44;">Aktivasyon Kodunuz:<br>${t.aktivasyon_kodu}</div>` : '';
     html += `<div class="talep-item">
       <div>
-        <div style="font-size:14px;font-weight:600;">${t.tur}</div>
+        <div style="font-size:14px;font-weight:600;">${t.tur} <span style="font-size:10px;padding:2px 6px;border-radius:4px;background:#3d6fff22;color:#3d6fff;margin-left:6px;border:1px solid #3d6fff44;">${(t.talep_tipi || 'online').toUpperCase()}</span></div>
         <div style="font-size:12px;color:var(--muted);">${t.tarih}${t.admin_notu ? " · " + t.admin_notu : ""}</div>
+        ${aktGosterim}
       </div>
       <span class="badge-sm ${durumBadge[t.durum]||""}">${durumYazi[t.durum]||t.durum}</span>
     </div>`;
@@ -2999,18 +3104,42 @@ async function taleplerYukle() {
     const planlarData = await planlarResp.json();
     html += `<div style="margin-top:16px;">
       <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Yeni lisans talep edin:</div>
+      
+      <div style="display:flex;gap:16px;margin-bottom:16px;background:var(--surface);padding:10px;border-radius:8px;border:1px solid var(--border);">
+        <label style="font-size:13px;display:flex;align-items:center;gap:6px;cursor:pointer;">
+          <input type="radio" name="talep_tipi" value="online" checked onchange="talepTipiDegisti()"> Online Lisans
+        </label>
+        <label style="font-size:13px;display:flex;align-items:center;gap:6px;cursor:pointer;">
+          <input type="radio" name="talep_tipi" value="offline" onchange="talepTipiDegisti()"> Çevrimdışı (Offline) Lisans
+        </label>
+      </div>
+
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
         ${planlarData.map(p => `<div class="plan-card ${dashSecilenPlan === p.kod ? 'selected' : ''}" id="dp-${p.kod}" onclick="dashPlanSec('${p.kod}')" style="padding:12px 16px;min-width:140px;cursor:pointer;">
           <div style="font-size:13px;font-weight:600;">${p.ad}</div>
           <div style="font-size:11px;color:var(--muted);margin-top:3px;">${p.aciklama||""}</div>
         </div>`).join("")}
       </div>
+      
+      <div id="offline-istek-alan" style="display:none;margin-bottom:14px;">
+        <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px;">Gateway İstek Kodu (REQ-XXX...):</label>
+        <input type="text" id="talep-istek-kodu" placeholder="REQ-XXXXXXXXXXXXXXXXXXXX" class="form-input" style="font-family:monospace;letter-spacing:1px;max-width:340px;">
+      </div>
+
       <button class="form-btn" style="max-width:200px;padding:10px;" onclick="talepGonder()">Talep Gönder</button>
       <div class="form-err" id="talep-hata" style="margin-top:10px;"></div>
       <div class="form-ok" id="talep-ok" style="margin-top:10px;"></div>
     </div>`;
   }
   document.getElementById("talep-icerik").innerHTML = html;
+}
+
+function talepTipiDegisti() {
+  const tip = document.querySelector('input[name="talep_tipi"]:checked').value;
+  const alan = document.getElementById("offline-istek-alan");
+  if (alan) {
+    alan.style.display = tip === "offline" ? "block" : "none";
+  }
 }
 
 let dashSecilenPlan = null;
@@ -3024,11 +3153,23 @@ function dashPlanSec(kod) {
 async function talepGonder() {
   if (!dashSecilenPlan) { mesajGoster("talep-hata", "Lütfen bir plan seçin."); return; }
   mesajGizle("talep-hata"); mesajGizle("talep-ok");
+  
+  const tipEl = document.querySelector('input[name="talep_tipi"]:checked');
+  const talep_tipi = tipEl ? tipEl.value : "online";
+  const istek_kodu = document.getElementById("talep-istek-kodu") ? document.getElementById("talep-istek-kodu").value.trim() : "";
+  
+  if (talep_tipi === "offline" && !istek_kodu) {
+    mesajGoster("talep-hata", "Offline lisans talebi için lütfen Geçerli İstek Kodunu giriniz.");
+    return;
+  }
+  
+  const payload = {tur: dashSecilenPlan, talep_tipi: talep_tipi, istek_kodu: istek_kodu};
+  
   const r = await fetch("/api/talep-olustur", {method:"POST", headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({tur: dashSecilenPlan})});
+    body: JSON.stringify(payload)});
   const d = await r.json();
   if (r.ok) {
-    mesajGoster("talep-ok", "✅ " + d.mesaj);
+    mesajGoster("talep-ok", "✅ Talep başarıyla gönderildi.");
     taleplerYukle();
   } else {
     mesajGoster("talep-hata", d.detail || "Hata.");
