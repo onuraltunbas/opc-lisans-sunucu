@@ -3166,7 +3166,7 @@ async function lisansImIptalEt() {
 }
 
 // Global state - poll yenilemesinde offline seçimi ve REQ kodu kaybolmasın
-var dashSecilenPlan = null;
+// var dashSecilenPlan = null;
 let _dashTalepTipi  = "online";
 let _dashReqKodu    = "";
 
@@ -3263,7 +3263,7 @@ function dashReqKodKontrol() {
   }
 }
 
-let dashSecilenPlan = null;
+var dashSecilenPlan = null;
 function dashPlanSec(kod) {
   dashSecilenPlan = kod;
   document.querySelectorAll("[id^='dp-']").forEach(c => c.classList.remove("selected"));
