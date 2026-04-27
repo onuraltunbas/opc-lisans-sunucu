@@ -2914,7 +2914,7 @@ async function planlariYukle() {
     </div>`).join("");
 }
 
-let secilenPlan = null;
+var secilenPlan = null;
 function planSec(kod) {
   secilenPlan = kod;
   document.querySelectorAll(".plan-card").forEach(c => c.classList.remove("selected"));
@@ -3166,7 +3166,7 @@ async function lisansImIptalEt() {
 }
 
 // Global state - poll yenilemesinde offline seçimi ve REQ kodu kaybolmasın
-let dashSecilenPlan = null;
+var dashSecilenPlan = null;
 let _dashTalepTipi  = "online";
 let _dashReqKodu    = "";
 
