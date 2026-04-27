@@ -3235,8 +3235,14 @@ async function taleplerYukle() {
     </div>`;
   }
   document.getElementById("talep-icerik").innerHTML = html;
-  // Re-render sonrası REQ durum göstergesini güncelle
-  if (_dashTalepTipi === 'offline' && _dashReqKodu) dashReqKodKontrol();
+  // Re-render sonrası kaydedilen REQ kodunu input'a geri yaz (polling sırasında silinmesin)
+  if (_dashTalepTipi === 'offline' && _dashReqKodu) {
+    const reqEl = document.getElementById("talep-istek-kodu");
+    if (reqEl && reqEl !== document.activeElement) {
+      reqEl.value = _dashReqKodu;
+    }
+    dashReqKodKontrol();
+  }
 }
 
 function talepTipiDegisti() {
@@ -3461,7 +3467,14 @@ function baslatSitePoll() {
                    document.getElementById("sayfa-dashboard").style.display !== "none";
     if (!isDash) return;
     lisansKartiGuncelle();
-    taleplerYukle();
+    // Kullanıcı REQ kodu alanına yazıyorsa talep formunu yeniden render etme
+    const aktifEl = document.activeElement;
+    const reqInput = document.getElementById("talep-istek-kodu");
+    if (aktifEl && reqInput && aktifEl === reqInput) {
+      // Sadece üst talep listesini güncelle, formu dokunma
+    } else {
+      taleplerYukle();
+    }
     lisansGecmisiniYukle();
     mesajlariYukle();
   }, 2000);
