@@ -230,41 +230,36 @@ class OfflineLisansAyarlari(Base):
 Base.metadata.create_all(engine)
 
 def _db_migrate():
-    with engine.connect() as conn:
+    """
+    PostgreSQL'de tek bir connection içinde bir DDL başarısız olursa
+    transaction bozuk kalır; sonraki commit'ler çalışmaz.
+    Çözüm: Her ALTER TABLE için bağımsız bir connection kullan.
+    PostgreSQL destekliyorsa 'IF NOT EXISTS' sözdizimi kullanılır.
+    """
+    _is_pg = not DATABASE_URL.startswith("sqlite")
+    _ifne  = "IF NOT EXISTS " if _is_pg else ""
+
+    _migrations = [
+        f"ALTER TABLE panel_kullanicilari ADD COLUMN {_ifne}yetki_offline_lisans BOOLEAN DEFAULT false",
+        f"ALTER TABLE uyelik_turleri ADD COLUMN {_ifne}sure_gun INTEGER DEFAULT 30",
+        f"ALTER TABLE uyelik_turleri ADD COLUMN {_ifne}prefix VARCHAR(10) DEFAULT 'STD'",
+        f"ALTER TABLE ayarlar ADD COLUMN {_ifne}son_exe_hash VARCHAR(100)",
+        f"ALTER TABLE ayarlar ADD COLUMN {_ifne}son_surum_tarihi TIMESTAMP",
+        f"ALTER TABLE lisans_talepler ADD COLUMN {_ifne}talep_tipi VARCHAR(20) DEFAULT 'online'",
+        f"ALTER TABLE lisans_talepler ADD COLUMN {_ifne}istek_kodu VARCHAR(100)",
+        f"ALTER TABLE lisans_talepler ADD COLUMN {_ifne}aktivasyon_kodu VARCHAR(100)",
+    ]
+
+    for sql in _migrations:
         try:
-            conn.execute(__import__("sqlalchemy").text("ALTER TABLE panel_kullanicilari ADD COLUMN yetki_offline_lisans BOOLEAN DEFAULT false"))
-            conn.commit()
-        except Exception: pass
-        try:
-            conn.execute(__import__("sqlalchemy").text("ALTER TABLE uyelik_turleri ADD COLUMN sure_gun INTEGER DEFAULT 30"))
-            conn.commit()
-        except Exception: pass
-        try:
-            conn.execute(__import__("sqlalchemy").text("ALTER TABLE uyelik_turleri ADD COLUMN prefix VARCHAR(10) DEFAULT 'STD'"))
-            conn.commit()
-        except Exception: pass
-        try:
-            conn.execute(__import__("sqlalchemy").text("ALTER TABLE ayarlar ADD COLUMN son_exe_hash VARCHAR(100)"))
-            conn.commit()
-        except Exception: pass
-        try:
-            conn.execute(__import__("sqlalchemy").text("ALTER TABLE ayarlar ADD COLUMN son_surum_tarihi TIMESTAMP"))
-            conn.commit()
-        except Exception: pass
-        try:
-            conn.execute(__import__("sqlalchemy").text("ALTER TABLE lisans_talepler ADD COLUMN talep_tipi VARCHAR(20) DEFAULT 'online'"))
-            conn.commit()
-        except Exception: pass
-        try:
-            conn.execute(__import__("sqlalchemy").text("ALTER TABLE lisans_talepler ADD COLUMN istek_kodu VARCHAR(100)"))
-            conn.commit()
-        except Exception: pass
-        try:
-            conn.execute(__import__("sqlalchemy").text("ALTER TABLE lisans_talepler ADD COLUMN aktivasyon_kodu VARCHAR(100)"))
-            conn.commit()
-        except Exception: pass
+            with engine.connect() as conn:
+                conn.execute(__import__("sqlalchemy").text(sql))
+                conn.commit()
+        except Exception:
+            pass  # Kolon zaten varsa (IF NOT EXISTS olmayan DB) devam et
 
 _db_migrate()
+
 
 def varsayilan_turleri_ekle():
     s = Session_()
@@ -3166,29 +3161,38 @@ async function taleplerYukle() {
     const planlarData = await planlarResp.json();
     html += `<div style="margin-top:16px;">
       <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Yeni lisans talep edin:</div>
-      
-      <div style="display:flex;gap:16px;margin-bottom:16px;background:var(--surface);padding:10px;border-radius:8px;border:1px solid var(--border);">
-        <label style="font-size:13px;display:flex;align-items:center;gap:6px;cursor:pointer;">
-          <input type="radio" name="talep_tipi" value="online" checked onchange="talepTipiDegisti()"> Online Lisans
+
+      <div style="display:flex;gap:0;margin-bottom:16px;background:var(--surface);border-radius:8px;border:1px solid var(--border);overflow:hidden;">
+        <label style="flex:1;font-size:13px;display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 16px;transition:background 0.15s;" id="lbl-online">
+          <input type="radio" name="talep_tipi" value="online" checked onchange="talepTipiDegisti()">
+          <span>🌐</span> <span>Online Lisans</span>
         </label>
-        <label style="font-size:13px;display:flex;align-items:center;gap:6px;cursor:pointer;">
-          <input type="radio" name="talep_tipi" value="offline" onchange="talepTipiDegisti()"> Çevrimdışı (Offline) Lisans
+        <div style="width:1px;background:var(--border);"></div>
+        <label style="flex:1;font-size:13px;display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 16px;transition:background 0.15s;" id="lbl-offline">
+          <input type="radio" name="talep_tipi" value="offline" onchange="talepTipiDegisti()">
+          <span>🔒</span> <span>Offline Lisans</span>
         </label>
       </div>
 
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
         ${planlarData.map(p => `<div class="plan-card ${dashSecilenPlan === p.kod ? 'selected' : ''}" id="dp-${p.kod}" onclick="dashPlanSec('${p.kod}')" style="padding:12px 16px;min-width:140px;cursor:pointer;">
           <div style="font-size:13px;font-weight:600;">${p.ad}</div>
           <div style="font-size:11px;color:var(--muted);margin-top:3px;">${p.aciklama||""}</div>
         </div>`).join("")}
       </div>
-      
-      <div id="offline-istek-alan" style="display:none;margin-bottom:14px;">
-        <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px;">Gateway İstek Kodu (REQ-XXX...):</label>
-        <input type="text" id="talep-istek-kodu" placeholder="REQ-XXXXXXXXXXXXXXXXXXXX" class="form-input" style="font-family:monospace;letter-spacing:1px;max-width:340px;">
+
+      <div id="offline-istek-alan" style="display:none;margin-bottom:14px;background:#3d6fff08;border:1px solid #3d6fff22;border-radius:8px;padding:14px;">
+        <label style="font-size:12px;color:#8a9bc0;display:block;margin-bottom:6px;font-weight:600;">Gateway İstek Kodu</label>
+        <input type="text" id="talep-istek-kodu" placeholder="REQ-XXXXXXXXXXXXXXXXXXXX"
+          class="form-input" style="font-family:monospace;letter-spacing:1px;max-width:360px;margin-bottom:4px;"
+          oninput="dashReqKodKontrol()">
+        <div id="dash-req-durum" style="font-size:12px;min-height:18px;"></div>
+        <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.6;">
+          📌 İstek kodunu almak için <b>OPC Gateway Pro</b> programını açıp <b>Offline Aktivasyon → İstek Kodu Oluştur</b> seçeneğini kullanın.
+        </div>
       </div>
 
-      <button class="form-btn" style="max-width:200px;padding:10px;" onclick="talepGonder()">Talep Gönder</button>
+      <button class="form-btn" id="talep-gonder-btn" style="max-width:220px;padding:10px;" onclick="talepGonder()">Talep Gönder</button>
       <div class="form-err" id="talep-hata" style="margin-top:10px;"></div>
       <div class="form-ok" id="talep-ok" style="margin-top:10px;"></div>
     </div>`;
@@ -3199,8 +3203,22 @@ async function taleplerYukle() {
 function talepTipiDegisti() {
   const tip = document.querySelector('input[name="talep_tipi"]:checked').value;
   const alan = document.getElementById("offline-istek-alan");
-  if (alan) {
-    alan.style.display = tip === "offline" ? "block" : "none";
+  const btn  = document.getElementById("talep-gonder-btn");
+  if (alan) alan.style.display = tip === "offline" ? "" : "none";
+  if (btn)  btn.textContent   = tip === "offline" ? "🔒 Offline Talep Gönder" : "🌐 Online Talep Gönder";
+}
+
+function dashReqKodKontrol() {
+  const val = (document.getElementById("talep-istek-kodu").value || "").trim().toUpperCase();
+  const el  = document.getElementById("dash-req-durum");
+  if (!el) return;
+  if (!val) { el.textContent = ""; return; }
+  if (!val.startsWith("REQ-") || val.length < 10) {
+    el.style.color = "#f87171";
+    el.textContent = "⚠️ Geçersiz format — REQ- ile başlamalı ve yeterince uzun olmalıdır.";
+  } else {
+    el.style.color = "#4ade80";
+    el.textContent = "✓ Format geçerli.";
   }
 }
 
@@ -3270,28 +3288,45 @@ async function offlineTalepGonder() {
 }
 
 async function talepGonder() {
-  if (!dashSecilenPlan) { mesajGoster("talep-hata", "Lütfen bir plan seçin."); return; }
+  if (!dashSecilenPlan) { mesajGoster("talep-hata", "⚠️ Lütfen bir plan seçin."); return; }
   mesajGizle("talep-hata"); mesajGizle("talep-ok");
-  
-  const tipEl = document.querySelector('input[name="talep_tipi"]:checked');
+
+  const tipEl      = document.querySelector('input[name="talep_tipi"]:checked');
   const talep_tipi = tipEl ? tipEl.value : "online";
-  const istek_kodu = document.getElementById("talep-istek-kodu") ? document.getElementById("talep-istek-kodu").value.trim() : "";
-  
-  if (talep_tipi === "offline" && !istek_kodu) {
-    mesajGoster("talep-hata", "Offline lisans talebi için lütfen Geçerli İstek Kodunu giriniz.");
-    return;
+  const istekEl    = document.getElementById("talep-istek-kodu");
+  const istek_kodu = istekEl ? istekEl.value.trim().toUpperCase() : "";
+
+  if (talep_tipi === "offline") {
+    if (!istek_kodu) {
+      mesajGoster("talep-hata", "⚠️ Offline lisans için Gateway İstek Kodu zorunludur.");
+      return;
+    }
+    if (!istek_kodu.startsWith("REQ-") || istek_kodu.length < 10) {
+      mesajGoster("talep-hata", "❌ Geçersiz istek kodu formatı. REQ- ile başlamalıdır.");
+      return;
+    }
   }
-  
-  const payload = {tur: dashSecilenPlan, talep_tipi: talep_tipi, istek_kodu: istek_kodu};
-  
-  const r = await fetch("/api/talep-olustur", {method:"POST", headers:{"Content-Type":"application/json"},
-    body: JSON.stringify(payload)});
+
+  const btn = document.getElementById("talep-gonder-btn");
+  if (btn) { btn.disabled = true; btn.textContent = "Gönderiliyor…"; }
+
+  const r = await fetch("/api/talep-olustur", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({tur: dashSecilenPlan, talep_tipi, istek_kodu})
+  });
   const d = await r.json();
+
+  if (btn) { btn.disabled = false; btn.textContent = talep_tipi === "offline" ? "🔒 Offline Talep Gönder" : "🌐 Online Talep Gönder"; }
+
   if (r.ok) {
-    mesajGoster("talep-ok", "✅ Talep başarıyla gönderildi.");
+    mesajGoster("talep-ok", talep_tipi === "offline"
+      ? "✅ Offline lisans talebiniz alındı! Onaylandığında aktivasyon kodunuz bu sayfada görünecektir."
+      : "✅ Talebiniz başarıyla gönderildi!"
+    );
     taleplerYukle();
   } else {
-    mesajGoster("talep-hata", d.detail || "Hata.");
+    mesajGoster("talep-hata", "❌ " + (d.detail || "Hata oluştu."));
   }
 }
 
