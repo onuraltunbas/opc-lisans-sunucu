@@ -3467,14 +3467,9 @@ function baslatSitePoll() {
                    document.getElementById("sayfa-dashboard").style.display !== "none";
     if (!isDash) return;
     lisansKartiGuncelle();
-    // Kullanıcı REQ kodu alanına yazıyorsa talep formunu yeniden render etme
-    const aktifEl = document.activeElement;
-    const reqInput = document.getElementById("talep-istek-kodu");
-    if (aktifEl && reqInput && aktifEl === reqInput) {
-      // Sadece üst talep listesini güncelle, formu dokunma
-    } else {
-      taleplerYukle();
-    }
+    // taleplerYukle() polling'den ÇIKARILDI — form her 2 sn'de yeniden render edilince
+    // kullanıcının girdiği REQ kodu siliniyor. Talepler sadece dashboard açılışında
+    // ve talep gönderildiğinde yüklenir. Kullanıcı manuel "↻ Yenile" butonu kullanabilir.
     lisansGecmisiniYukle();
     mesajlariYukle();
   }, 2000);
