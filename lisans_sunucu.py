@@ -947,9 +947,9 @@ async def talep_guncelle(request: Request, bg_tasks: BackgroundTasks, user: Pane
         
         if talep.talep_tipi == "offline":
             # Çevrimdışı (Offline) aktivasyon kodu üretimi
-            mesaj = f"{talep.istek_kodu}|{sure}|FULL".encode("utf-8")
+            mesaj = f"{talep.istek_kodu}|{sure}".encode("utf-8")
             imza = hmac.new(OFFLINE_SECRET_KEY, mesaj, hashlib.sha256).hexdigest()[:16].upper()
-            akt_kod = f"ACT-{sure}D-FULL-{imza}"
+            akt_kod = f"ACT-{sure}D-{imza}"
             talep.aktivasyon_kodu = akt_kod
             # Offline lisansı Lisans tablosuna da kaydet — geçmişte görünsün
             bitis_offline = datetime.datetime.utcnow() + datetime.timedelta(days=sure)
@@ -1679,6 +1679,7 @@ code { font-family: monospace; font-size: 12px; background: #222540; padding: 2p
       
       <div class="sub-pane" id="pane-yeni-offline">
         <input type="text" id="off-kime" placeholder="Kime Üretildi (Müşteri Adı) *">
+        <input type="email" id="off-email" placeholder="Müşteri E-posta (Panelde görünmesi için)">
         <input type="text" id="off-istek" placeholder="İstek Kodu (REQ-...) *">
         <input type="number" id="off-sure" placeholder="Süre (Gün) *" value="30">
         <button class="btn btn-warning yetki-offline-lisans" onclick="offlineLisansUretBtn()">🔒 Offline Lisans Üret</button>
@@ -3038,6 +3039,7 @@ function switchYeniLisansTab(tip) {
 // ===== YENİ LİSANS SAYFASI - OFFLINE FORM =====
 function offlineLisansUretBtn() {
   const kime = document.getElementById("off-kime").value.trim();
+  const email = document.getElementById("off-email").value.trim();
   const istek = document.getElementById("off-istek").value.trim().toUpperCase();
   const sure = document.getElementById("off-sure").value;
   const sonucEl = document.getElementById("off-sonuc");
@@ -3051,13 +3053,17 @@ function offlineLisansUretBtn() {
     body: JSON.stringify({
         istek_kodu: istek,
         sure_gun: parseInt(sure),
-        kime_uretildi: kime
+        kime_uretildi: kime,
+        musteri_email: email
       })
   }).then(r => r.json()).then(d => {
     if (d.basarili) {
       sonucEl.style.color = "#4ade80";
       const kod = d.aktivasyon_kodu || "";
       sonucEl.innerHTML = "\u2705 Aktivasyon Kodu: <b style=\"font-family:Consolas;letter-spacing:1px;\">" + kod + "</b> <button class=\"btn btn-ghost btn-sm\" style=\"margin-left:8px;\" onclick=\"navigator.clipboard.writeText('" + kod + "').then(()=>notif('Kopyaland\u0131!'))\">&#128203; Kopyala</button>";
+      document.getElementById("off-istek").value = "";
+      document.getElementById("off-kime").value = "";
+      document.getElementById("off-email").value = "";
       notif("Offline lisans \u00fcretildi.");
     } else {
       sonucEl.textContent = "\u274c " + (d.detail || "Hata olu\u015ftu.");
