@@ -121,7 +121,6 @@ class Lisans(Base):
     uretilen_tip   = Column(String, default="online")
     istek_kodu_db  = Column(String, nullable=True)
     sure_gun_db    = Column(Integer, nullable=True)
-    yetki_seviyesi = Column(String, nullable=True)
 
 class Log(Base):
     __tablename__ = "loglar"
@@ -188,6 +187,7 @@ class UyelikTuru(Base):
     sira        = Column(Integer, default=0)
     sure_gun    = Column(Integer, default=30)
     prefix      = Column(String, default="STD")
+    is_offline  = Column(Boolean, default=False)
 
 class PanelKullanici(Base):
     __tablename__ = "panel_kullanicilari"
@@ -206,7 +206,8 @@ class PanelKullanici(Base):
     yetki_mesaj_yaz = Column(Boolean, default=False)
     yetki_ip_ban = Column(Boolean, default=False)
     yetki_uyelik_tur = Column(Boolean, default=False)
-    yetki_offline_lisans = Column(Boolean, default=False)
+    yetki_offline_paket_yonetimi = Column(Boolean, default=False)
+    yetki_offline_lisans_uret = Column(Boolean, default=False)
     telegram_chat_id = Column(String, nullable=True)
     telegram_bildirim_alabilir = Column(Boolean, default=False)
     son_giris = Column(DateTime, nullable=True)
@@ -246,9 +247,11 @@ def _db_migrate():
     _ifne  = "IF NOT EXISTS " if _is_pg else ""
 
     _migrations = [
-        f"ALTER TABLE panel_kullanicilari ADD COLUMN {_ifne}yetki_offline_lisans BOOLEAN DEFAULT false",
+        f"ALTER TABLE panel_kullanicilari ADD COLUMN {_ifne}yetki_offline_paket_yonetimi BOOLEAN DEFAULT false",
+        f"ALTER TABLE panel_kullanicilari ADD COLUMN {_ifne}yetki_offline_lisans_uret BOOLEAN DEFAULT false",
         f"ALTER TABLE uyelik_turleri ADD COLUMN {_ifne}sure_gun INTEGER DEFAULT 30",
         f"ALTER TABLE uyelik_turleri ADD COLUMN {_ifne}prefix VARCHAR(10) DEFAULT 'STD'",
+        f"ALTER TABLE uyelik_turleri ADD COLUMN {_ifne}is_offline BOOLEAN DEFAULT false",
         f"ALTER TABLE ayarlar ADD COLUMN {_ifne}son_exe_hash VARCHAR(100)",
         f"ALTER TABLE ayarlar ADD COLUMN {_ifne}son_surum_tarihi TIMESTAMP",
         f"ALTER TABLE lisans_talepler ADD COLUMN {_ifne}talep_tipi VARCHAR(20) DEFAULT 'online'",
@@ -259,7 +262,6 @@ def _db_migrate():
         f"ALTER TABLE lisanslar ADD COLUMN {_ifne}uretilen_tip VARCHAR(20) DEFAULT 'online'",
         f"ALTER TABLE lisanslar ADD COLUMN {_ifne}istek_kodu_db VARCHAR(100)",
         f"ALTER TABLE lisanslar ADD COLUMN {_ifne}sure_gun_db INTEGER",
-        f"ALTER TABLE lisanslar ADD COLUMN {_ifne}yetki_seviyesi VARCHAR(50)",
     ]
 
     for sql in _migrations:
@@ -561,7 +563,8 @@ def panel_dogrula(request: Request, s: Session = Depends(db)):
                     "mesaj_yaz": pk.yetki_mesaj_yaz,
                     "ip_ban": pk.yetki_ip_ban,
                     "uyelik_tur": pk.yetki_uyelik_tur,
-                    "offline_lisans": pk.yetki_offline_lisans,
+                    "offline_paket_yonetimi": pk.yetki_offline_paket_yonetimi,
+                    "offline_lisans_uret": pk.yetki_offline_lisans_uret,
                 }
                 return PanelUserDto(kadi, pk.is_admin, yetkiler, isim_soyad=pk.isim_soyad)
     raise HTTPException(status_code=401, detail="Panel kullanici adi veya sifresi yanlis.")
@@ -835,7 +838,7 @@ def lisans_gecmisim(request: Request, s: Session = Depends(db)):
 
 @app.get("/api/uyelik-turleri-public")
 def uyelik_turleri_public(s: Session = Depends(db)):
-    return [{"kod": t.kod, "ad": t.ad, "aciklama": t.aciklama} for t in s.query(UyelikTuru).filter_by(aktif=True).order_by(UyelikTuru.sira).all()]
+    return [{"kod": t.kod, "ad": t.ad, "aciklama": t.aciklama, "is_offline": getattr(t, 'is_offline', False)} for t in s.query(UyelikTuru).filter_by(aktif=True).order_by(UyelikTuru.sira).all()]
 
 @app.get("/api/program-indir")
 def program_indir():
@@ -1076,9 +1079,9 @@ async def kullanici_duzenle(
 @app.post("/panel/uyelik-tur-ekle")
 async def uyelik_tur_ekle(request: Request, bg_tasks: BackgroundTasks, user: PanelUserDto = Depends(yetki_kontrol("uyelik_tur")), s: Session = Depends(db)):
     data = await request.json()
-    s.add(UyelikTuru(kod=data["kod"], ad=data["ad"], aciklama=data.get("aciklama", ""), sira=data.get("sira", 99), sure_gun=data.get("sure_gun", 30), prefix=data.get("prefix", "STD").upper()[:10]))
+    s.add(UyelikTuru(kod=data["kod"], ad=data["ad"], aciklama=data.get("aciklama", ""), sira=data.get("sira", 99), sure_gun=data.get("sure_gun", 30), prefix=data.get("prefix", "STD").upper()[:10], is_offline=data.get("is_offline", False)))
     s.commit()
-    istihbarat_raporu(bg_tasks, "Yeni Üyelik Türü Eklendi", user.tam_isim, f"Tür: {data['ad']} ({data['kod']})", request.client.host)
+    istihbarat_raporu(bg_tasks, "Yeni Paket/Tür Eklendi", user.tam_isim, f"Tür: {data['ad']} ({data['kod']}) | Offline: {'Evet' if data.get('is_offline') else 'Hayır'}", request.client.host)
     return {"basarili": True}
 
 class GirisIstek(BaseModel):
@@ -1110,6 +1113,16 @@ class YetkiliEkleIstek(BaseModel):
 @app.post("/panel/yetkili-ekle")
 def panel_yetkili_ekle(istek: YetkiliEkleIstek, request: Request, bg_tasks: BackgroundTasks, user: PanelUserDto = Depends(yetki_kontrol("kullanici_ekle")), s: Session = Depends(db)):
     y = PanelKullanici(kullanici_adi=istek.kullanici_adi, isim_soyad=istek.isim_soyad, email=istek.email, sifre_hash=sifre_hashle(istek.sifre))
+    yetki_map = {
+        "lisans_olustur": "yetki_lisans_olustur", "lisans_sil": "yetki_lisans_sil",
+        "hwid_sifirla": "yetki_hwid_sifirla", "sure_uzat": "yetki_sure_uzat",
+        "talep_onayla": "yetki_talep_onayla", "kullanici_ekle": "yetki_kullanici_ekle",
+        "mesaj_yaz": "yetki_mesaj_yaz", "ip_ban": "yetki_ip_ban", "uyelik_tur": "yetki_uyelik_tur",
+        "offline_paket_yonetimi": "yetki_offline_paket_yonetimi", "offline_lisans_uret": "yetki_offline_lisans_uret"
+    }
+    for key, col in yetki_map.items():
+        if key in istek.yetkiler:
+            setattr(y, col, bool(istek.yetkiler[key]))
     s.add(y)
     s.commit()
     istihbarat_raporu(bg_tasks, "Yeni Alt Yetkili Eklendi", user.tam_isim, f"Eklenen Yetkili: {istek.isim_soyad} ({istek.kullanici_adi})", request.client.host)
@@ -1126,14 +1139,13 @@ def panel_yetkili_sil(yetkili_id: int, request: Request, bg_tasks: BackgroundTas
 class OfflineLisansIstek(BaseModel):
     istek_kodu: str
     sure_gun: int
-    yetki: str
     kime_uretildi: str
 
 @app.post("/panel/offline-lisans-uret")
-def offline_lisans_uret(istek: OfflineLisansIstek, request: Request, bg_tasks: BackgroundTasks, user: PanelUserDto = Depends(yetki_kontrol("offline_lisans")), s: Session = Depends(db)):
-    mesaj = f"{istek.istek_kodu}|{istek.sure_gun}|{istek.yetki}".encode("utf-8")
+def offline_lisans_uret(istek: OfflineLisansIstek, request: Request, bg_tasks: BackgroundTasks, user: PanelUserDto = Depends(yetki_kontrol("offline_lisans_uret")), s: Session = Depends(db)):
+    mesaj = f"{istek.istek_kodu}|{istek.sure_gun}".encode("utf-8")
     imza = hmac.new(OFFLINE_SECRET_KEY, mesaj, hashlib.sha256).hexdigest()[:16].upper()
-    akt_kod = f"ACT-{istek.sure_gun}D-{istek.yetki}-{imza}"
+    akt_kod = f"ACT-{istek.sure_gun}D-{imza}"
     
     bitis = datetime.datetime.utcnow() + datetime.timedelta(days=istek.sure_gun) if istek.sure_gun > 0 else None
     
@@ -1146,15 +1158,14 @@ def offline_lisans_uret(istek: OfflineLisansIstek, request: Request, bg_tasks: B
         aktif=True,
         uretilen_tip="offline",
         istek_kodu_db=istek.istek_kodu,
-        sure_gun_db=istek.sure_gun,
-        yetki_seviyesi=istek.yetki
+        sure_gun_db=istek.sure_gun
     )
     s.add(l)
     s.commit()
     
-    detay = f"İstek Kodu: {istek.istek_kodu}\nMüşteri: {istek.kime_uretildi}\nSüre: {istek.sure_gun} Gün\nYetki: {istek.yetki}\n\nÜretilen Kod: {akt_kod}"
+    detay = f"İstek Kodu: {istek.istek_kodu}\nMüşteri: {istek.kime_uretildi}\nSüre: {istek.sure_gun} Gün\n\nÜretilen Kod: {akt_kod}"
     istihbarat_raporu(bg_tasks, "Çevrimdışı (Offline) Lisans Üretildi", user.tam_isim, detay, request.client.host)
-    return {"basarili": True, "aktivasyon_kodu": akt_kod, "istek_kodu": istek.istek_kodu, "sure_gun": istek.sure_gun, "yetki": istek.yetki}
+    return {"basarili": True, "aktivasyon_kodu": akt_kod, "istek_kodu": istek.istek_kodu, "sure_gun": istek.sure_gun}
 
 @app.get("/panel/loglar")
 def loglar(son: int = 100, user: PanelUserDto = Depends(panel_dogrula), s: Session = Depends(db)):
@@ -1228,7 +1239,7 @@ def ip_banlar(user: PanelUserDto = Depends(yetki_kontrol("ip_ban")), s: Session 
 @app.get("/panel/uyelik-turleri")
 def panel_uyelik_turleri(user: PanelUserDto = Depends(yetki_kontrol("uyelik_tur")), s: Session = Depends(db)):
     turler = s.query(UyelikTuru).order_by(UyelikTuru.sira).all()
-    return [{"id": t.id, "kod": t.kod, "ad": t.ad, "aciklama": t.aciklama, "aktif": t.aktif, "sira": t.sira, "sure_gun": getattr(t, 'sure_gun', 30), "prefix": getattr(t, 'prefix', 'STD')} for t in turler]
+    return [{"id": t.id, "kod": t.kod, "ad": t.ad, "aciklama": t.aciklama, "aktif": t.aktif, "sira": t.sira, "sure_gun": getattr(t, 'sure_gun', 30), "prefix": getattr(t, 'prefix', 'STD'), "is_offline": getattr(t, 'is_offline', False)} for t in turler]
 
 @app.post("/panel/uyelik-tur-guncelle")
 async def uyelik_tur_guncelle(request: Request, user: PanelUserDto = Depends(yetki_kontrol("uyelik_tur")), s: Session = Depends(db)):
@@ -1242,6 +1253,8 @@ async def uyelik_tur_guncelle(request: Request, user: PanelUserDto = Depends(yet
         t.sure_gun = int(data["sure_gun"])
     if "prefix" in data:
         t.prefix = str(data["prefix"]).upper()[:10]
+    if "is_offline" in data:
+        t.is_offline = bool(data["is_offline"])
     s.commit()
     panel_log_yaz(s, user.kullanici_adi, "Üyelik Türü Güncellendi", f"ID: {data['id']}")
     return {"basarili": True}
@@ -1281,7 +1294,8 @@ def panel_yetkililer_getir(user: PanelUserDto = Depends(panel_dogrula), s: Sessi
             "mesaj_yaz": p.yetki_mesaj_yaz,
             "ip_ban": p.yetki_ip_ban,
             "uyelik_tur": p.yetki_uyelik_tur,
-            "offline_lisans": p.yetki_offline_lisans,
+            "offline_paket_yonetimi": p.yetki_offline_paket_yonetimi,
+            "offline_lisans_uret": p.yetki_offline_lisans_uret,
         }
     } for p in pk]
 
@@ -1311,6 +1325,7 @@ def panel_cikis_yap(user: PanelUserDto = Depends(panel_dogrula), s: Session = De
 async def panel_yetkili_guncelle(
     yetkili_id: int,
     request: Request,
+    bg_tasks: BackgroundTasks,
     user: PanelUserDto = Depends(panel_dogrula),
     s: Session = Depends(db)
 ):
@@ -1330,7 +1345,8 @@ async def panel_yetkili_guncelle(
         "mesaj_yaz":      "yetki_mesaj_yaz",
         "ip_ban":         "yetki_ip_ban",
         "uyelik_tur":     "yetki_uyelik_tur",
-        "offline_lisans": "yetki_offline_lisans",
+        "offline_paket_yonetimi": "yetki_offline_paket_yonetimi",
+        "offline_lisans_uret": "yetki_offline_lisans_uret",
     }
     yetkiler = data.get("yetkiler", {})
     for key, col in yetki_map.items():
@@ -1346,6 +1362,13 @@ async def panel_yetkili_guncelle(
         
     s.commit()
     panel_log_yaz(s, user.kullanici_adi, "Yetkili Güncelledi", f"ID: {yetkili_id}")
+    
+    degisenler = [f"{k}: {'Açık' if yetkiler[k] else 'Kapalı'}" for k in yetkiler] if yetkiler else []
+    detay = f"Düzenlenen Yetkili: {y.isim_soyad or y.kullanici_adi}\nŞifre Değişti: {'Evet' if data.get('sifre') else 'Hayır'}"
+    if degisenler:
+        detay += f"\nYetkiler:\n" + "\n".join(degisenler)
+    
+    istihbarat_raporu(bg_tasks, "Alt Yetkili İzinleri Güncellendi", user.tam_isim, detay, request.client.host)
     return {"basarili": True}
 
 class AdminGuncelleIstek(BaseModel):
@@ -1650,11 +1673,6 @@ code { font-family: monospace; font-size: 12px; background: #222540; padding: 2p
         <input type="text" id="off-kime" placeholder="Kime Üretildi (Müşteri Adı) *">
         <input type="text" id="off-istek" placeholder="İstek Kodu (REQ-...) *">
         <input type="number" id="off-sure" placeholder="Süre (Gün) *" value="30">
-        <select id="off-yetki">
-          <option value="FULL">Tam Yetki (FULL)</option>
-          <option value="READ">Sadece Okuma (READ)</option>
-          <option value="DEMO">Demo (DEMO)</option>
-        </select>
         <button class="btn btn-warning yetki-offline-lisans" onclick="offlineLisansUretBtn()">🔒 Offline Lisans Üret</button>
         <div id="off-sonuc" style="margin-top:10px;font-size:13px;color:#ffb74d;font-weight:bold;font-family:monospace;"></div>
       </div>
@@ -1861,7 +1879,18 @@ code { font-family: monospace; font-size: 12px; background: #222540; padding: 2p
         <input type="text" id="tur-kod" placeholder="Kod (örn: haftalik) *">
         <input type="text" id="tur-ad" placeholder="Görünen ad (örn: Haftalık Lisans) *">
         <textarea id="tur-aciklama" placeholder="Açıklama (opsiyonel)"></textarea>
-        <input type="number" id="tur-sure" placeholder="Süre Gün (Sınırsız için 0) *" value="30">
+        <label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:13px;cursor:pointer;">
+          <input type="checkbox" id="tur-is-offline"> <b>Bu bir Çevrimdışı (Offline) Pakettir 🔒</b>
+        </label>
+        <select id="tur-sure-select" onchange="document.getElementById('tur-sure-custom').style.display = this.value === 'custom' ? 'block' : 'none';" style="margin-bottom:8px;">
+          <option value="30">1 Ay (30 Gün)</option>
+          <option value="90">3 Ay (90 Gün)</option>
+          <option value="180">6 Ay (180 Gün)</option>
+          <option value="365">1 Yıl (365 Gün)</option>
+          <option value="0">Ömür Boyu (0 Gün)</option>
+          <option value="custom">Özel Süreli (Manuel)</option>
+        </select>
+        <input type="number" id="tur-sure-custom" placeholder="Özel Süre (Gün) *" style="display:none;" value="30">
         <input type="text" id="tur-prefix" placeholder="Lisans Ön Eki (örn: VIP) *" value="STD">
         <input type="number" id="tur-sira" placeholder="Sıra (küçük = önce)" value="99">
         <button class="btn btn-primary" onclick="turEkle()">✚ Ekle</button>
@@ -1923,7 +1952,8 @@ code { font-family: monospace; font-size: 12px; background: #222540; padding: 2p
           <label><input type="checkbox" id="cb-mesaj_yaz"> Mesaj Yazabilme</label>
           <label><input type="checkbox" id="cb-ip_ban"> IP Banlama & Kaldırma</label>
           <label><input type="checkbox" id="cb-uyelik_tur"> Üyelik Türleri Yönetimi</label>
-          <label><input type="checkbox" id="cb-offline_lisans"> 🔒 Çevrimdışı Lisans Üretme</label>
+          <label><input type="checkbox" id="cb-offline_paket_yonetimi"> 🔒 Çevrimdışı Paket/Tür Yönetimi</label>
+          <label><input type="checkbox" id="cb-offline_lisans_uret"> 🔒 Çevrimdışı Lisans Üretme</label>
         </div>
         <button class="btn btn-primary" onclick="yetkiliEkle()">✚ Ekle</button>
       </div>
@@ -1970,12 +2000,6 @@ code { font-family: monospace; font-size: 12px; background: #222540; padding: 2p
         <input type="text" id="ol-istek-kodu" placeholder="REQ-XXXXXXXXXXXXXXXXXXXX" style="font-family:Consolas;letter-spacing:1px;">
         <label style="font-size:11px;color:#666;display:block;margin:10px 0 4px;">Süre (Gün):</label>
         <input type="number" id="ol-sure" value="30" min="1" max="365">
-        <label style="font-size:11px;color:#666;display:block;margin:10px 0 4px;">Yetki Seviyesi:</label>
-        <select id="ol-yetki">
-          <option value="FULL">FULL — Tam Erişim</option>
-          <option value="READ">READ — Sadece Okuma</option>
-          <option value="DEMO">DEMO — Demo Modu</option>
-        </select>
         <button class="btn btn-primary" style="margin-top:14px;width:100%;" onclick="offlineLisansUret()">⚡ Aktivasyon Kodu Üret</button>
         <div id="ol-hata" style="color:#f87171;font-size:12px;margin-top:8px;display:none;"></div>
       </div>
@@ -1992,7 +2016,7 @@ code { font-family: monospace; font-size: 12px; background: #222540; padding: 2p
         </div>
         <div style="font-size:12px;color:#888;line-height:1.8;">
           <div>İstek Kodu: <code id="ol-det-istek" style="color:#7eb8ff;"></code></div>
-          <div>Süre: <b id="ol-det-sure" style="color:#e0e0e0;"></b> Gün &nbsp;|  Yetki: <b id="ol-det-yetki" style="color:#e0e0e0;"></b></div>
+          <div>Süre: <b id="ol-det-sure" style="color:#e0e0e0;"></b> Gün</div>
         </div>
       </div>
     </div>
@@ -2034,7 +2058,8 @@ code { font-family: monospace; font-size: 12px; background: #222540; padding: 2p
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="yd-cb-mesaj_yaz"> Mesaj Yazabilme</label>
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="yd-cb-ip_ban"> IP Banlama &amp; Kaldırma</label>
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="yd-cb-uyelik_tur"> Üyelik Türleri Yönetimi</label>
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="yd-cb-offline_lisans"> 🔒 Çevrimdışı Lisans Üretme</label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="yd-cb-offline_paket_yonetimi"> 🔒 Çevrimdışı Paket/Tür Yönetimi</label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="yd-cb-offline_lisans_uret"> 🔒 Çevrimdışı Lisans Üretme</label>
       </div>
     </div>
 
@@ -2692,13 +2717,20 @@ function turEkle() {
   const kod = document.getElementById("tur-kod").value.trim();
   const ad  = document.getElementById("tur-ad").value.trim();
   const aciklama = document.getElementById("tur-aciklama").value.trim();
-  const sure_val = document.getElementById("tur-sure").value;
-  if (sure_val === "") { notif("Süre (Gün) zorunludur! Sınırsız için 0 girin.", true); return; }
-  const sure_gun = parseInt(sure_val) || 0;
+  const sure_sel = document.getElementById("tur-sure-select").value;
+  let sure_gun = 30;
+  if (sure_sel === "custom") {
+    const sure_val = document.getElementById("tur-sure-custom").value;
+    if (sure_val === "") { notif("Özel Süre (Gün) zorunludur! Sınırsız için 0 girin.", true); return; }
+    sure_gun = parseInt(sure_val) || 0;
+  } else {
+    sure_gun = parseInt(sure_sel) || 0;
+  }
   const prefix = document.getElementById("tur-prefix").value.trim() || "STD";
   const sira = parseInt(document.getElementById("tur-sira").value) || 99;
+  const is_offline = document.getElementById("tur-is-offline").checked;
   if (!kod || !ad) { notif("Kod ve ad zorunlu!", true); return; }
-  fetch("/panel/uyelik-tur-ekle", {method:"POST", headers:auth(), body:JSON.stringify({kod, ad, aciklama, sira, sure_gun, prefix})})
+  fetch("/panel/uyelik-tur-ekle", {method:"POST", headers:auth(), body:JSON.stringify({kod, ad, aciklama, sira, sure_gun, prefix, is_offline})})
     .then(r => r.json()).then(d => { notif(d.basarili ? "Tür eklendi" : d.detail, !d.basarili); turleriYukle(); });
 }
 
@@ -2800,7 +2832,8 @@ function yetkiliEkle() {
       mesaj_yaz: document.getElementById("cb-mesaj_yaz").checked,
       ip_ban: document.getElementById("cb-ip_ban").checked,
       uyelik_tur: document.getElementById("cb-uyelik_tur").checked,
-      offline_lisans: document.getElementById("cb-offline_lisans").checked,
+      offline_paket_yonetimi: document.getElementById("cb-offline_paket_yonetimi").checked,
+      offline_lisans_uret: document.getElementById("cb-offline_lisans_uret").checked,
   };
   
   if (!kullanici_adi || !email || !sifre || !isim_soyad) { notif("Tüm alanları doldurun!", true); return; }
@@ -2825,8 +2858,7 @@ function yetkiliEkle() {
 
 function offlineLisansUret() {
   const req_kodu = document.getElementById("ol-istek-kodu").value.trim();
-  const sure     = parseInt(document.getElementById("ol-sure").value) || 30;
-  const yetki    = document.getElementById("ol-yetki").value;
+  const sure     = document.getElementById("ol-sure").value;
   const hataEl   = document.getElementById("ol-hata");
 
   hataEl.style.display = "none";
@@ -2839,17 +2871,17 @@ function offlineLisansUret() {
   fetch("/panel/offline-lisans-uret", {
       method:"POST", 
       headers:auth(),
-      body: JSON.stringify({ istek_kodu: req_kodu, sure_gun: sure, yetki: yetki })
+      body: JSON.stringify({ istek_kodu: req_kodu, sure_gun: parseInt(sure) })
   }).then(r => r.json()).then(d => {
       if(d.basarili) {
           document.getElementById("ol-akt-kod").textContent = d.aktivasyon_kodu;
           document.getElementById("ol-det-istek").textContent = d.istek_kodu;
           document.getElementById("ol-det-sure").textContent = d.sure_gun;
-          document.getElementById("ol-det-yetki").textContent = d.yetki;
           
           document.getElementById("ol-sonuc-kart").style.display = "block";
           document.getElementById("ol-kopyala-ok").style.display = "none";
           document.getElementById("ol-kopyala-btn").textContent = "📋 Kopyala";
+          document.getElementById("ol-istek-kodu").value = "";
           notif("Aktivasyon kodu üretildi.");
       } else {
           hataEl.textContent = d.detail || "Hata oluştu.";
@@ -2885,7 +2917,7 @@ function yetkiliDuzenleModalAc(id, kadi, isim, telegramId, telegramBildirim, yet
   document.getElementById("yd-sifre").value = "";
   document.getElementById("yd-telegram-id").value = telegramId || "";
   document.getElementById("yd-telegram-bildirim").checked = !!telegramBildirim;
-  const cbMap = ["lisans_olustur","lisans_sil","hwid_sifirla","sure_uzat","talep_onayla","kullanici_ekle","mesaj_yaz","ip_ban","uyelik_tur","offline_lisans"];
+  const cbMap = ["lisans_olustur","lisans_sil","hwid_sifirla","sure_uzat","talep_onayla","kullanici_ekle","mesaj_yaz","ip_ban","uyelik_tur","offline_paket_yonetimi","offline_lisans_uret"];
   cbMap.forEach(k => {
     const el = document.getElementById("yd-cb-" + k);
     if (el) el.checked = !!(yetkiler[k]);
@@ -2906,7 +2938,7 @@ function yetkiliDuzenleKaydet() {
   const telegramId = document.getElementById("yd-telegram-id").value.trim();
   const telegramBildirim = document.getElementById("yd-telegram-bildirim").checked;
 
-  const cbMap = ["lisans_olustur","lisans_sil","hwid_sifirla","sure_uzat","talep_onayla","kullanici_ekle","mesaj_yaz","ip_ban","uyelik_tur","offline_lisans"];
+  const cbMap = ["lisans_olustur","lisans_sil","hwid_sifirla","sure_uzat","talep_onayla","kullanici_ekle","mesaj_yaz","ip_ban","uyelik_tur","offline_paket_yonetimi","offline_lisans_uret"];
   const yetkiler = {};
   cbMap.forEach(k => {
     const el = document.getElementById("yd-cb-" + k);
@@ -2990,9 +3022,8 @@ function switchYeniLisansTab(tip) {
 // ===== YENİ LİSANS SAYFASI - OFFLINE FORM =====
 function offlineLisansUretBtn() {
   const kime = document.getElementById("off-kime").value.trim();
-  const istek = document.getElementById("off-istek").value.trim();
-  const sure = parseInt(document.getElementById("off-sure").value) || 30;
-  const yetki = document.getElementById("off-yetki").value;
+  const istek = document.getElementById("off-istek").value.trim().toUpperCase();
+  const sure = document.getElementById("off-sure").value;
   const sonucEl = document.getElementById("off-sonuc");
 
   if (!kime) { sonucEl.textContent = "\u274c Kime \u00fcretildi\u011fini girin!"; sonucEl.style.color="#f87171"; return; }
@@ -3001,7 +3032,11 @@ function offlineLisansUretBtn() {
   fetch("/panel/offline-lisans-uret", {
     method: "POST",
     headers: auth(),
-    body: JSON.stringify({ istek_kodu: istek, kime_uretildi: kime, sure_gun: sure, yetki: yetki })
+    body: JSON.stringify({
+        istek_kodu: istek,
+        sure_gun: parseInt(sure),
+        kime_uretildi: kime
+      })
   }).then(r => r.json()).then(d => {
     if (d.basarili) {
       sonucEl.style.color = "#4ade80";
@@ -3588,7 +3623,7 @@ async function planlariYukle() {
   if (!planlar.length) { el.innerHTML = '<div style="text-align:center;color:var(--muted);grid-column:1/-1;padding:40px;">Henüz plan eklenmemiş.</div>'; return; }
   el.innerHTML = planlar.map(p => `
     <div class="plan-card" id="plan-${p.kod}" onclick="planSec('${p.kod}')">
-      <div class="plan-name">${p.ad}</div>
+      <div class="plan-name">${p.ad} ${p.is_offline ? '🔒' : ''}</div>
       <div class="plan-desc">${p.aciklama||""}</div>
     </div>`).join("");
 }
@@ -3891,7 +3926,7 @@ async function taleplerYukle() {
 
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
         ${planlarData.map(p => `<div class="plan-card ${dashSecilenPlan === p.kod ? 'selected' : ''}" id="dp-${p.kod}" onclick="dashPlanSec('${p.kod}')" style="padding:12px 16px;min-width:140px;cursor:pointer;">
-          <div style="font-size:13px;font-weight:600;">${p.ad}</div>
+          <div style="font-size:13px;font-weight:600;">${p.ad} ${p.is_offline ? '🔒' : ''}</div>
           <div style="font-size:11px;color:var(--muted);margin-top:3px;">${p.aciklama||""}</div>
         </div>`).join("")}
       </div>
