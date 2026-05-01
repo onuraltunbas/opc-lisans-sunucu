@@ -841,7 +841,10 @@ def uyelik_turleri_public(s: Session = Depends(db)):
     return [{"kod": t.kod, "ad": t.ad, "aciklama": t.aciklama, "is_offline": getattr(t, 'is_offline', False)} for t in s.query(UyelikTuru).filter_by(aktif=True).order_by(UyelikTuru.sira).all()]
 
 @app.get("/api/program-indir")
-def program_indir():
+def program_indir(request: Request):
+  kid = get_kullanici_id(request)
+  if not kid: raise HTTPException(status_code=401, detail="Lütfen önce giriş yapın.")
+  
   exe_path = os.path.join("dosyalar", "OPC_Gateway_Pro.exe")
   if not os.path.exists(exe_path):
     raise HTTPException(status_code=404, detail="Program dosyası sunucuda bulunamadı.")
@@ -849,7 +852,10 @@ def program_indir():
 
 
 @app.get("/api/public-info")
-def public_info():
+def public_info(request: Request):
+  kid = get_kullanici_id(request)
+  if not kid: raise HTTPException(status_code=401)
+  
   exe_path = os.path.join("dosyalar", "OPC_Gateway_Pro.exe")
   return {
     "indirme_linki": "/api/program-indir" if os.path.exists(exe_path) else None,
@@ -1140,6 +1146,7 @@ class OfflineLisansIstek(BaseModel):
     istek_kodu: str
     sure_gun: int
     kime_uretildi: str
+    musteri_email: str = ""
 
 @app.post("/panel/offline-lisans-uret")
 def offline_lisans_uret(istek: OfflineLisansIstek, request: Request, bg_tasks: BackgroundTasks, user: PanelUserDto = Depends(yetki_kontrol("offline_lisans_uret")), s: Session = Depends(db)):
@@ -1152,6 +1159,7 @@ def offline_lisans_uret(istek: OfflineLisansIstek, request: Request, bg_tasks: B
     l = Lisans(
         lisans_kodu=akt_kod,
         musteri_adi=istek.kime_uretildi,
+        musteri_email=istek.musteri_email,
         tur="Offline",
         bitis_tarihi=bitis,
         notlar=f"offline|{istek.istek_kodu}",
@@ -1998,6 +2006,10 @@ code { font-family: monospace; font-size: 12px; background: #222540; padding: 2p
         <h3 style="margin-bottom:14px;">Aktivasyon Kodu Üret</h3>
         <label style="font-size:11px;color:#666;display:block;margin-bottom:4px;">İstek Kodu (Müşteriden alınan REQ-...):</label>
         <input type="text" id="ol-istek-kodu" placeholder="REQ-XXXXXXXXXXXXXXXXXXXX" style="font-family:Consolas;letter-spacing:1px;">
+        <label style="font-size:11px;color:#666;display:block;margin:10px 0 4px;">Kime Üretildi (Müşteri/Kurum Adı):</label>
+        <input type="text" id="ol-kime" placeholder="Örn: ABC Firması">
+        <label style="font-size:11px;color:#666;display:block;margin:10px 0 4px;">Müşteri E-posta (Panelde görünmesi için):</label>
+        <input type="email" id="ol-email" placeholder="Örn: musteri@mail.com">
         <label style="font-size:11px;color:#666;display:block;margin:10px 0 4px;">Süre (Gün):</label>
         <input type="number" id="ol-sure" value="30" min="1" max="365">
         <button class="btn btn-primary" style="margin-top:14px;width:100%;" onclick="offlineLisansUret()">⚡ Aktivasyon Kodu Üret</button>
@@ -2859,6 +2871,8 @@ function yetkiliEkle() {
 function offlineLisansUret() {
   const req_kodu = document.getElementById("ol-istek-kodu").value.trim();
   const sure     = document.getElementById("ol-sure").value;
+  const kime     = document.getElementById("ol-kime").value.trim() || "Bilinmeyen Offline Müşteri";
+  const email    = document.getElementById("ol-email").value.trim();
   const hataEl   = document.getElementById("ol-hata");
 
   hataEl.style.display = "none";
@@ -2871,7 +2885,7 @@ function offlineLisansUret() {
   fetch("/panel/offline-lisans-uret", {
       method:"POST", 
       headers:auth(),
-      body: JSON.stringify({ istek_kodu: req_kodu, sure_gun: parseInt(sure) })
+      body: JSON.stringify({ istek_kodu: req_kodu, sure_gun: parseInt(sure), kime_uretildi: kime, musteri_email: email })
   }).then(r => r.json()).then(d => {
       if(d.basarili) {
           document.getElementById("ol-akt-kod").textContent = d.aktivasyon_kodu;
@@ -2882,6 +2896,8 @@ function offlineLisansUret() {
           document.getElementById("ol-kopyala-ok").style.display = "none";
           document.getElementById("ol-kopyala-btn").textContent = "📋 Kopyala";
           document.getElementById("ol-istek-kodu").value = "";
+          document.getElementById("ol-kime").value = "";
+          document.getElementById("ol-email").value = "";
           notif("Aktivasyon kodu üretildi.");
       } else {
           hataEl.textContent = d.detail || "Hata oluştu.";
