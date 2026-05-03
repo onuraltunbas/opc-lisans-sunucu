@@ -3304,6 +3304,7 @@ SITE_HTML_TEMPLATE = """<!DOCTYPE html>
 <meta name="description" content="Nautilus Technology, endüstriyel tesislerin dijital dönüşümü için güvenilir OPC UA / OPC DA tabanlı Gateway ve otomasyon yazılımları geliştirir.">
 <meta name="keywords" content="Nautilus Technology,nautilus, opc, plc, ua,da, gateway, endüstriyel gateway, OPC UA, OPC DA, otomasyon yazılımı, endüstriyel yazılım, scada entegrasyonu">
 <meta name="author" content="Nautilus Technology">
+<meta name="google-site-verification" content="5PWZlgIA2ix0hNSBohcMBFv76V76GvmZN7-5mLJMF3k" />
 
 {CSS}
 </head>
