@@ -3300,7 +3300,11 @@ SITE_HTML_TEMPLATE = """<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>OPC Gateway — Lisans Sistemi</title>
+<title>Nautilus Technology | Endüstriyel Gateway ve Otomasyon Çözümleri</title>
+<meta name="description" content="Nautilus Technology, endüstriyel tesislerin dijital dönüşümü için güvenilir OPC UA / OPC DA tabanlı Gateway ve otomasyon yazılımları geliştirir.">
+<meta name="keywords" content="Nautilus Technology,nautilus, opc, plc, ua,da, gateway, endüstriyel gateway, OPC UA, OPC DA, otomasyon yazılımı, endüstriyel yazılım, scada entegrasyonu">
+<meta name="author" content="Nautilus Technology">
+
 {CSS}
 </head>
 <body>
