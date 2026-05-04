@@ -23,6 +23,7 @@ import datetime
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 # ── Modüller ──────────────────────────────────────────────────────────
 from database import Session_, Ayarlar
@@ -95,6 +96,14 @@ async def startup_event():
 @app.on_event("shutdown")
 def shutdown_event():
     telegram_bildirim_gonder("🚧 <b>Sistem Kapanıyor</b>\nSunucu kapatılıyor — yeni deploy başlıyor olabilir.")
+
+# =====================================================================
+# STATIC DOSYALAR (/static/logo.png vb.)
+# =====================================================================
+import pathlib
+_static_dir = pathlib.Path(__file__).parent / "static"
+_static_dir.mkdir(exist_ok=True)
+app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
 
 # =====================================================================
 # ROUTER KAYITLARI

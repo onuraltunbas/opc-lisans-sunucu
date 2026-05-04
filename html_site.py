@@ -4,203 +4,224 @@ Kullanıcı Sitesi CSS ve HTML Template içeriği.
 """
 
 SITE_CSS = """<style>
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* &#9472;&#9472; Dark mode (varsayılan) &#9472;&#9472; */
 :root {
-  --bg: #080b14;
-  --surface: #0e1221;
-  --border: #1a2040;
-  --accent: #3d6fff;
-  --accent2: #00d4ff;
-  --text: #e2e8f8;
-  --muted: #5a6a8a;
-  --success: #22c55e;
-  --danger: #ef4444;
-  --warn: #f59e0b;
+  --bg:        #0a0a0a;
+  --bg2:       #111111;
+  --surface:   #161616;
+  --surface2:  #1e1e1e;
+  --border:    #2a2a2a;
+  --border2:   #383838;
+  --accent:    #e0e0e0;
+  --accent2:   #ffffff;
+  --text:      #e0e0e0;
+  --text2:     #a0a0a0;
+  --muted:     #606060;
+  --success:   #22c55e;
+  --danger:    #ef4444;
+  --warn:      #f59e0b;
+  --radius:    4px;
+  --radius-sm: 2px;
 }
-html, body { min-height: 100vh; font-family: 'Sora', sans-serif; background: var(--bg); color: var(--text); }
-body { background-image: radial-gradient(ellipse at 20% 50%, #0d1a4020 0%, transparent 60%), radial-gradient(ellipse at 80% 10%, #0a2a5020 0%, transparent 50%); }
 
-/* Navbar */
-.nav { display: flex; align-items: center; justify-content: space-between; padding: 0 40px; height: 64px; border-bottom: 1px solid var(--border); background: rgba(8,11,20,0.9); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 100; }
-.nav-brand { font-size: 16px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 10px; }
-.nav-brand .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 12px var(--accent); }
-.nav-links { display: flex; align-items: center; gap: 8px; }
-.nav-btn { padding: 7px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; font-family: 'Sora', sans-serif; }
-.nav-btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+/* &#9472;&#9472; Light mode &#9472;&#9472; */
+[data-theme="light"] {
+  --bg:        #f4f4f4;
+  --bg2:       #ffffff;
+  --surface:   #ffffff;
+  --surface2:  #ebebeb;
+  --border:    #d0d0d0;
+  --border2:   #b8b8b8;
+  --accent:    #222222;
+  --accent2:   #000000;
+  --text:      #1a1a1a;
+  --text2:     #4a4a4a;
+  --muted:     #909090;
+}
+
+html, body {
+  min-height: 100vh;
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  transition: background 0.2s, color 0.2s;
+}
+body {
+  background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 48px 48px;
+  background-position: -1px -1px;
+}
+
+/* &#9472;&#9472; NAVBAR &#9472;&#9472; */
+.nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 32px; height: 60px;
+  border-bottom: 1px solid var(--border2);
+  background: var(--bg);
+  position: sticky; top: 0; z-index: 200;
+}
+.nav-brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--text); }
+.nav-logo { height: 30px; width: auto; display: block; }
+[data-theme="light"] .nav-logo { filter: invert(1); }
+.nav-brand-text { font-size: 14px; font-weight: 800; letter-spacing: -0.3px; color: var(--text); display: flex; flex-direction: column; line-height: 1.1; }
+.nav-brand-text span { font-size: 10px; font-weight: 400; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; }
+.nav-links { display: flex; align-items: center; gap: 6px; }
+.nav-btn { padding: 6px 16px; border-radius: var(--radius); font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; font-family: 'Inter', sans-serif; }
+.nav-btn-ghost { background: transparent; color: var(--text2); border-color: var(--border2); }
 .nav-btn-ghost:hover { color: var(--text); border-color: var(--accent); }
-.nav-btn-primary { background: var(--accent); color: white; }
-.nav-btn-primary:hover { background: #5580ff; }
+.nav-btn-primary { background: var(--accent2); color: var(--bg); border-color: var(--accent2); }
+.nav-btn-primary:hover { opacity: 0.85; }
 
-/* Hero */
-.hero { text-align: center; padding: 80px 24px 60px; }
-.hero-badge { display: inline-flex; align-items: center; gap: 6px; background: #3d6fff15; border: 1px solid #3d6fff33; color: var(--accent2); padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 24px; }
-.hero h1 { font-size: clamp(32px, 6vw, 60px); font-weight: 700; line-height: 1.1; margin-bottom: 20px; }
-.hero h1 span { background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-.hero p { color: var(--muted); font-size: 17px; max-width: 540px; margin: 0 auto 36px; line-height: 1.7; }
-.hero-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-.btn-hero { padding: 13px 28px; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; border: none; font-family: 'Sora', sans-serif; transition: all 0.2s; }
-.btn-hero-primary { background: linear-gradient(135deg, var(--accent), #5b8fff); color: white; box-shadow: 0 0 32px #3d6fff44; }
-.btn-hero-primary:hover { transform: translateY(-2px); box-shadow: 0 0 48px #3d6fff66; }
-.btn-hero-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
-.btn-hero-ghost:hover { border-color: var(--accent); color: var(--accent); }
+/* Dark/Light toggle */
+#theme-toggle {
+  display: flex; align-items: center; justify-content: center;
+  width: 34px; height: 30px; background: transparent;
+  border: 1px solid var(--border2); border-radius: var(--radius);
+  cursor: pointer; color: var(--muted); font-size: 15px;
+  transition: border-color 0.15s, color 0.15s; flex-shrink: 0;
+}
+#theme-toggle:hover { border-color: var(--accent); color: var(--text); }
 
-/* Features */
-.features { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; max-width: 900px; margin: 0 auto 80px; padding: 0 24px; }
-.feature { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
-.feature-icon { font-size: 28px; margin-bottom: 12px; }
-.feature h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
-.feature p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+/* &#9472;&#9472; HERO &#9472;&#9472; */
+.hero { text-align: center; padding: 72px 24px 56px; }
+.hero-badge { display: inline-flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--border2); color: var(--text2); padding: 4px 14px; border-radius: var(--radius-sm); font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 24px; }
+.hero h1 { font-size: clamp(28px, 5vw, 52px); font-weight: 800; line-height: 1.05; margin-bottom: 20px; letter-spacing: -1.5px; color: var(--accent2); }
+.hero h1 span { color: var(--muted); font-weight: 300; font-style: italic; }
+.hero p { color: var(--text2); font-size: 16px; max-width: 480px; margin: 0 auto 36px; line-height: 1.75; }
+.hero-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.btn-hero { padding: 11px 28px; border-radius: var(--radius); font-size: 14px; font-weight: 700; cursor: pointer; border: 1px solid transparent; font-family: 'Inter', sans-serif; transition: all 0.15s; letter-spacing: 0.2px; }
+.btn-hero-primary { background: var(--accent2); color: var(--bg); border-color: var(--accent2); }
+.btn-hero-primary:hover { opacity: 0.87; transform: translateY(-1px); }
+.btn-hero-ghost { background: transparent; color: var(--text); border-color: var(--border2); }
+.btn-hero-ghost:hover { border-color: var(--accent); }
 
-/* Plans */
-.plans-section { padding: 0 24px 80px; max-width: 900px; margin: 0 auto; }
-.section-title { text-align: center; font-size: 28px; font-weight: 700; margin-bottom: 8px; }
-.section-sub { text-align: center; color: var(--muted); font-size: 15px; margin-bottom: 36px; }
-.plans { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
-.plan-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 22px; cursor: pointer; transition: all 0.2s; position: relative; }
-.plan-card:hover { border-color: var(--accent); transform: translateY(-2px); }
-.plan-card.selected { border-color: var(--accent); background: #3d6fff0d; box-shadow: 0 0 24px #3d6fff22; }
-.plan-card.selected::after { content: '✓'; position: absolute; top: 12px; right: 14px; color: var(--accent); font-weight: 700; font-size: 16px; }
-.plan-name { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
-.plan-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+/* &#9472;&#9472; FEATURES &#9472;&#9472; */
+.features { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1px; max-width: 880px; margin: 0 auto 64px; padding: 0 24px; border: 1px solid var(--border); background: var(--border); }
+.feature { background: var(--surface); padding: 28px 24px; transition: background 0.15s; }
+.feature:hover { background: var(--surface2); }
+.feature-icon { font-size: 20px; margin-bottom: 12px; }
+.feature h3 { font-size: 14px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.2px; }
+.feature p { font-size: 13px; color: var(--text2); line-height: 1.65; }
 
-/* Forms */
-.form-container { max-width: 440px; margin: 0 auto; padding: 0 24px 80px; }
-.form-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; }
-.form-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+/* &#9472;&#9472; PLANS &#9472;&#9472; */
+.plans-section { padding: 0 24px 80px; max-width: 880px; margin: 0 auto; }
+.section-title { text-align: center; font-size: 26px; font-weight: 800; margin-bottom: 6px; letter-spacing: -0.5px; color: var(--accent2); }
+.section-sub { text-align: center; color: var(--muted); font-size: 14px; margin-bottom: 32px; }
+.plans { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); }
+.plan-card { background: var(--surface); padding: 22px 20px; cursor: pointer; transition: background 0.15s; position: relative; }
+.plan-card:hover { background: var(--surface2); }
+.plan-card.selected { background: var(--surface2); outline: 2px solid var(--accent2); outline-offset: -2px; }
+.plan-card.selected::after { content: '\u2713'; position: absolute; top: 12px; right: 14px; color: var(--accent2); font-weight: 900; font-size: 14px; }
+.plan-name { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+.plan-desc { font-size: 12px; color: var(--muted); line-height: 1.55; }
+
+/* &#9472;&#9472; FORMS &#9472;&#9472; */
+.form-container { max-width: 420px; margin: 0 auto; padding: 0 24px 80px; }
+.form-card { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius); padding: 32px; }
+.form-title { font-size: 20px; font-weight: 800; margin-bottom: 4px; letter-spacing: -0.4px; }
 .form-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
-.form-group { margin-bottom: 16px; }
-.form-label { display: block; font-size: 13px; font-weight: 500; color: #8a9bc0; margin-bottom: 7px; }
-.form-input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 11px 14px; color: var(--text); font-size: 14px; font-family: 'Sora', sans-serif; transition: border-color 0.2s; }
+.form-group { margin-bottom: 14px; }
+.form-label { display: block; font-size: 11px; font-weight: 600; color: var(--text2); margin-bottom: 6px; letter-spacing: 0.5px; text-transform: uppercase; }
+.form-input { width: 100%; background: var(--bg); border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 10px 12px; color: var(--text); font-size: 14px; font-family: 'Inter', sans-serif; transition: border-color 0.15s; }
 .form-input:focus { outline: none; border-color: var(--accent); }
-.form-btn { width: 100%; background: linear-gradient(135deg, var(--accent), #5b8fff); color: white; border: none; border-radius: 8px; padding: 13px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: 'Sora', sans-serif; transition: all 0.2s; margin-top: 6px; }
-.form-btn:hover { opacity: 0.92; transform: translateY(-1px); }
-.form-alt { text-align: center; font-size: 13px; color: var(--muted); margin-top: 16px; }
-.form-alt a { color: var(--accent); cursor: pointer; font-weight: 600; }
-.form-err { background: #ef444415; border: 1px solid #ef444433; color: #fca5a5; border-radius: 6px; padding: 10px 14px; font-size: 13px; margin-bottom: 14px; display: none; }
-.form-ok { background: #22c55e15; border: 1px solid #22c55e33; color: #86efac; border-radius: 6px; padding: 10px 14px; font-size: 13px; margin-bottom: 14px; display: none; }
+.form-btn { width: 100%; background: var(--accent2); color: var(--bg); border: 1px solid var(--accent2); border-radius: var(--radius); padding: 12px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; transition: opacity 0.15s; margin-top: 6px; letter-spacing: 0.3px; }
+.form-btn:hover { opacity: 0.85; }
+.form-alt { text-align: center; font-size: 13px; color: var(--muted); margin-top: 14px; }
+.form-alt a { color: var(--text); cursor: pointer; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.form-err { background: transparent; border: 1px solid var(--danger); color: #fca5a5; border-radius: var(--radius-sm); padding: 10px 14px; font-size: 13px; margin-bottom: 14px; display: none; }
+.form-ok  { background: transparent; border: 1px solid var(--success); color: #86efac; border-radius: var(--radius-sm); padding: 10px 14px; font-size: 13px; margin-bottom: 14px; display: none; }
 
-/* Dashboard */
-.dashboard { max-width: 800px; margin: 0 auto; padding: 32px 24px; }
-.dash-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
-.dash-title { font-size: 22px; font-weight: 700; }
-.dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
-.dash-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+/* &#9472;&#9472; DASHBOARD &#9472;&#9472; */
+.dashboard { max-width: 780px; margin: 0 auto; padding: 32px 24px; }
+.dash-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+.dash-title { font-size: 20px; font-weight: 800; letter-spacing: -0.4px; }
+.dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; margin-bottom: 1px; background: var(--border); }
+.dash-card { background: var(--surface); border: none; padding: 20px; }
 .dash-card.full { grid-column: 1 / -1; }
-.dash-card h3 { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
-.dash-val { font-size: 20px; font-weight: 700; color: var(--text); }
+.dash-card h3 { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; font-weight: 600; }
+.dash-val { font-size: 22px; font-weight: 800; color: var(--accent2); letter-spacing: -0.5px; }
 .dash-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
-.license-box { background: var(--bg); border: 1px solid var(--accent); border-radius: 10px; padding: 18px; text-align: center; }
-.license-code { font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 600; color: var(--accent2); letter-spacing: 2px; }
+.license-box { background: var(--bg); border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 18px; text-align: center; }
+.license-code { font-family: 'JetBrains Mono', monospace; font-size: 17px; font-weight: 600; color: var(--accent2); letter-spacing: 2.5px; }
 .license-sub { font-size: 12px; color: var(--muted); margin-top: 6px; }
-.status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
-.status-active { background: #22c55e15; color: #4ade80; border: 1px solid #22c55e33; }
-.status-none { background: #ef444415; color: #f87171; border: 1px solid #ef444433; }
-.status-pending { background: #f59e0b15; color: #fbbf24; border: 1px solid #f59e0b33; }
+.status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: var(--radius-sm); font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+.status-active  { background: transparent; color: var(--success); border: 1px solid var(--success); }
+.status-none    { background: transparent; color: var(--danger);  border: 1px solid var(--danger); }
+.status-pending { background: transparent; color: var(--warn);    border: 1px solid var(--warn); }
 
-/* Mesaj alanı */
+/* &#9472;&#9472; MESAJ &#9472;&#9472; */
 .msg-area { display: flex; flex-direction: column; gap: 10px; max-height: 320px; overflow-y: auto; padding: 4px 0; margin-bottom: 12px; }
-.msg-b { max-width: 80%; padding: 10px 14px; border-radius: 10px; font-size: 13px; line-height: 1.6; }
-.msg-b.benim { background: #3d6fff22; color: #93b4ff; align-self: flex-end; border-bottom-right-radius: 2px; border: 1px solid #3d6fff33; }
-.msg-b.admin { background: var(--bg); color: var(--text); align-self: flex-start; border: 1px solid var(--border); border-bottom-left-radius: 2px; }
+.msg-b { max-width: 80%; padding: 10px 14px; border-radius: 0; font-size: 13px; line-height: 1.6; }
+.msg-b.benim { background: var(--surface2); color: var(--text); align-self: flex-end; border-left: 2px solid var(--accent2); }
+.msg-b.admin { background: var(--bg); color: var(--text2); align-self: flex-start; border: 1px solid var(--border2); }
 .msg-wrap { display: flex; flex-direction: column; }
 .msg-wrap.right { align-items: flex-end; }
-.msg-t { font-size: 10px; color: var(--muted); margin-top: 3px; }
-.msg-input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-size: 13px; font-family: 'Sora', sans-serif; resize: vertical; min-height: 72px; }
+.msg-t { font-size: 10px; color: var(--muted); margin-top: 3px; letter-spacing: 0.3px; }
+.msg-input { width: 100%; background: var(--bg); border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 10px 14px; color: var(--text); font-size: 13px; font-family: 'Inter', sans-serif; resize: vertical; min-height: 72px; }
 .msg-input:focus { outline: none; border-color: var(--accent); }
 
-/* Talepler listesi */
-.talep-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; }
-.badge-sm { padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: 600; }
-.b-bekl { background: #f59e0b20; color: #fbbf24; border: 1px solid #f59e0b44; }
-.b-onay { background: #22c55e20; color: #4ade80; border: 1px solid #22c55e44; }
-.b-red  { background: #ef444420; color: #f87171; border: 1px solid #ef444444; }
+/* &#9472;&#9472; TALEPLER &#9472;&#9472; */
+.talep-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 6px; }
+.badge-sm { padding: 2px 8px; border-radius: 0; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+.b-bekl { background: transparent; color: var(--warn);    border: 1px solid var(--warn); }
+.b-onay { background: transparent; color: var(--success); border: 1px solid var(--success); }
+.b-red  { background: transparent; color: var(--danger);  border: 1px solid var(--danger); }
 
-/* Responsive */
+/* &#9472;&#9472; ÇEREZ BANNER &#9472;&#9472; */
+#cerez-banner { position: fixed; bottom: 0; left: 0; right: 0; z-index: 9999; background: var(--surface); border-top: 1px solid var(--border2); padding: 20px 32px; display: flex; align-items: flex-start; gap: 24px; box-shadow: 0 -4px 24px rgba(0,0,0,0.4); animation: cerezSlideUp 0.35s cubic-bezier(.22,1,.36,1); }
+@keyframes cerezSlideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+#cerez-banner.cerez-gizle { animation: cerezSlideDown 0.3s ease forwards; }
+@keyframes cerezSlideDown { to { transform: translateY(110%); opacity: 0; } }
+.cerez-icerik { flex: 1; }
+.cerez-baslik { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+.cerez-aciklama { font-size: 13px; color: var(--muted); line-height: 1.65; max-width: 640px; }
+.cerez-aciklama a { color: var(--text); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.cerez-aksiyonlar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex-shrink: 0; margin-top: 4px; }
+.cerez-btn { padding: 8px 18px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid var(--border2); font-family: 'Inter', sans-serif; transition: all 0.15s; white-space: nowrap; background: transparent; color: var(--text2); }
+.cerez-btn:hover { border-color: var(--accent); color: var(--text); }
+.cerez-btn-tum { background: var(--accent2); color: var(--bg); border-color: var(--accent2); }
+.cerez-btn-tum:hover { opacity: 0.85; }
+.cerez-btn-reddet { color: var(--danger); border-color: var(--danger); }
+.cerez-btn-reddet:hover { background: rgba(239,68,68,0.08); }
+
+/* Cerez Modal */
+#cerez-modal-overlay { position: fixed; inset: 0; z-index: 10000; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; padding: 16px; }
+#cerez-modal-overlay.aktif { display: flex; }
+#cerez-modal { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius); width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; padding: 28px; }
+.cerez-modal-baslik { font-size: 17px; font-weight: 800; margin-bottom: 4px; letter-spacing: -0.3px; }
+.cerez-modal-sub { font-size: 13px; color: var(--muted); margin-bottom: 20px; line-height: 1.6; }
+.cerez-kategori { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 10px; }
+.cerez-kat-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.cerez-kat-ad { font-size: 13px; font-weight: 700; color: var(--text); }
+.cerez-kat-acik { font-size: 12px; color: var(--muted); line-height: 1.55; }
+.cerez-toggle { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+.cerez-toggle input { opacity: 0; width: 0; height: 0; }
+.cerez-toggle-slider { position: absolute; inset: 0; border-radius: 22px; background: var(--border2); cursor: pointer; transition: background 0.2s; border: 1px solid var(--border2); }
+.cerez-toggle-slider::before { content: ''; position: absolute; width: 16px; height: 16px; border-radius: 50%; background: var(--muted); bottom: 2px; left: 2px; transition: all 0.2s; }
+.cerez-toggle input:checked + .cerez-toggle-slider { background: var(--accent2); border-color: var(--accent2); }
+.cerez-toggle input:checked + .cerez-toggle-slider::before { transform: translateX(18px); background: var(--bg); }
+.cerez-toggle input:disabled + .cerez-toggle-slider { opacity: 0.45; cursor: not-allowed; }
+.cerez-zorunlu-etiket { font-size: 10px; color: var(--success); background: transparent; border: 1px solid var(--success); padding: 1px 7px; border-radius: var(--radius-sm); font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+.cerez-modal-alt { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
+
+/* &#9472;&#9472; RESPONSIVE &#9472;&#9472; */
 @media (max-width: 600px) {
   .nav { padding: 0 16px; }
-  .hero { padding: 48px 16px 40px; }
+  .hero { padding: 48px 16px 36px; }
   .dash-grid { grid-template-columns: 1fr; }
-  .msg-split { grid-template-columns: 1fr; }
-}
-
-/* ===== ÇEREZ BANNER ===== */
-#cerez-banner {
-  position: fixed; bottom: 0; left: 0; right: 0; z-index: 9999;
-  background: #0e1221; border-top: 1px solid #1a2040;
-  padding: 20px 32px; display: flex; align-items: flex-start; gap: 24px;
-  box-shadow: 0 -8px 40px rgba(0,0,0,0.5);
-  animation: cerezSlideUp 0.35s cubic-bezier(.22,1,.36,1);
-}
-@keyframes cerezSlideUp {
-  from { transform: translateY(100%); opacity: 0; }
-  to   { transform: translateY(0);    opacity: 1; }
-}
-#cerez-banner.cerez-gizle {
-  animation: cerezSlideDown 0.3s ease forwards;
-}
-@keyframes cerezSlideDown {
-  to { transform: translateY(110%); opacity: 0; }
-}
-.cerez-icerik { flex: 1; }
-.cerez-baslik { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
-.cerez-aciklama { font-size: 13px; color: var(--muted); line-height: 1.65; max-width: 640px; }
-.cerez-aciklama a { color: var(--accent); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
-.cerez-aksiyonlar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex-shrink: 0; margin-top: 4px; }
-.cerez-btn { padding: 9px 20px; border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; font-family: 'Sora', sans-serif; transition: all 0.18s; white-space: nowrap; }
-.cerez-btn-tum     { background: linear-gradient(135deg, var(--accent), #5b8fff); color: #fff; }
-.cerez-btn-tum:hover { opacity: 0.88; transform: translateY(-1px); }
-.cerez-btn-zorunlu { background: transparent; color: var(--muted); border: 1px solid var(--border); }
-.cerez-btn-zorunlu:hover { color: var(--text); border-color: var(--accent); }
-.cerez-btn-reddet  { background: transparent; color: #f87171; border: 1px solid #ef444433; }
-.cerez-btn-reddet:hover { background: #ef444412; border-color: #f87171; }
-.cerez-btn-ayarlar { background: transparent; color: var(--accent); border: 1px solid #3d6fff44; }
-.cerez-btn-ayarlar:hover { background: #3d6fff12; }
-
-/* Çerez Tercih Modalı */
-#cerez-modal-overlay {
-  position: fixed; inset: 0; z-index: 10000;
-  background: rgba(0,0,0,0.75); backdrop-filter: blur(6px);
-  display: none; align-items: center; justify-content: center; padding: 16px;
-}
-#cerez-modal-overlay.aktif { display: flex; }
-#cerez-modal {
-  background: #0e1221; border: 1px solid #1a2040; border-radius: 16px;
-  width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto;
-  padding: 32px;
-}
-.cerez-modal-baslik { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
-.cerez-modal-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; line-height: 1.6; }
-.cerez-kategori { background: #080b14; border: 1px solid #1a2040; border-radius: 10px; padding: 16px 18px; margin-bottom: 12px; }
-.cerez-kat-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-.cerez-kat-ad { font-size: 14px; font-weight: 600; color: var(--text); }
-.cerez-kat-acik { font-size: 12px; color: var(--muted); line-height: 1.55; }
-.cerez-toggle { position: relative; width: 42px; height: 24px; flex-shrink: 0; }
-.cerez-toggle input { opacity: 0; width: 0; height: 0; }
-.cerez-toggle-slider {
-  position: absolute; inset: 0; border-radius: 24px;
-  background: #1a2040; cursor: pointer; transition: background 0.2s;
-}
-.cerez-toggle-slider::before {
-  content: ''; position: absolute; width: 18px; height: 18px; border-radius: 50%;
-  background: #5a6a8a; bottom: 3px; left: 3px; transition: all 0.2s;
-}
-.cerez-toggle input:checked + .cerez-toggle-slider { background: #3d6fff44; border: 1px solid #3d6fff88; }
-.cerez-toggle input:checked + .cerez-toggle-slider::before { transform: translateX(18px); background: var(--accent); box-shadow: 0 0 8px #3d6fff88; }
-.cerez-toggle input:disabled + .cerez-toggle-slider { opacity: 0.6; cursor: not-allowed; }
-.cerez-zorunlu-etiket { font-size: 11px; color: #4ade80; background: #22c55e15; border: 1px solid #22c55e33; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
-.cerez-modal-alt { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; flex-wrap: wrap; }
-
-@media (max-width: 600px) {
+  .features { grid-template-columns: 1fr; }
   #cerez-banner { flex-direction: column; padding: 16px; gap: 14px; }
-  .cerez-aksiyonlar { width: 100%; justify-content: stretch; }
+  .cerez-aksiyonlar { width: 100%; }
   .cerez-btn { flex: 1; text-align: center; }
 }
 </style>
-"""
+""""""
 
 SITE_HTML_TEMPLATE = """<!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -217,10 +238,10 @@ SITE_HTML_TEMPLATE = """<!DOCTYPE html>
 <!-- ===== ÇEREZ ONAYI BANNER ===== -->
 <div id="cerez-banner" style="display:none;">
   <div class="cerez-icerik">
-    <div class="cerez-baslik">🍪 Çerez Politikası</div>
+    <div class="cerez-baslik">&#127850; Çerez Politikası</div>
     <div class="cerez-aciklama">
       Bu site yalnızca <strong>zorunlu oturum çerezleri</strong> kullanmaktadır. Oturum çerezi, giriş yaptıktan sonra kimliğinizi doğrulamak için gereklidir; reklam, izleme veya pazarlama amaçlı herhangi bir çerez kullanılmamaktadır.
-      <a onclick="cerezAyarlariAc()">Çerez tercihlerini yönet →</a>
+      <a onclick="cerezAyarlariAc()">Çerez tercihlerini yönet &rarr;</a>
     </div>
   </div>
   <div class="cerez-aksiyonlar">
@@ -234,7 +255,7 @@ SITE_HTML_TEMPLATE = """<!DOCTYPE html>
 <!-- ===== ÇEREZ TERCİH MODALI ===== -->
 <div id="cerez-modal-overlay">
   <div id="cerez-modal">
-    <div class="cerez-modal-baslik">🍪 Çerez Tercihleri</div>
+    <div class="cerez-modal-baslik">&#127850; Çerez Tercihleri</div>
     <div class="cerez-modal-sub">
       Aşağıdaki kategorileri dilediğiniz gibi etkinleştirip devre dışı bırakabilirsiniz.
       Zorunlu çerezler sitenin temel işlevleri için gereklidir ve devre dışı bırakılamaz.
@@ -255,7 +276,7 @@ SITE_HTML_TEMPLATE = """<!DOCTYPE html>
         </div>
       </div>
       <div class="cerez-kat-acik">
-        <strong>session</strong> — Giriş yaptıktan sonra kimliğinizi doğrulamak için kullanılır. 7 gün boyunca geçerlidir.
+        <strong>session</strong> &mdash; Giriş yaptıktan sonra kimliğinizi doğrulamak için kullanılır. 7 gün boyunca geçerlidir.
         Oturum kapatıldığında veya süre dolduğunda otomatik olarak silinir. Bu çerez olmadan sisteme giriş yapamazsınız.
       </div>
     </div>
@@ -272,7 +293,7 @@ SITE_HTML_TEMPLATE = """<!DOCTYPE html>
         </label>
       </div>
       <div class="cerez-kat-acik">
-        <strong>cookie_consent</strong> — Çerez tercihlerinizi hatırlamak için kullanılır (1 yıl geçerli).
+        <strong>cookie_consent</strong> &mdash; Çerez tercihlerinizi hatırlamak için kullanılır (1 yıl geçerli).
         Bu çerezi devre dışı bırakırsanız her ziyarette tekrar onay kutusu görüntülenir.
       </div>
     </div>
@@ -318,49 +339,55 @@ SITE_HTML_TEMPLATE = """<!DOCTYPE html>
 </div>
 
 <nav class="nav">
-  <div class="nav-brand" style="display:flex;align-items:center;gap:12px;">
-    <div style="display:flex;align-items:center;gap:10px;">
-      <div class="dot"></div>
-      <div style="font-weight:700;">OPC Gateway</div>
+  <div class="nav-brand">
+    <img src="/static/logo.png" alt="Nautilus Technology" class="nav-logo" onerror="this.style.display='none'">
+    <div class="nav-brand-text">
+      Nautilus Technology
+      <span>OPC Gateway Lisans</span>
     </div>
-    <div id="nav-quick-links" style="display:flex;align-items:center;gap:8px;"></div>
   </div>
-  <div class="nav-links" id="nav-links">
-    <button class="nav-btn nav-btn-ghost" onclick="sayfaGoster('giris')">Giriş Yap</button>
-    <button class="nav-btn nav-btn-primary" onclick="sayfaGoster('kayit')">Kayıt Ol</button>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <div id="nav-quick-links" style="display:flex;align-items:center;gap:6px;"></div>
+    <div class="nav-links" id="nav-links">
+      <button class="nav-btn nav-btn-ghost" onclick="sayfaGoster('giris')">Giriş Yap</button>
+      <button class="nav-btn nav-btn-primary" onclick="sayfaGoster('kayit')">Kayıt Ol</button>
+    </div>
+    <button id="theme-toggle" onclick="temaToggle()" title="Tema Değiştir">
+      <span id="theme-icon">&#9790;</span>
+    </button>
   </div>
 </nav>
 
 <!-- ANASAYFA -->
 <div id="sayfa-anasayfa">
   <div class="hero">
-    <div class="hero-badge">⚡ OPC Gateway Lisans Sistemi</div>
+    <div class="hero-badge">&#9889; OPC Gateway Lisans Sistemi</div>
     <h1>Endüstriyel Otomasyon<br><span>Lisans Yönetimi</span></h1>
     <p>OPC Gateway yazılımı için güvenli, hızlı ve kolay lisans aktivasyon sistemi.</p>
     <div class="hero-btns">
-      <button class="btn-hero btn-hero-primary" onclick="sayfaGoster('kayit')">Hemen Başla →</button>
+      <button class="btn-hero btn-hero-primary" onclick="sayfaGoster('kayit')">Hemen Başla &rarr;</button>
       <button class="btn-hero btn-hero-ghost" onclick="sayfaGoster('planlar')">Planları İncele</button>
     </div>
   </div>
 
   <div class="features">
     <div class="feature">
-      <div class="feature-icon">🔐</div>
+      <div class="feature-icon">&#128272;</div>
       <h3>Güvenli Aktivasyon</h3>
       <p>HWID tabanlı lisans sistemi ile yazılımınızı yetkisiz kullanıma karşı koruyun.</p>
     </div>
     <div class="feature">
-      <div class="feature-icon">⚡</div>
+      <div class="feature-icon">&#9889;</div>
       <h3>Anında Aktivasyon</h3>
       <p>Lisans kodunu aldıktan sonra saniyeler içinde programınızı aktive edin.</p>
     </div>
     <div class="feature">
-      <div class="feature-icon">💬</div>
+      <div class="feature-icon">&#128172;</div>
       <h3>7/24 Destek</h3>
       <p>Hesabınızdaki destek sistemi üzerinden doğrudan ekibimize ulaşın.</p>
     </div>
     <div class="feature">
-      <div class="feature-icon">🔄</div>
+      <div class="feature-icon">&#128260;</div>
       <h3>Esnek Planlar</h3>
       <p>Aylık, yıllık veya ömür boyu seçeneklerden ihtiyacınıza uygun planı seçin.</p>
     </div>
@@ -377,7 +404,7 @@ SITE_HTML_TEMPLATE = """<!DOCTYPE html>
       <div style="text-align:center;color:var(--muted);grid-column:1/-1;padding:40px;">Planlar yükleniyor...</div>
     </div>
     <div style="text-align:center;margin-top:32px;">
-      <button class="btn-hero btn-hero-primary" onclick="sayfaGoster('kayit')">Kayıt Ol ve Talep Gönder →</button>
+      <button class="btn-hero btn-hero-primary" onclick="sayfaGoster('kayit')">Kayıt Ol ve Talep Gönder &rarr;</button>
     </div>
   </div>
 </div>
@@ -387,12 +414,12 @@ SITE_HTML_TEMPLATE = """<!DOCTYPE html>
   <div style="height:48px;"></div>
   <div class="form-container" style="max-width:520px;">
     <div class="form-card">
-      <div class="form-title">🔒 Offline Aktivasyon Talebi</div>
+      <div class="form-title">&#128274; Offline Aktivasyon Talebi</div>
       <div class="form-sub">İnternet bağlantısı olmayan sistemler için lisans talebinde bulunun. Giriş yapmış olmanız gerekir.</div>
       <div class="form-err" id="offline-hata"></div>
       <div class="form-ok" id="offline-ok"></div>
       <div id="offline-giris-uyari" style="display:none;background:#f59e0b15;border:1px solid #f59e0b44;color:#fbbf24;border-radius:8px;padding:12px 16px;font-size:13px;margin-bottom:16px;">
-        ⚠️ Offline aktivasyon talebi göndermek için önce <a onclick="sayfaGoster('giris')" style="color:#3d6fff;cursor:pointer;font-weight:600;">giriş yapmalısınız</a>.
+        &#9888; Offline aktivasyon talebi göndermek için önce <a onclick="sayfaGoster('giris')" style="color:#3d6fff;cursor:pointer;font-weight:600;">giriş yapmalısınız</a>.
       </div>
       <div id="offline-form-icerik">
         <div class="form-group">
@@ -405,7 +432,7 @@ SITE_HTML_TEMPLATE = """<!DOCTYPE html>
           <div id="off-req-durum" style="font-size:12px;margin-top:4px;"></div>
         </div>
         <div style="background:#3d6fff0a;border:1px solid #3d6fff22;border-radius:8px;padding:12px 14px;font-size:12px;color:#8a9bc0;margin-bottom:16px;line-height:1.7;">
-          📌 İstek kodunu almak için <b>OPC Gateway Pro</b> programını açıp <b>Offline Aktivasyon → İstek Kodu Oluştur</b> seçeneğini kullanın.
+          &#128268; İstek kodunu almak için <b>OPC Gateway Pro</b> programını açıp <b>Offline Aktivasyon &rarr; İstek Kodu Oluştur</b> seçeneğini kullanın.
         </div>
         <button class="form-btn" id="off-talep-btn" onclick="offlineTalepGonder()">Offline Lisans Talebi Gönder</button>
       </div>
@@ -484,17 +511,17 @@ SITE_HTML_TEMPLATE = """<!DOCTYPE html>
     <!-- Lisans Geçmişi -->
     <div class="dash-card full" id="gecmis-section">
       <h3 style="display:flex;align-items:center;justify-content:space-between;">
-        <span>📋 Lisans Geçmişi</span>
-        <button onclick="lisansGecmisiniYukle()" style="background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;">↻ Yenile</button>
+        <span>&#128267; Lisans Geçmişi</span>
+        <button onclick="lisansGecmisiniYukle()" style="background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;">&#8635; Yenile</button>
       </h3>
-      <div id="gecmis-icerik"><div style="color:var(--muted);font-size:13px;">Yükleniyor…</div></div>
+      <div id="gecmis-icerik"><div style="color:var(--muted);font-size:13px;">Yükleniyor&hellip;</div></div>
     </div>
 
     <!-- Mesajlar -->
     <div class="dash-card full">
       <h3>Destek / Mesajlar</h3>
       <div class="msg-area" id="msg-area"></div>
-      <textarea class="msg-input" id="msg-yaz" placeholder="Mesajınızı yazın… (Ctrl+Enter ile gönder)" onkeydown="if(event.ctrlKey&&event.key==='Enter')mesajGonder()"></textarea>
+      <textarea class="msg-input" id="msg-yaz" placeholder="Mesajınızı yazın&hellip; (Ctrl+Enter ile gönder)" onkeydown="if(event.ctrlKey&&event.key==='Enter')mesajGonder()"></textarea>
       <button class="form-btn" style="margin-top:8px;padding:10px;" onclick="mesajGonder()">Gönder</button>
     </div>
 
@@ -512,7 +539,7 @@ SITE_HTML_TEMPLATE = """<!DOCTYPE html>
 <!-- İPTAL MODALı -->
 <div id="iptal-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(6px);">
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px;width:480px;max-width:95vw;">
-    <div style="font-size:18px;font-weight:700;color:#f87171;margin-bottom:6px;">⚠️ Lisansı İptal Et</div>
+    <div style="font-size:18px;font-weight:700;color:#f87171;margin-bottom:6px;">&#9888; Lisansı İptal Et</div>
     <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">Bu işlem geri alınamaz. Lisansınız iptal edildikten sonra programı kullanamazsınız.</div>
     <div style="font-size:13px;font-weight:500;margin-bottom:8px;color:#8a9bc0;">Neden iptal ediyorsunuz?</div>
     <select id="iptal-neden-sec" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;font-family:'Sora',sans-serif;margin-bottom:8px;">
@@ -554,7 +581,7 @@ async function planlariYukle() {
   if (!planlar.length) { el.innerHTML = '<div style="text-align:center;color:var(--muted);grid-column:1/-1;padding:40px;">Henüz plan eklenmemiş.</div>'; return; }
   el.innerHTML = planlar.map(p => `
     <div class="plan-card" id="plan-${p.kod}" onclick="planSec('${p.kod}')">
-      <div class="plan-name">${p.ad} ${p.is_offline ? '🔒' : ''}</div>
+      <div class="plan-name">${p.ad} ${p.is_offline ? '&#128274;' : ''}</div>
       <div class="plan-desc">${p.aciklama||""}</div>
     </div>`).join("");
 }
@@ -575,13 +602,13 @@ async function kayitOl() {
   mesajGizle("kayit-hata"); mesajGizle("kayit-ok");
 
   if (!ad || !email || !sifre) {
-    mesajGoster("kayit-hata", "⚠️ Tüm alanları doldurun.");
+    mesajGoster("kayit-hata", "&#9888; Tüm alanları doldurun.");
     return;
   }
 
   // Butonu devre dışı bırak
   const btn = document.querySelector("#sayfa-kayit .form-btn");
-  if (btn) { btn.disabled = true; btn.textContent = "Kayıt yapılıyor…"; }
+  if (btn) { btn.disabled = true; btn.textContent = "Kayıt yapılıyor&hellip;"; }
 
   const r = await fetch("/api/kayit", {method:"POST", headers:{"Content-Type":"application/json"},
     body: JSON.stringify({ad_soyad: ad, email, sifre})});
@@ -592,7 +619,7 @@ async function kayitOl() {
   if (r.ok) {
     // Geri sayımlı yönlendirme
     let saniye = 3;
-    mesajGoster("kayit-ok", `✅ Kayıt başarılı! Giriş sayfasına yönlendiriliyorsunuz (${saniye})…`);
+    mesajGoster("kayit-ok", `&#9989; Kayıt başarılı! Giriş sayfasına yönlendiriliyorsunuz (${saniye})&hellip;`);
     const sayac = setInterval(() => {
       saniye--;
       if (saniye <= 0) {
@@ -600,12 +627,12 @@ async function kayitOl() {
         mesajGizle("kayit-ok");
         sayfaGoster("giris");
       } else {
-        mesajGoster("kayit-ok", `✅ Kayıt başarılı! Giriş sayfasına yönlendiriliyorsunuz (${saniye})…`);
+        mesajGoster("kayit-ok", `&#9989; Kayıt başarılı! Giriş sayfasına yönlendiriliyorsunuz (${saniye})&hellip;`);
       }
     }, 1000);
   } else {
     const hata = d.detail || "Bir hata oluştu.";
-    mesajGoster("kayit-hata", "❌ " + hata);
+    mesajGoster("kayit-hata", "&#10060; " + hata);
   }
 }
 
@@ -616,12 +643,12 @@ async function girisYap() {
   mesajGizle("giris-hata"); mesajGizle("giris-ok");
 
   if (!email || !sifre) {
-    mesajGoster("giris-hata", "⚠️ Lütfen e-posta ve şifrenizi girin.");
+    mesajGoster("giris-hata", "&#9888; Lütfen e-posta ve şifrenizi girin.");
     return;
   }
 
   const btn = document.querySelector("#sayfa-giris .form-btn");
-  if (btn) { btn.disabled = true; btn.textContent = "Giriş yapılıyor…"; }
+  if (btn) { btn.disabled = true; btn.textContent = "Giriş yapılıyor&hellip;"; }
 
   const r = await fetch("/api/giris", {method:"POST", headers:{"Content-Type":"application/json"},
     body: JSON.stringify({email, sifre})});
@@ -630,7 +657,7 @@ async function girisYap() {
   if (btn) { btn.disabled = false; btn.textContent = "Giriş Yap"; }
 
   if (r.ok) {
-    mesajGoster("giris-ok", "✅ Giriş başarılı! Yönlendiriliyorsunuz…");
+    mesajGoster("giris-ok", "&#9989; Giriş başarılı! Yönlendiriliyorsunuz&hellip;");
     setTimeout(() => {
       mesajGizle("giris-ok");
       sayfaGoster("dashboard");
@@ -640,9 +667,9 @@ async function girisYap() {
     // Kullanıcı dostu hata mesajları
     let hata = d.detail || "";
     if (!hata || hata.toLowerCase().includes("e-posta") || hata.toLowerCase().includes("sifre") || hata.toLowerCase().includes("şifre") || r.status === 401) {
-      hata = "❌ E-posta adresi veya şifre yanlış. Lütfen tekrar deneyin.";
+      hata = "&#10060; E-posta adresi veya şifre yanlış. Lütfen tekrar deneyin.";
     } else {
-      hata = "❌ " + hata;
+      hata = "&#10060; " + hata;
     }
     mesajGoster("giris-hata", hata);
     // Yanlış girişte şifre alanını temizle ve odaklan
@@ -684,7 +711,7 @@ function lisansGridRender(p, grid) {
     grid.innerHTML = `
       <div class="dash-card full">
         <h3>Lisans Durumu</h3>
-        <span class="status-badge status-none">● Lisans Yok</span>
+        <span class="status-badge status-none">&#9679; Lisans Yok</span>
         <div class="dash-sub" style="margin-top:8px;">Aşağıdan lisans talebinde bulunabilirsiniz.</div>
       </div>`;
     return;
@@ -693,7 +720,7 @@ function lisansGridRender(p, grid) {
     grid.innerHTML = `
       <div class="dash-card">
         <h3>Lisans Durumu</h3>
-        <span class="status-badge status-active">● Aktif</span>
+        <span class="status-badge status-active">&#9679; Aktif</span>
         <div class="dash-sub" style="margin-top:8px;">${l.tur}</div>
       </div>
       <div class="dash-card">
@@ -712,30 +739,30 @@ function lisansGridRender(p, grid) {
       <div class="dash-card full" style="text-align:center;">
         ${(p.yeni_surum_banner && p.son_guncelleme) ? `
         <div style="margin-bottom:14px;">
-          <span style="display:inline-block;background:linear-gradient(90deg,#22d3ee,#38bdf8);color:#fff;padding:8px 20px;border-radius:20px;font-size:14px;font-weight:700;box-shadow:0 4px 12px #38bdf844;letter-spacing:0.5px;border:1px solid #ffffff33;">🚀 YENİ SÜRÜM YAYINDA! (${p.son_guncelleme})</span>
+          <span style="display:inline-block;background:linear-gradient(90deg,#22d3ee,#38bdf8);color:#fff;padding:8px 20px;border-radius:20px;font-size:14px;font-weight:700;box-shadow:0 4px 12px #38bdf844;letter-spacing:0.5px;border:1px solid #ffffff33;">&#128640; YENİ SÜRÜM YAYINDA! (${p.son_guncelleme})</span>
         </div>` : ''}
         <h3>Program İndir</h3>
         <div class="dash-sub" style="margin-bottom:16px;">Lisansınız aktif. Programı indirip lisans kodunuzla aktive edebilirsiniz.</div>
         <a href="${p.indirme_linki}" target="_blank" style="display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--success),#16a34a);color:white;padding:14px 32px;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;box-shadow:0 0 24px #22c55e33;transition:all 0.2s;">
-          ⬇ OPC Gateway'i İndir
+          &#11015; OPC Gateway'i İndir
         </a>
         <div style="margin-top:18px;">
           <a href="https://www.virustotal.com/gui/file/${p.vt_hash}" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(90deg,#22c55e,#16a34a);color:white;padding:10px 22px;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none;box-shadow:0 0 12px #22c55e33;transition:all 0.2s;">
-            🛡️ VirusTotal Güvenlik Raporu (0 Virüs)
+            &#128737; VirusTotal Güvenlik Raporu (0 Virüs)
           </a>
         </div>
       </div>` : ''}
       <div class="dash-card full" style="text-align:center;padding-top:8px;">
         <button onclick="iptalModalAc()" style="background:transparent;border:1px solid #ef444455;color:#f87171;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Sora',sans-serif;transition:all 0.2s;" onmouseover="this.style.background='#ef444415'" onmouseout="this.style.background='transparent'">
-          ⚠️ Lisansı İptal Et
+          &#9888; Lisansı İptal Et
         </button>
       </div>`;
   } else if (l.durum === "suresi_dolmus") {
     grid.innerHTML = `
       <div class="dash-card full">
         <h3>Lisans Durumu</h3>
-        <span class="status-badge" style="background:#f59e0b15;color:#fbbf24;border:1px solid #f59e0b33;">● Süresi Dolmuş</span>
-        <div class="dash-sub" style="margin-top:8px;">${l.tur} · Bitiş: ${l.bitis}</div>
+        <span class="status-badge" style="background:#f59e0b15;color:#fbbf24;border:1px solid #f59e0b33;">&#9679; Süresi Dolmuş</span>
+        <div class="dash-sub" style="margin-top:8px;">${l.tur} &middot; Bitiş: ${l.bitis}</div>
         <div class="dash-sub" style="margin-top:6px;color:#7eb8ff;">Lisans kodunuz: <strong style="font-family:monospace;">${l.kod}</strong></div>
         <div class="dash-sub" style="margin-top:8px;">Süreniz dolmuş. Yenilemek için aşağıdan yeni bir talep gönderin.</div>
       </div>`;
@@ -743,8 +770,8 @@ function lisansGridRender(p, grid) {
     grid.innerHTML = `
       <div class="dash-card full">
         <h3>Lisans Durumu</h3>
-        <span class="status-badge status-none">● İptal Edildi</span>
-        <div class="dash-sub" style="margin-top:8px;">${l.tur} · Lisans kodunuz: <strong style="font-family:monospace;">${l.kod}</strong></div>
+        <span class="status-badge status-none">&#9679; İptal Edildi</span>
+        <div class="dash-sub" style="margin-top:8px;">${l.tur} &middot; Lisans kodunuz: <strong style="font-family:monospace;">${l.kod}</strong></div>
         ${l.iptal_nedeni ? `<div class="dash-sub" style="margin-top:6px;">Neden: ${l.iptal_nedeni}</div>` : ''}
         <div class="dash-sub" style="margin-top:8px;">Yeni lisans için aşağıdan talep gönderebilirsiniz.</div>
       </div>`;
@@ -755,7 +782,7 @@ async function dashboardYukle() {
   const r = await fetch("/api/profil");
   if (!r.ok) { sayfaGoster("giris"); return; }
   const p = await r.json();
-  document.getElementById("dash-hosgeldin").textContent = "Merhaba, " + p.ad_soyad + " 👋";
+  document.getElementById("dash-hosgeldin").textContent = "Merhaba, " + p.ad_soyad + " &#128075;";
   document.getElementById("nav-links").innerHTML = `<span style="font-size:13px;color:var(--muted);margin-right:8px;">${p.email}</span><button class="nav-btn nav-btn-ghost" onclick="cikisYap()">Cıkış</button>`;
   lisansGridRender(p, document.getElementById("dash-grid"));
   taleplerYukle();
@@ -788,11 +815,11 @@ async function lisansImIptalEt() {
   const aciklama = document.getElementById("iptal-aciklama").value.trim();
   const hataEl = document.getElementById("iptal-hata");
   if (!sec) {
-    hataEl.textContent = "⚠️ Lütfen bir neden seçin.";
+    hataEl.textContent = "&#9888; Lütfen bir neden seçin.";
     hataEl.style.display = "block";
     return;
   }
-  const neden = aciklama ? `${sec} — ${aciklama}` : sec;
+  const neden = aciklama ? `${sec} &mdash; ${aciklama}` : sec;
   const r = await fetch("/api/lisansimi-iptal-et", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
@@ -805,7 +832,7 @@ async function lisansImIptalEt() {
     lisansGecmisiniYukle();
     taleplerYukle();
   } else {
-    hataEl.textContent = "❌ " + (d.detail || "Bir hata oluştu.");
+    hataEl.textContent = "&#10060; " + (d.detail || "Bir hata oluştu.");
     hataEl.style.display = "block";
   }
 }
@@ -828,7 +855,7 @@ async function taleplerYukle() {
     html += `<div class="talep-item">
       <div>
         <div style="font-size:14px;font-weight:600;">${t.tur} <span style="font-size:10px;padding:2px 6px;border-radius:4px;background:#3d6fff22;color:#3d6fff;margin-left:6px;border:1px solid #3d6fff44;">${(t.talep_tipi || 'online').toUpperCase()}</span></div>
-        <div style="font-size:12px;color:var(--muted);">${t.tarih}${t.admin_notu ? " · " + t.admin_notu : ""}</div>
+        <div style="font-size:12px;color:var(--muted);">${t.tarih}${t.admin_notu ? " &middot; " + t.admin_notu : ""}</div>
         ${aktGosterim}
       </div>
       <span class="badge-sm ${durumBadge[t.durum]||""}">${durumYazi[t.durum]||t.durum}</span>
@@ -846,18 +873,18 @@ async function taleplerYukle() {
       <div style="display:flex;gap:0;margin-bottom:16px;background:var(--surface);border-radius:8px;border:1px solid var(--border);overflow:hidden;">
         <label style="flex:1;font-size:13px;display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 16px;" id="lbl-online">
           <input type="radio" name="talep_tipi" value="online" ${_dashTalepTipi !== 'offline' ? 'checked' : ''} onchange="talepTipiDegisti()">
-          <span>🌐</span> <span>Online Lisans</span>
+          <span>&#127760;</span> <span>Online Lisans</span>
         </label>
         <div style="width:1px;background:var(--border);"></div>
         <label style="flex:1;font-size:13px;display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 16px;" id="lbl-offline">
           <input type="radio" name="talep_tipi" value="offline" ${_dashTalepTipi === 'offline' ? 'checked' : ''} onchange="talepTipiDegisti()">
-          <span>🔒</span> <span>Offline Lisans</span>
+          <span>&#128274;</span> <span>Offline Lisans</span>
         </label>
       </div>
 
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
         ${planlarData.map(p => `<div class="plan-card ${dashSecilenPlan === p.kod ? 'selected' : ''}" id="dp-${p.kod}" onclick="dashPlanSec('${p.kod}')" style="padding:12px 16px;min-width:140px;cursor:pointer;">
-          <div style="font-size:13px;font-weight:600;">${p.ad} ${p.is_offline ? '🔒' : ''}</div>
+          <div style="font-size:13px;font-weight:600;">${p.ad} ${p.is_offline ? '&#128274;' : ''}</div>
           <div style="font-size:11px;color:var(--muted);margin-top:3px;">${p.aciklama||""}</div>
         </div>`).join("")}
       </div>
@@ -870,11 +897,11 @@ async function taleplerYukle() {
           oninput="_dashReqKodu=this.value;dashReqKodKontrol()">
         <div id="dash-req-durum" style="font-size:12px;min-height:18px;"></div>
         <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.6;">
-          📌 İstek kodunu almak için <b>OPC Gateway Pro</b> programını açıp <b>Offline Aktivasyon → İstek Kodu Oluştur</b> seçeneğini kullanın.
+          &#128268; İstek kodunu almak için <b>OPC Gateway Pro</b> programını açıp <b>Offline Aktivasyon &rarr; İstek Kodu Oluştur</b> seçeneğini kullanın.
         </div>
       </div>
 
-      <button class="form-btn" id="talep-gonder-btn" style="max-width:220px;padding:10px;" onclick="talepGonder()">${_dashTalepTipi === 'offline' ? '🔒 Offline Talep Gönder' : '🌐 Online Talep Gönder'}</button>
+      <button class="form-btn" id="talep-gonder-btn" style="max-width:220px;padding:10px;" onclick="talepGonder()">${_dashTalepTipi === 'offline' ? '&#128274; Offline Talep Gönder' : '&#127760; Online Talep Gönder'}</button>
       <div class="form-err" id="talep-hata" style="margin-top:10px;"></div>
       <div class="form-ok" id="talep-ok" style="margin-top:10px;"></div>
     </div>`;
@@ -897,7 +924,7 @@ function talepTipiDegisti() {
   const alan = document.getElementById("offline-istek-alan");
   const btn  = document.getElementById("talep-gonder-btn");
   if (alan) alan.style.display = tip.value === "offline" ? "" : "none";
-  if (btn)  btn.textContent   = tip.value === "offline" ? "🔒 Offline Talep Gönder" : "🌐 Online Talep Gönder";
+  if (btn)  btn.textContent   = tip.value === "offline" ? "&#128274; Offline Talep Gönder" : "&#127760; Online Talep Gönder";
 }
 
 function dashReqKodKontrol() {
@@ -907,10 +934,10 @@ function dashReqKodKontrol() {
   if (!val) { el.textContent = ""; return; }
   if (!val.startsWith("REQ-") || val.length < 10) {
     el.style.color = "#f87171";
-    el.textContent = "⚠️ Geçersiz format — REQ- ile başlamalı ve yeterince uzun olmalıdır.";
+    el.textContent = "&#9888; Geçersiz format &mdash; REQ- ile başlamalı ve yeterince uzun olmalıdır.";
   } else {
     el.style.color = "#4ade80";
-    el.textContent = "✓ Format geçerli.";
+    el.textContent = "&#10003; Format geçerli.";
   }
 }
 
@@ -939,7 +966,7 @@ async function offlineSayfasiYukle() {
   const pr = await fetch("/api/uyelik-turleri-public");
   const planlarData = await pr.json();
   const sel = document.getElementById("off-tur-sec");
-  if (sel) sel.innerHTML = planlarData.map(p => `<option value="${p.kod}">${p.ad} — ${p.aciklama||""}</option>`).join("");
+  if (sel) sel.innerHTML = planlarData.map(p => `<option value="${p.kod}">${p.ad} &mdash; ${p.aciklama||""}</option>`).join("");
 }
 
 function offReqKodKontrol() {
@@ -948,10 +975,10 @@ function offReqKodKontrol() {
   if (!val) { durumEl.textContent = ""; return; }
   if (!val.startsWith("REQ-")) {
     durumEl.style.color = "#f87171";
-    durumEl.textContent = "⚠️ Geçersiz format. REQ- ile başlamalıdır.";
+    durumEl.textContent = "&#9888; Geçersiz format. REQ- ile başlamalıdır.";
   } else {
     durumEl.style.color = "#4ade80";
-    durumEl.textContent = "✓ Format geçerli görünüyor.";
+    durumEl.textContent = "&#10003; Format geçerli görünüyor.";
   }
 }
 
@@ -959,11 +986,11 @@ async function offlineTalepGonder() {
   mesajGizle("offline-hata"); mesajGizle("offline-ok");
   const tur        = document.getElementById("off-tur-sec")  ? document.getElementById("off-tur-sec").value.trim()  : "";
   const istek_kodu = (document.getElementById("off-req-kod").value || "").trim().toUpperCase();
-  if (!tur)        { mesajGoster("offline-hata", "⚠️ Lütfen bir lisans türü seçin."); return; }
-  if (!istek_kodu) { mesajGoster("offline-hata", "⚠️ İstek kodu zorunludur."); return; }
-  if (!istek_kodu.startsWith("REQ-")) { mesajGoster("offline-hata", "❌ Geçersiz istek kodu. REQ- ile başlamalıdır."); return; }
+  if (!tur)        { mesajGoster("offline-hata", "&#9888; Lütfen bir lisans türü seçin."); return; }
+  if (!istek_kodu) { mesajGoster("offline-hata", "&#9888; İstek kodu zorunludur."); return; }
+  if (!istek_kodu.startsWith("REQ-")) { mesajGoster("offline-hata", "&#10060; Geçersiz istek kodu. REQ- ile başlamalıdır."); return; }
   const btn = document.getElementById("off-talep-btn");
-  if (btn) { btn.disabled = true; btn.textContent = "Gönderiliyor…"; }
+  if (btn) { btn.disabled = true; btn.textContent = "Gönderiliyor&hellip;"; }
   const r = await fetch("/api/talep-olustur", {
     method:"POST", headers:{"Content-Type":"application/json"},
     body: JSON.stringify({tur, talep_tipi:"offline", istek_kodu})
@@ -971,16 +998,16 @@ async function offlineTalepGonder() {
   const d = await r.json();
   if (btn) { btn.disabled = false; btn.textContent = "Offline Lisans Talebi Gönder"; }
   if (r.ok) {
-    mesajGoster("offline-ok", "✅ Talebiniz alındı! Onaylandığında aktivasyon kodunuz lisans geçmişinizde görünecektir.");
+    mesajGoster("offline-ok", "&#9989; Talebiniz alındı! Onaylandığında aktivasyon kodunuz lisans geçmişinizde görünecektir.");
     document.getElementById("off-req-kod").value = "";
     document.getElementById("off-req-durum").textContent = "";
   } else {
-    mesajGoster("offline-hata", "❌ " + (d.detail || "Bir hata oluştu."));
+    mesajGoster("offline-hata", "&#10060; " + (d.detail || "Bir hata oluştu."));
   }
 }
 
 async function talepGonder() {
-  if (!dashSecilenPlan) { mesajGoster("talep-hata", "⚠️ Lütfen bir plan seçin."); return; }
+  if (!dashSecilenPlan) { mesajGoster("talep-hata", "&#9888; Lütfen bir plan seçin."); return; }
   mesajGizle("talep-hata"); mesajGizle("talep-ok");
 
   const tipEl      = document.querySelector('input[name="talep_tipi"]:checked');
@@ -990,17 +1017,17 @@ async function talepGonder() {
 
   if (talep_tipi === "offline") {
     if (!istek_kodu) {
-      mesajGoster("talep-hata", "⚠️ Offline lisans için Gateway İstek Kodu zorunludur.");
+      mesajGoster("talep-hata", "&#9888; Offline lisans için Gateway İstek Kodu zorunludur.");
       return;
     }
     if (!istek_kodu.startsWith("REQ-") || istek_kodu.length < 10) {
-      mesajGoster("talep-hata", "❌ Geçersiz istek kodu formatı. REQ- ile başlamalıdır.");
+      mesajGoster("talep-hata", "&#10060; Geçersiz istek kodu formatı. REQ- ile başlamalıdır.");
       return;
     }
   }
 
   const btn = document.getElementById("talep-gonder-btn");
-  if (btn) { btn.disabled = true; btn.textContent = "Gönderiliyor…"; }
+  if (btn) { btn.disabled = true; btn.textContent = "Gönderiliyor&hellip;"; }
 
   const r = await fetch("/api/talep-olustur", {
     method: "POST",
@@ -1009,16 +1036,16 @@ async function talepGonder() {
   });
   const d = await r.json();
 
-  if (btn) { btn.disabled = false; btn.textContent = talep_tipi === "offline" ? "🔒 Offline Talep Gönder" : "🌐 Online Talep Gönder"; }
+  if (btn) { btn.disabled = false; btn.textContent = talep_tipi === "offline" ? "&#128274; Offline Talep Gönder" : "&#127760; Online Talep Gönder"; }
 
   if (r.ok) {
     mesajGoster("talep-ok", talep_tipi === "offline"
-      ? "✅ Offline lisans talebiniz alındı! Onaylandığında lisans geçmişinizde görünecektir."
-      : "✅ Talebiniz başarıyla gönderildi!"
+      ? "&#9989; Offline lisans talebiniz alındı! Onaylandığında lisans geçmişinizde görünecektir."
+      : "&#9989; Talebiniz başarıyla gönderildi!"
     );
     taleplerYukle();
   } else {
-    mesajGoster("talep-hata", "❌ " + (d.detail || "Hata oluştu."));
+    mesajGoster("talep-hata", "&#10060; " + (d.detail || "Hata oluştu."));
   }
 }
 
@@ -1032,11 +1059,11 @@ async function lisansGecmisiniYukle() {
     return;
   }
   const durumBilgi = {
-    aktif:          { cls: 'b-onay',  yazi: '✓ Aktif' },
+    aktif:          { cls: 'b-onay',  yazi: '&#10003; Aktif' },
     suresi_dolmus:  { cls: 'b-red',   yazi: '✗ Süresi Doldu' },
     iptal:          { cls: 'b-red',   yazi: '✗ İptal Edildi' },
   };
-  const turIkon = { aylik: '🗓', yillik: '📅', omur_boyu: '♾', deneme: '🔬' };
+  const turIkon = { aylik: '&#128467;', yillik: '&#128197;', omur_boyu: '&#9854;', deneme: '&#128300;' };
   el.innerHTML = `<div style="overflow-x:auto;">
     <table style="width:100%;border-collapse:collapse;font-size:13px;">
       <thead>
@@ -1053,15 +1080,15 @@ async function lisansGecmisiniYukle() {
       <tbody>
         ${liste.map(l => {
           const d = durumBilgi[l.durum] || { cls: '', yazi: l.durum };
-          const ikon = l.tip === 'offline' ? '🔒' : (turIkon[l.tur] || '🔑');
-          const kalanTxt = l.kalan_gun != null ? ` · ${l.kalan_gun} gün kaldı` : '';
+          const ikon = l.tip === 'offline' ? '&#128274;' : (turIkon[l.tur] || '&#128273;');
+          const kalanTxt = l.kalan_gun != null ? ` &middot; ${l.kalan_gun} gün kaldı` : '';
           const kodRenk = l.tip === 'offline' ? '#4ade80' : '#7eb8ff';
           const tipBadge = l.tip === 'offline'
-            ? `<span style="font-size:10px;padding:2px 6px;border-radius:4px;background:#22c55e15;color:#4ade80;border:1px solid #22c55e44;">🔒 OFFLİNE</span>`
-            : `<span style="font-size:10px;padding:2px 6px;border-radius:4px;background:#3d6fff15;color:#7eb8ff;border:1px solid #3d6fff44;">🌐 ONLİNE</span>`;
+            ? `<span style="font-size:10px;padding:2px 6px;border-radius:4px;background:#22c55e15;color:#4ade80;border:1px solid #22c55e44;">&#128274; OFFLİNE</span>`
+            : `<span style="font-size:10px;padding:2px 6px;border-radius:4px;background:#3d6fff15;color:#7eb8ff;border:1px solid #3d6fff44;">&#127760; ONLİNE</span>`;
           const istekKoduCell = l.tip === 'offline' && l.istek_kodu
             ? `<code style="font-family:monospace;font-size:11px;background:var(--bg);padding:2px 6px;border-radius:4px;color:#a78bfa;">${l.istek_kodu}</code>`
-            : `<span style="color:var(--muted);">—</span>`;
+            : `<span style="color:var(--muted);">&mdash;</span>`;
           return `<tr style="border-top:1px solid var(--border);">
             <td style="padding:10px 12px;"><code style="font-family:monospace;font-size:12px;background:var(--bg);padding:3px 8px;border-radius:4px;color:${kodRenk};">${l.kod}</code></td>
             <td style="padding:10px 12px;">${ikon} ${l.tur.replace('_',' ')}</td>
@@ -1088,7 +1115,7 @@ async function mesajlariYukle() {
   el.innerHTML = mesajlar.map(m => `
     <div class="msg-wrap ${m.gonderen==='kullanici'?'right':''}">
       <div class="msg-b ${m.gonderen==='kullanici'?'benim':'admin'}">${m.icerik}</div>
-      <div class="msg-t">${m.gonderen==='kullanici'?'Siz':'Destek'} · ${m.tarih}</div>
+      <div class="msg-t">${m.gonderen==='kullanici'?'Siz':'Destek'} &middot; ${m.tarih}</div>
     </div>`).join("");
   if (altaYakin) el.scrollTop = el.scrollHeight;
 }
@@ -1121,9 +1148,9 @@ function baslatSitePoll() {
                    document.getElementById("sayfa-dashboard").style.display !== "none";
     if (!isDash) return;
     lisansKartiGuncelle();
-    // taleplerYukle() polling'den ÇIKARILDI — form her 2 sn'de yeniden render edilince
+    // taleplerYukle() polling'den ÇIKARILDI &mdash; form her 2 sn'de yeniden render edilince
     // kullanıcının girdiği REQ kodu siliniyor. Talepler sadece dashboard açılışında
-    // ve talep gönderildiğinde yüklenir. Kullanıcı manuel "↻ Yenile" butonu kullanabilir.
+    // ve talep gönderildiğinde yüklenir. Kullanıcı manuel "&#8635; Yenile" butonu kullanabilir.
     lisansGecmisiniYukle();
     mesajlariYukle();
   }, 2000);
@@ -1136,7 +1163,7 @@ let _sitePollTimer = null;
   if (r.ok) {
     sayfaGoster("dashboard");
     const p = await r.json();
-    document.getElementById("nav-links").innerHTML = `<span style="font-size:13px;color:var(--muted);margin-right:8px;">${p.email}</span><button class="nav-btn nav-btn-ghost" onclick="sayfaGoster('offline')" style="border-color:#3d6fff44;color:#7eb8ff;">🔒 Offline</button><button class="nav-btn nav-btn-ghost" onclick="cikisYap()">Cıkış</button>`;
+    document.getElementById("nav-links").innerHTML = `<span style="font-size:13px;color:var(--muted);margin-right:8px;">${p.email}</span><button class="nav-btn nav-btn-ghost" onclick="sayfaGoster('offline')" style="border-color:#3d6fff44;color:#7eb8ff;">&#128274; Offline</button><button class="nav-btn nav-btn-ghost" onclick="cikisYap()">Cıkış</button>`;
     baslatSitePoll();
   }
 })();
@@ -1224,15 +1251,33 @@ let _sitePollTimer = null;
     if (!q) return;
     q.innerHTML = "";
     if (d.indirme_linki) {
-      q.innerHTML += `<a href="${d.indirme_linki}" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(90deg,#06b6d4,#3b82f6);color:#fff;padding:6px 10px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;">⬇ İndir</a>`;
+      q.innerHTML += `<a href="${d.indirme_linki}" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(90deg,#06b6d4,#3b82f6);color:#fff;padding:6px 10px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;">&#11015; İndir</a>`;
     } else {
-      q.innerHTML += `<a href="#" onclick="alert('Program sunucuda mevcut değil.')" style="display:inline-flex;align-items:center;gap:6px;background:#ef44447a;color:#fff;padding:6px 10px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;">⬇ İndir</a>`;
+      q.innerHTML += `<a href="#" onclick="alert('Program sunucuda mevcut değil.')" style="display:inline-flex;align-items:center;gap:6px;background:#ef44447a;color:#fff;padding:6px 10px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;">&#11015; İndir</a>`;
     }
     if (d.vt_hash) {
-      q.innerHTML += `<a href="https://www.virustotal.com/gui/file/${d.vt_hash}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#111;color:#fff;padding:6px 10px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;margin-left:6px;">🛡️ VT</a>`;
+      q.innerHTML += `<a href="https://www.virustotal.com/gui/file/${d.vt_hash}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#111;color:#fff;padding:6px 10px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;margin-left:6px;">&#128737; VT</a>`;
     }
   } catch(e) {}
 })();
+</script>
+<script>
+// ===== TEMA YÖNETİMİ (dark/light) =====
+(function() {
+  var kayitli = localStorage.getItem('nt_tema') || 'dark';
+  document.documentElement.setAttribute('data-theme', kayitli);
+  var ikon = document.getElementById('theme-icon');
+  if (ikon) ikon.innerHTML = kayitli === 'light' ? '&#9728;' : '&#9790;';
+})();
+
+function temaToggle() {
+  var mevcut = document.documentElement.getAttribute('data-theme') || 'dark';
+  var yeni   = mevcut === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', yeni);
+  localStorage.setItem('nt_tema', yeni);
+  var ikon = document.getElementById('theme-icon');
+  if (ikon) ikon.innerHTML = yeni === 'light' ? '&#9728;' : '&#9790;';
+}
 </script>
 </body>
 </html>"""
