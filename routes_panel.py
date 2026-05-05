@@ -558,3 +558,77 @@ def admin_guncelle(istek: AdminGuncelleIstek, user: PanelUserDto = Depends(panel
     return {"basarili": True, "mesaj": "Admin bilgileri güncellendi. Lütfen tekrar giriş yapın."}
 
 
+# =====================================================================
+# KALICI SİLME — TALEPler
+# =====================================================================
+@router.delete("/panel/talep-sil/{talep_id}")
+def talep_kalici_sil(talep_id: str, request: Request, bg_tasks: BackgroundTasks, user: PanelUserDto = Depends(yetki_kontrol("talep_onayla")), s: Session = Depends(db)):
+    t = s.query(LisansTalep).filter_by(id=talep_id).first()
+    if not t:
+        raise HTTPException(status_code=404, detail="Talep bulunamadı.")
+    bilgi = f"{t.ad_soyad} ({t.email}) — {t.tur}"
+    s.delete(t)
+    s.commit()
+    panel_log_yaz(s, user.kullanici_adi, "Talep Kalıcı Silindi", bilgi)
+    istihbarat_raporu(bg_tasks, "🗑 Talep KALICI Silindi", user.tam_isim, bilgi, request.client.host)
+    return {"basarili": True}
+
+
+@router.post("/panel/talep-toplu-sil")
+async def talep_toplu_sil(request: Request, bg_tasks: BackgroundTasks, user: PanelUserDto = Depends(yetki_kontrol("talep_onayla")), s: Session = Depends(db)):
+    data = await request.json()
+    ids = data.get("ids", [])
+    if not ids:
+        raise HTTPException(status_code=400, detail="Silinecek ID listesi boş.")
+    silinen = 0
+    for tid in ids:
+        t = s.query(LisansTalep).filter_by(id=tid).first()
+        if t:
+            s.delete(t)
+            silinen += 1
+    s.commit()
+    panel_log_yaz(s, user.kullanici_adi, "Toplu Talep Kalıcı Silindi", f"{silinen} talep silindi.")
+    istihbarat_raporu(bg_tasks, "🗑 Toplu Talep Silindi", user.tam_isim, f"{silinen} talep kalıcı olarak silindi.", request.client.host)
+    return {"basarili": True, "silinen": silinen}
+
+
+# =====================================================================
+# KALICI SİLME — MESAJLAR
+# =====================================================================
+@router.delete("/panel/mesaj-sil/{mesaj_id}")
+def mesaj_kalici_sil(mesaj_id: str, request: Request, bg_tasks: BackgroundTasks, user: PanelUserDto = Depends(yetki_kontrol("mesaj_yaz")), s: Session = Depends(db)):
+    m = s.query(Mesaj).filter_by(id=mesaj_id).first()
+    if not m:
+        raise HTTPException(status_code=404, detail="Mesaj bulunamadı.")
+    s.delete(m)
+    s.commit()
+    panel_log_yaz(s, user.kullanici_adi, "Mesaj Kalıcı Silindi", f"ID: {mesaj_id}")
+    return {"basarili": True}
+
+
+@router.delete("/panel/mesaj-konusma-sil/{kullanici_id}")
+def mesaj_konusma_sil(kullanici_id: str, request: Request, bg_tasks: BackgroundTasks, user: PanelUserDto = Depends(yetki_kontrol("mesaj_yaz")), s: Session = Depends(db)):
+    k = s.query(Kullanici).filter_by(id=kullanici_id).first()
+    isim = k.ad_soyad if k else kullanici_id
+    silinen = s.query(Mesaj).filter_by(kullanici_id=kullanici_id).delete()
+    s.commit()
+    panel_log_yaz(s, user.kullanici_adi, "Konuşma Kalıcı Silindi", f"Kullanıcı: {isim} — {silinen} mesaj")
+    istihbarat_raporu(bg_tasks, "🗑 Konuşma Silindi", user.tam_isim, f"{isim} — {silinen} mesaj silindi.", request.client.host)
+    return {"basarili": True, "silinen": silinen}
+
+
+@router.post("/panel/mesaj-toplu-sil")
+async def mesaj_toplu_sil(request: Request, bg_tasks: BackgroundTasks, user: PanelUserDto = Depends(yetki_kontrol("mesaj_yaz")), s: Session = Depends(db)):
+    data = await request.json()
+    ids = data.get("ids", [])
+    if not ids:
+        raise HTTPException(status_code=400, detail="Silinecek ID listesi boş.")
+    silinen = 0
+    for mid in ids:
+        m = s.query(Mesaj).filter_by(id=mid).first()
+        if m:
+            s.delete(m)
+            silinen += 1
+    s.commit()
+    panel_log_yaz(s, user.kullanici_adi, "Toplu Mesaj Kalıcı Silindi", f"{silinen} mesaj silindi.")
+    return {"basarili": True, "silinen": silinen}

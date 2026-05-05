@@ -46,3 +46,8 @@ def planlar_sayfasi():
 @router.get("/offline-aktivasyon", response_class=HTMLResponse)
 def offline_aktivasyon_sayfasi():
     return HTMLResponse(content=SITE_HTML_TEMPLATE.replace("{CSS}", SITE_CSS) + "<script>sayfaGoster('offline');</script>")
+
+
+@router.get("/hakkimizda", response_class=HTMLResponse)
+def hakkimizda_sayfasi():
+    return HTMLResponse(content=SITE_HTML_TEMPLATE.replace("{CSS}", SITE_CSS) + "<script>sayfaGoster('hakkimizda');</script>")

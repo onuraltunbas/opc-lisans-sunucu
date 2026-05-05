@@ -371,13 +371,16 @@ code { font-family: monospace; font-size: 12px; background: #222540; padding: 2p
   <div class="page" id="page-talepler">
     <div class="page-title">📋 Lisans Talepleri</div>
     <div class="card">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
         <h3 style="margin:0">Gelen Talepler</h3>
-        <button class="btn btn-ghost btn-sm" onclick="taleplerYukle()">↻ Yenile</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-ghost btn-sm" onclick="taleplerYukle()">↻ Yenile</button>
+          <button class="btn btn-sm" id="talep-toplu-sil-btn" onclick="talepTopluSil()" style="background:#7f1d1d;color:#fca5a5;border:1px solid #991b1b;display:none;">🗑 Seçilenleri Kalıcı Sil</button>
+        </div>
       </div>
       <div class="tbl-wrap">
         <table>
-          <thead><tr><th>Tarih</th><th>Ad Soyad</th><th>E-posta</th><th>Tür</th><th>IP</th><th>Durum</th><th>İşlem</th></tr></thead>
+          <thead><tr><th style="width:36px;"><input type="checkbox" id="talep-hepsi-cb" onchange="talepTumunuSec(this.checked)" title="Tümünü Seç"></th><th>Tarih</th><th>Ad Soyad</th><th>E-posta</th><th>Tür</th><th>IP</th><th>Durum</th><th>İşlem</th></tr></thead>
           <tbody id="talep-tablo"></tbody>
         </table>
       </div>
@@ -1064,16 +1067,50 @@ function taleplerYukle() {
     const durumBadge = {beklemede:"b-beklemede",onaylandi:"b-onaylandi",reddedildi:"b-reddedildi"};
     document.getElementById("talep-tablo").innerHTML = liste.map(t => `
       <tr>
+        <td><input type="checkbox" class="talep-cb" value="${t.id}" onchange="talepSecimGuncelle()"></td>
         <td>${t.tarih}</td>
         <td>${t.ad_soyad}</td>
         <td>${t.email}</td>
         <td>${t.tur} ${t.talep_tipi === "offline" ? `<br><span style="font-size:10px;padding:2px 6px;border-radius:4px;background:#3d6fff22;color:#3d6fff;border:1px solid #3d6fff44;">OFFLINE</span>` : ""}</td>
         <td><code>${t.ip||"-"}</code></td>
-        <td><span class="badge ${durumBadge[t.durum]||""}">${t.durum}</span></td>
-        <td>${t.durum==="beklemede" ? `<button class="btn btn-primary btn-sm" onclick="talepModalAc('${t.id}','${t.ad_soyad}','${t.email}','${t.tur}','${t.ip||''}','${t.talep_tipi||'online'}','${t.istek_kodu||''}')">İşlem</button>` : (t.admin_notu ? `<span style="color:#666;font-size:11px;">${t.admin_notu.substring(0,40)}</span>` : "—")}</td>
+        <td><span class="badge ${durumBadge[t.durum]||""}">` + t.durum + `</span></td>
+        <td style="white-space:nowrap;">
+          ${t.durum==="beklemede" ? `<button class="btn btn-primary btn-sm" onclick="talepModalAc('${t.id}','${t.ad_soyad}','${t.email}','${t.tur}','${t.ip||''}','${t.talep_tipi||'online'}','${t.istek_kodu||''}')">İşlem</button>` : (t.admin_notu ? `<span style="color:#666;font-size:11px;">${t.admin_notu.substring(0,30)}</span>` : "—")}
+          <button class="btn btn-sm" style="background:#7f1d1d;color:#fca5a5;border:1px solid #991b1b;margin-left:4px;" onclick="talepKaliciSil('${t.id}','${t.ad_soyad}')" title="Kalıcı Olarak Sil">🗑</button>
+        </td>
       </tr>`).join("");
+    document.getElementById("talep-hepsi-cb").checked = false;
+    document.getElementById("talep-toplu-sil-btn").style.display = "none";
     badgeGuncelle();
   });
+}
+
+function talepSecimGuncelle() {
+  const secilen = document.querySelectorAll(".talep-cb:checked").length;
+  const btn = document.getElementById("talep-toplu-sil-btn");
+  btn.style.display = secilen > 0 ? "" : "none";
+  btn.textContent = `🗑 ${secilen} Talebi Kalıcı Sil`;
+}
+
+function talepTumunuSec(durum) {
+  document.querySelectorAll(".talep-cb").forEach(cb => cb.checked = durum);
+  talepSecimGuncelle();
+}
+
+function talepKaliciSil(id, ad) {
+  if (!confirm(`"${ad}" adlı kullanıcının bu talebi VERİTABANINDAN KALICI OLARAK silinecek.\n\nBu işlem GERİ ALINAMAZ. Emin misiniz?`)) return;
+  fetch(`/panel/talep-sil/${id}`, {method:"DELETE", headers:auth()})
+    .then(r => r.json())
+    .then(d => { notif(d.basarili ? "Talep kalıcı olarak silindi" : (d.detail || "Hata"), !d.basarili); taleplerYukle(); });
+}
+
+function talepTopluSil() {
+  const ids = [...document.querySelectorAll(".talep-cb:checked")].map(cb => cb.value);
+  if (!ids.length) return;
+  if (!confirm(`${ids.length} talep VERİTABANINDAN KALICI OLARAK silinecek.\n\nBu işlem GERİ ALINAMAZ. Emin misiniz?`)) return;
+  fetch("/panel/talep-toplu-sil", {method:"POST", headers:auth(), body:JSON.stringify({ids})})
+    .then(r => r.json())
+    .then(d => { notif(`${d.silinen || ids.length} talep kalıcı silindi`); taleplerYukle(); });
 }
 
 function talepModalAc(id, ad, email, tur, ip, tip, istekKodu) {
@@ -1171,9 +1208,12 @@ function _konusmaMesajYukle(kullaniciId) {
       const inp = document.getElementById("admin-msg-inp");
       if (inp && inputDeger !== null) inp.value = inputDeger;
     } else {
-      right.innerHTML = `
+    right.innerHTML = `
         <div class="msg-right-header">
-          <div style="font-size:15px;font-weight:700;color:#e0e0e0;margin-bottom:8px;">${k.ad_soyad}</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div style="font-size:15px;font-weight:700;color:#e0e0e0;">${k.ad_soyad}</div>
+            <button class="btn btn-sm" style="background:#7f1d1d;color:#fca5a5;border:1px solid #991b1b;" onclick="mesajKonusmaSil('${kullaniciId}','${k.ad_soyad}')" title="Tüm konuşmayı kalıcı sil">🗑 Konuşmayı Sil</button>
+          </div>
           <div class="user-detail">
             <div class="row">
               <div class="field"><label>E-posta</label><span>${k.email}</span></div>
@@ -1213,6 +1253,18 @@ function adminMesajGonder() {
     _konusmaMesajYukle(secilenKullaniciId);
     mesajlariYukle();
   });
+}
+
+function mesajKonusmaSil(kullaniciId, ad) {
+  if (!confirm(`"${ad}" kullanıcısına ait TÜM MESAJLAR VERİTABANINDAN KALICI OLARAK silinecek.\n\nBu işlem GERİ ALINAMAZ. Emin misiniz?`)) return;
+  fetch(`/panel/mesaj-konusma-sil/${kullaniciId}`, {method:"DELETE", headers:auth()})
+    .then(r => r.json())
+    .then(d => {
+      notif(`${d.silinen || 0} mesaj kalıcı silindi`);
+      secilenKullaniciId = null;
+      document.getElementById("msg-right").innerHTML = '<div style="flex:1;display:flex;align-items:center;justify-content:center;color:#444;font-size:14px;">Konuşma silindi</div>';
+      mesajlariYukle();
+    });
 }
 
 // ===== KULLANICILAR =====
