@@ -59,7 +59,7 @@ body {
   position: sticky; top: 0; z-index: 200;
 }
 .nav-brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--text); }
-.nav-logo { height: 30px; width: auto; display: block; transition: filter 0.2s; }
+.nav-logo { height: 100px; width: auto; display: block; transition: filter 0.2s; }
 /* Karanlık temada logonun siyah kısımları beyaz olur */
 [data-theme="dark"] .nav-logo, :root:not([data-theme="light"]) .nav-logo { filter: invert(1); }
 .nav-brand-text { font-size: 14px; font-weight: 800; letter-spacing: -0.3px; color: var(--text); display: flex; flex-direction: column; line-height: 1.1; }
