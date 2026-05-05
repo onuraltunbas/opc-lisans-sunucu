@@ -117,13 +117,13 @@
 </div>
 
 <nav class="nav">
-  <div class="nav-brand">
+  <a class="nav-brand" onclick="sayfaGoster('anasayfa')" style="cursor:pointer;text-decoration:none;">
     <img src="/static/logo.png" alt="Nautilus Technology" class="nav-logo" onerror="this.style.display='none'">
     <div class="nav-brand-text">
       Nautilus Technology
       <span>OPC Gateway Lisans</span>
     </div>
-  </div>
+  </a>
   <div style="display:flex;align-items:center;gap:8px;">
     <div id="nav-quick-links" style="display:flex;align-items:center;gap:6px;"></div>
     <div class="nav-links" id="nav-links">
@@ -342,14 +342,35 @@
 let planlar = [];
 
 // ===== SAYFA YÖNETİMİ =====
-function sayfaGoster(ad) {
+function sayfaGoster(ad, pushState) {
   ["anasayfa","planlar","kayit","giris","dashboard","offline"].forEach(s => {
     document.getElementById("sayfa-" + s).style.display = s === ad ? "" : "none";
   });
   if (ad === "planlar") planlariYukle();
   if (ad === "dashboard") dashboardYukle();
   if (ad === "offline") offlineSayfasiYukle();
+  // Tarayici gecmisine ekle (geri/ileri tus destegi)
+  if (pushState !== false) {
+    var url = ad === "anasayfa" ? "/" : "/" + ad;
+    if (history.state && history.state.sayfa === ad) return;
+    history.pushState({ sayfa: ad }, "", url);
+  }
 }
+
+// Tarayici geri/ileri tusunu dinle
+window.addEventListener("popstate", function(e) {
+  var sayfa = (e.state && e.state.sayfa) ? e.state.sayfa : "anasayfa";
+  sayfaGoster(sayfa, false);
+});
+
+// Sayfa ilk yuklendiginde mevcut URL'e gore sayfayi ayarla (refresh destegi)
+(function() {
+  var path = window.location.pathname.replace("/", "").replace(/\/$/,"") || "anasayfa";
+  var gecerli = ["anasayfa","planlar","kayit","giris","dashboard","offline"];
+  if (!gecerli.includes(path)) path = "anasayfa";
+  // history'de ilk durumu kaydet
+  history.replaceState({ sayfa: path }, "", window.location.pathname);
+})();
 
 // ===== PLANLAR =====
 async function planlariYukle() {
