@@ -232,12 +232,30 @@
         <input class="form-input" type="text" id="r-ad" placeholder="Adınız Soyadınız">
       </div>
       <div class="form-group">
+        <label class="form-label">Firma İsmi</label>
+        <input class="form-input" type="text" id="r-firma" placeholder="Firma İsmi (Opsiyonel)">
+      </div>
+      <div class="form-group">
         <label class="form-label">E-posta</label>
         <input class="form-input" type="email" id="r-email" placeholder="ornek@email.com">
       </div>
       <div class="form-group">
         <label class="form-label">Şifre</label>
         <input class="form-input" type="password" id="r-sifre" placeholder="En az 6 karakter">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Şifre Tekrar</label>
+        <input class="form-input" type="password" id="r-sifre-tekrar" placeholder="Şifrenizi tekrar girin">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Detaylı Adres</label>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <select class="form-input" id="r-ulke" onchange="adresGuncelle('ulke')"><option value="">Ülke Seçin</option></select>
+          <select class="form-input" id="r-sehir" onchange="adresGuncelle('sehir')" disabled><option value="">Şehir Seçin</option></select>
+          <select class="form-input" id="r-ilce" onchange="adresGuncelle('ilce')" disabled><option value="">İlçe Seçin</option></select>
+          <select class="form-input" id="r-mahalle" onchange="adresGuncelle('mahalle')" disabled><option value="">Mahalle Seçin</option></select>
+          <select class="form-input" id="r-sokak" disabled><option value="">Sokak Seçin</option></select>
+        </div>
       </div>
       <button class="form-btn" onclick="kayitOl()">Hesap Oluştur</button>
       <div class="form-alt">Kayıt olarak <a href="#" style="color:var(--accent)">kullanım koşullarını</a> kabul etmiş olursunuz.</div>
@@ -393,15 +411,106 @@ function planSec(kod) {
   if (el) el.classList.add("selected");
 }
 
+// ===== ADRES VERİSİ (MOCK) =====
+const adresVerisi = {
+  "Türkiye": {
+    "İstanbul": {
+      "Kadıköy": {
+        "Caferağa": ["Moda Cad.", "Mühürdar Cad.", "Bahariye Cad."],
+        "Osmanağa": ["Söğütlüçeşme Cad.", "Halitağa Cad."]
+      },
+      "Beşiktaş": {
+        "Abbasağa": ["Ihlamurdere Cad.", "Barbaros Bulvarı"],
+        "Sinanpaşa": ["Köyiçi Meydanı", "Hasfırın Cad."]
+      }
+    },
+    "Ankara": {
+      "Çankaya": {
+        "Kızılay": ["Atatürk Bulvarı", "Meşrutiyet Cad."],
+        "Bahçelievler": ["7. Cadde", "3. Cadde"]
+      }
+    }
+  }
+};
+
+function initAdres() {
+  const ulkeSec = document.getElementById("r-ulke");
+  if (!ulkeSec) return;
+  ulkeSec.innerHTML = '<option value="">Ülke Seçin</option>';
+  for (let ulke in adresVerisi) {
+    ulkeSec.innerHTML += `<option value="${ulke}">${ulke}</option>`;
+  }
+}
+
+function adresGuncelle(seviye) {
+  const ulke = document.getElementById("r-ulke").value;
+  const sehir = document.getElementById("r-sehir").value;
+  const ilce = document.getElementById("r-ilce").value;
+  const mahalle = document.getElementById("r-mahalle").value;
+  
+  const secSehir = document.getElementById("r-sehir");
+  const secIlce = document.getElementById("r-ilce");
+  const secMahalle = document.getElementById("r-mahalle");
+  const secSokak = document.getElementById("r-sokak");
+  
+  if (seviye === 'ulke') {
+    secSehir.innerHTML = '<option value="">Şehir Seçin</option>';
+    secIlce.innerHTML = '<option value="">İlçe Seçin</option>';
+    secMahalle.innerHTML = '<option value="">Mahalle Seçin</option>';
+    secSokak.innerHTML = '<option value="">Sokak Seçin</option>';
+    secSehir.disabled = !ulke; secIlce.disabled = true; secMahalle.disabled = true; secSokak.disabled = true;
+    if (ulke && adresVerisi[ulke]) {
+      for (let s in adresVerisi[ulke]) secSehir.innerHTML += `<option value="${s}">${s}</option>`;
+    }
+  } else if (seviye === 'sehir') {
+    secIlce.innerHTML = '<option value="">İlçe Seçin</option>';
+    secMahalle.innerHTML = '<option value="">Mahalle Seçin</option>';
+    secSokak.innerHTML = '<option value="">Sokak Seçin</option>';
+    secIlce.disabled = !sehir; secMahalle.disabled = true; secSokak.disabled = true;
+    if (sehir && adresVerisi[ulke][sehir]) {
+      for (let i in adresVerisi[ulke][sehir]) secIlce.innerHTML += `<option value="${i}">${i}</option>`;
+    }
+  } else if (seviye === 'ilce') {
+    secMahalle.innerHTML = '<option value="">Mahalle Seçin</option>';
+    secSokak.innerHTML = '<option value="">Sokak Seçin</option>';
+    secMahalle.disabled = !ilce; secSokak.disabled = true;
+    if (ilce && adresVerisi[ulke][sehir][ilce]) {
+      for (let m in adresVerisi[ulke][sehir][ilce]) secMahalle.innerHTML += `<option value="${m}">${m}</option>`;
+    }
+  } else if (seviye === 'mahalle') {
+    secSokak.innerHTML = '<option value="">Sokak Seçin</option>';
+    secSokak.disabled = !mahalle;
+    if (mahalle && adresVerisi[ulke][sehir][ilce][mahalle]) {
+      adresVerisi[ulke][sehir][ilce][mahalle].forEach(s => secSokak.innerHTML += `<option value="${s}">${s}</option>`);
+    }
+  }
+}
+
 // ===== KAYIT =====
 async function kayitOl() {
   const ad    = document.getElementById("r-ad").value.trim();
+  const firma = document.getElementById("r-firma").value.trim();
   const email = document.getElementById("r-email").value.trim();
   const sifre = document.getElementById("r-sifre").value;
+  const sifreTekrar = document.getElementById("r-sifre-tekrar").value;
+  
+  const ulke = document.getElementById("r-ulke").value;
+  const sehir = document.getElementById("r-sehir").value;
+  const ilce = document.getElementById("r-ilce").value;
+  const mahalle = document.getElementById("r-mahalle").value;
+  const sokak = document.getElementById("r-sokak").value;
+  
+  const detayli_adres = [ulke, sehir, ilce, mahalle, sokak].filter(Boolean).join(" - ");
+
   mesajGizle("kayit-hata"); mesajGizle("kayit-ok");
 
-  if (!ad || !email || !sifre) {
-    mesajGoster("kayit-hata", "&#9888; Tüm alanları doldurun.");
+  if (!ad || !email || !sifre || !sifreTekrar) {
+    mesajGoster("kayit-hata", "&#9888; Tüm zorunlu alanları doldurun.");
+    return;
+  }
+  
+  if (sifre !== sifreTekrar) {
+    mesajGoster("kayit-hata", "&#9888; Şifreler eşleşmiyor.");
     return;
   }
 
@@ -410,7 +519,7 @@ async function kayitOl() {
   if (btn) { btn.disabled = true; btn.textContent = "Kayıt yapılıyor&hellip;"; }
 
   const r = await fetch("/api/kayit", {method:"POST", headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({ad_soyad: ad, email, sifre})});
+    body: JSON.stringify({ad_soyad: ad, email, sifre, firma_ismi: firma, detayli_adres})});
   const d = await r.json();
 
   if (btn) { btn.disabled = false; btn.textContent = "Hesap Oluştur"; }
@@ -682,7 +791,7 @@ async function taleplerYukle() {
       </div>
 
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
-        ${planlarData.map(p => `<div class="plan-card ${dashSecilenPlan === p.kod ? 'selected' : ''}" id="dp-${p.kod}" onclick="dashPlanSec('${p.kod}')" style="padding:12px 16px;min-width:140px;cursor:pointer;">
+        ${planlarData.map(p => `<div class="plan-card ${dashSecilenPlan === p.kod ? 'selected' : ''}" id="dp-${p.kod}" data-is-offline="${p.is_offline ? 'true' : 'false'}" style="padding:12px 16px;min-width:140px;cursor:pointer; display:${(_dashTalepTipi === 'offline') == !!p.is_offline ? 'block' : 'none'};" onclick="dashPlanSec('${p.kod}')">
           <div style="font-size:13px;font-weight:600;">${p.ad} ${p.is_offline ? '&#128274;' : ''}</div>
           <div style="font-size:11px;color:var(--muted);margin-top:3px;">${p.aciklama||""}</div>
         </div>`).join("")}
@@ -724,6 +833,16 @@ function talepTipiDegisti() {
   const btn  = document.getElementById("talep-gonder-btn");
   if (alan) alan.style.display = tip.value === "offline" ? "" : "none";
   if (btn)  btn.textContent   = tip.value === "offline" ? "&#128274; Offline Talep Gönder" : "&#127760; Online Talep Gönder";
+  
+  // Planları filtrele
+  const isOfflineReq = (tip.value === "offline");
+  document.querySelectorAll("[id^='dp-']").forEach(el => {
+    const isOfflinePlan = el.getAttribute("data-is-offline") === "true";
+    el.style.display = (isOfflineReq === isOfflinePlan) ? "block" : "none";
+  });
+  // Seçimi sıfırla
+  dashSecilenPlan = null;
+  document.querySelectorAll("[id^='dp-']").forEach(c => c.classList.remove("selected"));
 }
 
 function dashReqKodKontrol() {

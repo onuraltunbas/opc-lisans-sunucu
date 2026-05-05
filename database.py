@@ -88,6 +88,8 @@ class Kullanici(Base):
     kayit_tar       = Column(DateTime, default=datetime.datetime.utcnow)
     son_giris       = Column(DateTime, nullable=True)
     son_ip          = Column(String, nullable=True)
+    firma_ismi      = Column(String, nullable=True)
+    detayli_adres   = Column(Text, nullable=True)
 
 class LisansTalep(Base):
     __tablename__ = "lisans_talepler"
@@ -213,6 +215,8 @@ def _db_migrate():
         f"ALTER TABLE lisanslar ADD COLUMN {_ifne}uretilen_tip VARCHAR(20) DEFAULT 'online'",
         f"ALTER TABLE lisanslar ADD COLUMN {_ifne}istek_kodu_db VARCHAR(100)",
         f"ALTER TABLE lisanslar ADD COLUMN {_ifne}sure_gun_db INTEGER",
+        f"ALTER TABLE kullanicilar ADD COLUMN {_ifne}firma_ismi VARCHAR(255)",
+        f"ALTER TABLE kullanicilar ADD COLUMN {_ifne}detayli_adres TEXT",
     ]
 
     for sql in _migrations:

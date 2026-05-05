@@ -34,17 +34,28 @@ async def kayit_ol(request: Request, bg_tasks: BackgroundTasks, s: Session = Dep
     ad_soyad = data.get("ad_soyad", "").strip()
     email = data.get("email", "").strip().lower()
     sifre = data.get("sifre", "")
+    firma_ismi = data.get("firma_ismi", "").strip()
+    detayli_adres = data.get("detayli_adres", "").strip()
 
     if not ad_soyad or not email or not sifre:
         raise HTTPException(status_code=400, detail="Eksik alan.")
     if s.query(Kullanici).filter_by(email=email).first():
         raise HTTPException(status_code=409, detail="Kayıtlı e-posta.")
 
-    k = Kullanici(ad_soyad=ad_soyad, email=email, sifre_hash=sifre_hashle(sifre), email_dogrulandi=True, son_ip=request.client.host)
+    k = Kullanici(
+        ad_soyad=ad_soyad, 
+        email=email, 
+        sifre_hash=sifre_hashle(sifre), 
+        email_dogrulandi=True, 
+        son_ip=request.client.host,
+        firma_ismi=firma_ismi,
+        detayli_adres=detayli_adres
+    )
     s.add(k)
     s.commit()
 
-    istihbarat_raporu(bg_tasks, "Yeni Kullanıcı Kaydı", ad_soyad, f"E-posta: {email}", request.client.host)
+    mesaj_detay = f"E-posta: {email}\nFirma: {firma_ismi}\nAdres: {detayli_adres}"
+    istihbarat_raporu(bg_tasks, "Yeni Kullanıcı Kaydı", ad_soyad, mesaj_detay, request.client.host)
     return {"basarili": True, "mesaj": "Kayıt başarılı!"}
 
 
