@@ -10,6 +10,7 @@
 <meta name="google-site-verification" content="5PWZlgIA2ix0hNSBohcMBFv76V76GvmZN7-5mLJMF3k" />
 
 {CSS}
+<script src="/static/adres_data.js"></script>
 </head>
 <body>
 
@@ -248,14 +249,16 @@
         <input class="form-input" type="password" id="r-sifre-tekrar" placeholder="Şifrenizi tekrar girin">
       </div>
       <div class="form-group">
-        <label class="form-label">Detaylı Adres</label>
-        <div style="display:flex; flex-direction:column; gap:8px;">
-          <select class="form-input" id="r-ulke" onchange="adresGuncelle('ulke')"><option value="">Ülke Seçin</option></select>
-          <select class="form-input" id="r-sehir" onchange="adresGuncelle('sehir')" disabled><option value="">Şehir Seçin</option></select>
-          <select class="form-input" id="r-ilce" onchange="adresGuncelle('ilce')" disabled><option value="">İlçe Seçin</option></select>
-          <select class="form-input" id="r-mahalle" onchange="adresGuncelle('mahalle')" disabled><option value="">Mahalle Seçin</option></select>
-          <select class="form-input" id="r-sokak" disabled><option value="">Sokak Seçin</option></select>
-        </div>
+        <label class="form-label">İl</label>
+        <select class="form-input" id="r-il" onchange="ilDegisti()"><option value="">İl Seçin</option></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">İlçe</label>
+        <select class="form-input" id="r-ilce" disabled><option value="">Önce İl Seçin</option></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Açık Adres <span style="color:var(--muted);font-weight:400;">(Mahalle, Sokak, No)</span></label>
+        <input class="form-input" type="text" id="r-acik-adres" placeholder="Mahalle, Sokak, Kapı No...">
       </div>
       <button class="form-btn" onclick="kayitOl()">Hesap Oluştur</button>
       <div class="form-alt">Kayıt olarak <a href="#" style="color:var(--accent)">kullanım koşullarını</a> kabul etmiş olursunuz.</div>
@@ -367,6 +370,7 @@ function sayfaGoster(ad, pushState) {
   if (ad === "planlar") planlariYukle();
   if (ad === "dashboard") dashboardYukle();
   if (ad === "offline") offlineSayfasiYukle();
+  if (ad === "kayit") initAdres();
   // Tarayici gecmisine ekle (geri/ileri tus destegi)
   if (pushState !== false) {
     var url = ad === "anasayfa" ? "/" : "/" + ad;
@@ -411,78 +415,25 @@ function planSec(kod) {
   if (el) el.classList.add("selected");
 }
 
-// ===== ADRES VERİSİ (MOCK) =====
-const adresVerisi = {
-  "Türkiye": {
-    "İstanbul": {
-      "Kadıköy": {
-        "Caferağa": ["Moda Cad.", "Mühürdar Cad.", "Bahariye Cad."],
-        "Osmanağa": ["Söğütlüçeşme Cad.", "Halitağa Cad."]
-      },
-      "Beşiktaş": {
-        "Abbasağa": ["Ihlamurdere Cad.", "Barbaros Bulvarı"],
-        "Sinanpaşa": ["Köyiçi Meydanı", "Hasfırın Cad."]
-      }
-    },
-    "Ankara": {
-      "Çankaya": {
-        "Kızılay": ["Atatürk Bulvarı", "Meşrutiyet Cad."],
-        "Bahçelievler": ["7. Cadde", "3. Cadde"]
-      }
-    }
-  }
-};
-
+// ===== ADRES (İL/İLÇE - TR_ILLER) =====
 function initAdres() {
-  const ulkeSec = document.getElementById("r-ulke");
-  if (!ulkeSec) return;
-  ulkeSec.innerHTML = '<option value="">Ülke Seçin</option>';
-  for (let ulke in adresVerisi) {
-    ulkeSec.innerHTML += `<option value="${ulke}">${ulke}</option>`;
-  }
+  const ilSec = document.getElementById("r-il");
+  if (!ilSec || typeof TR_ILLER === 'undefined') return;
+  ilSec.innerHTML = '<option value="">İl Seçin</option>';
+  Object.keys(TR_ILLER).sort().forEach(il => {
+    ilSec.innerHTML += `<option value="${il}">${il}</option>`;
+  });
 }
 
-function adresGuncelle(seviye) {
-  const ulke = document.getElementById("r-ulke").value;
-  const sehir = document.getElementById("r-sehir").value;
-  const ilce = document.getElementById("r-ilce").value;
-  const mahalle = document.getElementById("r-mahalle").value;
-  
-  const secSehir = document.getElementById("r-sehir");
-  const secIlce = document.getElementById("r-ilce");
-  const secMahalle = document.getElementById("r-mahalle");
-  const secSokak = document.getElementById("r-sokak");
-  
-  if (seviye === 'ulke') {
-    secSehir.innerHTML = '<option value="">Şehir Seçin</option>';
-    secIlce.innerHTML = '<option value="">İlçe Seçin</option>';
-    secMahalle.innerHTML = '<option value="">Mahalle Seçin</option>';
-    secSokak.innerHTML = '<option value="">Sokak Seçin</option>';
-    secSehir.disabled = !ulke; secIlce.disabled = true; secMahalle.disabled = true; secSokak.disabled = true;
-    if (ulke && adresVerisi[ulke]) {
-      for (let s in adresVerisi[ulke]) secSehir.innerHTML += `<option value="${s}">${s}</option>`;
-    }
-  } else if (seviye === 'sehir') {
-    secIlce.innerHTML = '<option value="">İlçe Seçin</option>';
-    secMahalle.innerHTML = '<option value="">Mahalle Seçin</option>';
-    secSokak.innerHTML = '<option value="">Sokak Seçin</option>';
-    secIlce.disabled = !sehir; secMahalle.disabled = true; secSokak.disabled = true;
-    if (sehir && adresVerisi[ulke][sehir]) {
-      for (let i in adresVerisi[ulke][sehir]) secIlce.innerHTML += `<option value="${i}">${i}</option>`;
-    }
-  } else if (seviye === 'ilce') {
-    secMahalle.innerHTML = '<option value="">Mahalle Seçin</option>';
-    secSokak.innerHTML = '<option value="">Sokak Seçin</option>';
-    secMahalle.disabled = !ilce; secSokak.disabled = true;
-    if (ilce && adresVerisi[ulke][sehir][ilce]) {
-      for (let m in adresVerisi[ulke][sehir][ilce]) secMahalle.innerHTML += `<option value="${m}">${m}</option>`;
-    }
-  } else if (seviye === 'mahalle') {
-    secSokak.innerHTML = '<option value="">Sokak Seçin</option>';
-    secSokak.disabled = !mahalle;
-    if (mahalle && adresVerisi[ulke][sehir][ilce][mahalle]) {
-      adresVerisi[ulke][sehir][ilce][mahalle].forEach(s => secSokak.innerHTML += `<option value="${s}">${s}</option>`);
-    }
+function ilDegisti() {
+  const il = document.getElementById("r-il").value;
+  const ilceSec = document.getElementById("r-ilce");
+  ilceSec.innerHTML = '<option value="">İlçe Seçin</option>';
+  ilceSec.disabled = !il;
+  if (il && TR_ILLER[il]) {
+    TR_ILLER[il].forEach(ilce => {
+      ilceSec.innerHTML += `<option value="${ilce}">${ilce}</option>`;
+    });
   }
 }
 
@@ -493,14 +444,10 @@ async function kayitOl() {
   const email = document.getElementById("r-email").value.trim();
   const sifre = document.getElementById("r-sifre").value;
   const sifreTekrar = document.getElementById("r-sifre-tekrar").value;
-  
-  const ulke = document.getElementById("r-ulke").value;
-  const sehir = document.getElementById("r-sehir").value;
-  const ilce = document.getElementById("r-ilce").value;
-  const mahalle = document.getElementById("r-mahalle").value;
-  const sokak = document.getElementById("r-sokak").value;
-  
-  const detayli_adres = [ulke, sehir, ilce, mahalle, sokak].filter(Boolean).join(" - ");
+  const il    = document.getElementById("r-il") ? document.getElementById("r-il").value : "";
+  const ilce  = document.getElementById("r-ilce") ? document.getElementById("r-ilce").value : "";
+  const acikAdres = document.getElementById("r-acik-adres") ? document.getElementById("r-acik-adres").value.trim() : "";
+  const detayli_adres = ["Türkiye", il, ilce, acikAdres].filter(Boolean).join(" - ");
 
   mesajGizle("kayit-hata"); mesajGizle("kayit-ok");
 
