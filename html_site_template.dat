@@ -404,46 +404,71 @@
 
 <!-- DASHBOARD -->
 <div id="sayfa-dashboard" style="display:none">
-  <div class="dashboard">
-    <div class="dash-header">
-      <div class="dash-title" id="dash-hosgeldin">Hoş Geldiniz</div>
-      <button class="nav-btn nav-btn-ghost" onclick="cikisYap()" style="font-size:13px;">Çıkış</button>
-    </div>
+  <div style="max-width:1050px; margin:0 auto; padding: 32px 24px; display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap;">
+    
+    <!-- SOL SÜTUN: İndirme ve Araçlar -->
+    <div style="flex:1; min-width:280px; max-width:320px;" id="dash-left-col">
+      <div class="dash-card" style="text-align:center; border:1px solid var(--border); border-radius:var(--radius);">
+        <h3 style="font-size:14px; font-weight:700; margin-bottom:16px; color:var(--text); letter-spacing:-0.2px;">Program İndir</h3>
+        <div class="dash-sub" style="margin-bottom:16px; line-height:1.5;">Lisansınız olsun veya olmasın güncel yazılımı her zaman buradan indirebilirsiniz.</div>
+        
+        <div id="dash-yeni-surum-badge" style="display:none; margin-bottom:14px;">
+          <span id="dash-yeni-surum-txt" style="display:inline-block;background:linear-gradient(90deg,#22d3ee,#38bdf8);color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;box-shadow:0 4px 12px #38bdf844;letter-spacing:0.5px;">&#128640; YENİ SÜRÜM YAYINDA!</span>
+        </div>
 
-    <div class="dash-grid" id="dash-grid">
-      <!-- JS ile doldurulacak -->
-    </div>
-
-    <!-- Lisans Talebi -->
-    <div class="dash-card full" id="talep-section">
-      <h3>Lisans Talebi</h3>
-      <div id="talep-icerik"></div>
-    </div>
-
-    <!-- Lisans Geçmişi -->
-    <div class="dash-card full" id="gecmis-section">
-      <h3 style="display:flex;align-items:center;justify-content:space-between;">
-        <span>&#128267; Lisans Geçmişi</span>
-        <button onclick="lisansGecmisiniYukle()" style="background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;">&#8635; Yenile</button>
-      </h3>
-      <div id="gecmis-icerik"><div style="color:var(--muted);font-size:13px;">Yükleniyor&hellip;</div></div>
-    </div>
-
-    <!-- Mesajlar -->
-    <div class="dash-card full">
-      <h3>Destek / Mesajlar</h3>
-      <div class="msg-area" id="msg-area"></div>
-      <textarea class="msg-input" id="msg-yaz" placeholder="Mesajınızı yazın&hellip; (Ctrl+Enter ile gönder)" onkeydown="if(event.ctrlKey&&event.key==='Enter')mesajGonder()"></textarea>
-      <button class="form-btn" style="margin-top:8px;padding:10px;" onclick="mesajGonder()">Gönder</button>
-    </div>
-
-    <!-- Şifre Değiştirme -->
-    <div style="margin-top:32px; padding-top:16px; border-top:1px solid var(--border); text-align:center;">
-      <div style="display:flex; justify-content:center; align-items:center; gap:8px;">
-        <input type="password" id="k-yeni-sifre" placeholder="Yeni şifreniz (en az 6 karakter)" style="background:transparent; border:1px solid var(--border); border-radius:6px; padding:6px 12px; font-size:12px; color:var(--text); width:200px;">
-        <button onclick="kullaniciSifreDegistir()" style="background:transparent; border:1px solid var(--border); color:var(--muted); padding:6px 12px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:600;">Şifremi Değiştir</button>
+        <a id="sol-indir-btn" href="#" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;width:100%;gap:10px;background:var(--accent2);color:var(--bg);padding:14px;border-radius:var(--radius-sm);font-size:14px;font-weight:700;text-decoration:none;transition:opacity 0.2s;">
+          &#11015; OPC Gateway'i İndir
+        </a>
+        <div style="margin-top:16px;">
+          <a id="sol-vt-btn" href="#" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;width:100%;gap:8px;background:transparent;border:1px solid var(--success);color:var(--success);padding:10px;border-radius:var(--radius-sm);font-size:12px;font-weight:600;text-decoration:none;transition:background 0.2s;" onmouseover="this.style.background='rgba(34, 197, 94, 0.1)'" onmouseout="this.style.background='transparent'">
+            &#128737; VirusTotal Raporu
+          </a>
+        </div>
       </div>
-      <div style="font-size:10px; color:var(--muted); margin-top:6px;">Hesabınızın şifresini eski şifrenizi girmeden hızlıca değiştirebilirsiniz.</div>
+    </div>
+
+    <!-- SAĞ SÜTUN: Ana Dashboard -->
+    <div style="flex:2; min-width:400px; width:100%;">
+      <div class="dash-header" style="margin-bottom:16px;">
+        <div class="dash-title" id="dash-hosgeldin">Hoş Geldiniz</div>
+        <button class="nav-btn nav-btn-ghost" onclick="cikisYap()" style="font-size:13px;">Çıkış</button>
+      </div>
+
+      <div class="dash-grid" id="dash-grid">
+        <!-- JS ile doldurulacak -->
+      </div>
+
+      <!-- Lisans Talebi -->
+      <div class="dash-card full" id="talep-section" style="margin-top:1px;">
+        <h3>Lisans Talebi</h3>
+        <div id="talep-icerik"></div>
+      </div>
+
+      <!-- Lisans Geçmişi -->
+      <div class="dash-card full" id="gecmis-section" style="margin-top:1px;">
+        <h3 style="display:flex;align-items:center;justify-content:space-between;">
+          <span>&#128267; Lisans Geçmişi</span>
+          <button onclick="lisansGecmisiniYukle()" style="background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;">&#8635; Yenile</button>
+        </h3>
+        <div id="gecmis-icerik"><div style="color:var(--muted);font-size:13px;">Yükleniyor&hellip;</div></div>
+      </div>
+
+      <!-- Mesajlar -->
+      <div class="dash-card full" style="margin-top:1px;">
+        <h3>Destek / Mesajlar</h3>
+        <div class="msg-area" id="msg-area"></div>
+        <textarea class="msg-input" id="msg-yaz" placeholder="Mesajınızı yazın&hellip; (Ctrl+Enter ile gönder)" onkeydown="if(event.ctrlKey&&event.key==='Enter')mesajGonder()"></textarea>
+        <button class="form-btn" style="margin-top:8px;padding:10px;" onclick="mesajGonder()">Gönder</button>
+      </div>
+
+      <!-- Şifre Değiştirme -->
+      <div style="margin-top:32px; padding-top:16px; border-top:1px solid var(--border); text-align:center;">
+        <div style="display:flex; justify-content:center; align-items:center; gap:8px;">
+          <input type="password" id="k-yeni-sifre" placeholder="Yeni şifreniz (en az 6 karakter)" style="background:transparent; border:1px solid var(--border); border-radius:6px; padding:6px 12px; font-size:12px; color:var(--text); width:200px;">
+          <button onclick="kullaniciSifreDegistir()" style="background:transparent; border:1px solid var(--border); color:var(--muted); padding:6px 12px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:600;">Şifremi Değiştir</button>
+        </div>
+        <div style="font-size:10px; color:var(--muted); margin-top:6px;">Hesabınızın şifresini eski şifrenizi girmeden hızlıca değiştirebilirsiniz.</div>
+      </div>
     </div>
   </div>
 </div>
@@ -579,13 +604,13 @@ async function kayitOl() {
 
   // Butonu devre dışı bırak
   const btn = document.querySelector("#sayfa-kayit .form-btn");
-  if (btn) { btn.disabled = true; btn.textContent = "Kayıt yapılıyor&hellip;"; }
+  if (btn) { btn.disabled = true; btn.innerHTML = "Kayıt yapılıyor&hellip;"; }
 
   const r = await fetch("/api/kayit", {method:"POST", headers:{"Content-Type":"application/json"},
     body: JSON.stringify({ad_soyad: ad, email, sifre, firma_ismi: firma, detayli_adres})});
   const d = await r.json();
 
-  if (btn) { btn.disabled = false; btn.textContent = "Hesap Oluştur"; }
+  if (btn) { btn.disabled = false; btn.innerHTML = "Hesap Oluştur"; }
 
   if (r.ok) {
     // Geri sayımlı yönlendirme
@@ -619,13 +644,13 @@ async function girisYap() {
   }
 
   const btn = document.querySelector("#sayfa-giris .form-btn");
-  if (btn) { btn.disabled = true; btn.textContent = "Giriş yapılıyor&hellip;"; }
+  if (btn) { btn.disabled = true; btn.innerHTML = "Giriş yapılıyor&hellip;"; }
 
   const r = await fetch("/api/giris", {method:"POST", headers:{"Content-Type":"application/json"},
     body: JSON.stringify({email, sifre})});
   const d = await r.json();
 
-  if (btn) { btn.disabled = false; btn.textContent = "Giriş Yap"; }
+  if (btn) { btn.disabled = false; btn.innerHTML = "Giriş Yap"; }
 
   if (r.ok) {
     mesajGoster("giris-ok", "&#9989; Giriş başarılı! Yönlendiriliyorsunuz&hellip;");
@@ -706,23 +731,6 @@ function lisansGridRender(p, grid) {
           <div class="license-sub">Bu kodu program aktivasyonunda kullanın</div>
         </div>
       </div>
-      ${(p.indirme_linki && p.vt_hash) ? `
-      <div class="dash-card full" style="text-align:center;">
-        ${(p.yeni_surum_banner && p.son_guncelleme) ? `
-        <div style="margin-bottom:14px;">
-          <span style="display:inline-block;background:linear-gradient(90deg,#22d3ee,#38bdf8);color:#fff;padding:8px 20px;border-radius:20px;font-size:14px;font-weight:700;box-shadow:0 4px 12px #38bdf844;letter-spacing:0.5px;border:1px solid #ffffff33;">&#128640; YENİ SÜRÜM YAYINDA! (${p.son_guncelleme})</span>
-        </div>` : ''}
-        <h3>Program İndir</h3>
-        <div class="dash-sub" style="margin-bottom:16px;">Lisansınız aktif. Programı indirip lisans kodunuzla aktive edebilirsiniz.</div>
-        <a href="${p.indirme_linki}" target="_blank" style="display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--success),#16a34a);color:white;padding:14px 32px;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;box-shadow:0 0 24px #22c55e33;transition:all 0.2s;">
-          &#11015; OPC Gateway'i İndir
-        </a>
-        <div style="margin-top:18px;">
-          <a href="https://www.virustotal.com/gui/file/${p.vt_hash}" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(90deg,#22c55e,#16a34a);color:white;padding:10px 22px;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none;box-shadow:0 0 12px #22c55e33;transition:all 0.2s;">
-            &#128737; VirusTotal Güvenlik Raporu (0 Virüs)
-          </a>
-        </div>
-      </div>` : ''}
       <div class="dash-card full" style="text-align:center;padding-top:8px;">
         <button onclick="iptalModalAc()" style="background:transparent;border:1px solid #ef444455;color:#f87171;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Sora',sans-serif;transition:all 0.2s;" onmouseover="this.style.background='#ef444415'" onmouseout="this.style.background='transparent'">
           &#9888; Lisansı İptal Et
@@ -753,8 +761,22 @@ async function dashboardYukle() {
   const r = await fetch("/api/profil");
   if (!r.ok) { sayfaGoster("giris"); return; }
   const p = await r.json();
-  document.getElementById("dash-hosgeldin").textContent = "Merhaba, " + p.ad_soyad + " &#128075;";
+  document.getElementById("dash-hosgeldin").innerHTML = "Merhaba, " + p.ad_soyad + " &#128075;";
   document.getElementById("nav-links").innerHTML = `<span style="font-size:13px;color:var(--muted);margin-right:8px;">${p.email}</span><button class="nav-btn nav-btn-ghost" onclick="cikisYap()">Cıkış</button>`;
+  
+  // Sol kolon indirme linkleri (lisans durumundan bağımsız)
+  if (p.indirme_linki) document.getElementById("sol-indir-btn").href = p.indirme_linki;
+  if (p.vt_hash) document.getElementById("sol-vt-btn").href = "https://www.virustotal.com/gui/file/" + p.vt_hash;
+  
+  // Yeni sürüm banner'ı
+  const ysBadge = document.getElementById("dash-yeni-surum-badge");
+  if (p.yeni_surum_banner && p.son_guncelleme) {
+    document.getElementById("dash-yeni-surum-txt").innerHTML = `&#128640; YENİ SÜRÜM YAYINDA! (${p.son_guncelleme})`;
+    ysBadge.style.display = "block";
+  } else {
+    ysBadge.style.display = "none";
+  }
+
   lisansGridRender(p, document.getElementById("dash-grid"));
   taleplerYukle();
   lisansGecmisiniYukle();
@@ -1115,7 +1137,7 @@ async function mesajGonder() {
 // ===== YARDIMCI =====
 function mesajGoster(id, txt) {
   const el = document.getElementById(id);
-  if (el) { el.textContent = txt; el.style.display = "block"; }
+  if (el) { el.innerHTML = txt; el.style.display = "block"; }
 }
 function mesajGizle(id) {
   const el = document.getElementById(id);
