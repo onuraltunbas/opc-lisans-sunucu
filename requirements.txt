@@ -9,3 +9,4 @@ aiosmtplib
 jinja2
 email-validator
 psycopg2-binary
+aiofiles
