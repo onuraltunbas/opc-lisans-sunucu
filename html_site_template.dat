@@ -46,7 +46,7 @@
         <div>
           <div class="cerez-kat-ad">Zorunlu Çerezler</div>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;">
+        <div style="display:flex;flex-wrap:wrap;flex:1 1 auto;align-items:center;gap:clamp(6px,0.8vw,10px);">
           <span class="cerez-zorunlu-etiket">Her Zaman Aktif</span>
           <label class="cerez-toggle">
             <input type="checkbox" checked disabled>
@@ -121,10 +121,10 @@
   <a class="nav-brand" onclick="sayfaGoster('anasayfa')" style="cursor:pointer;text-decoration:none;">
     <img src="/static/logo.png" alt="Nautilus Technology" class="nav-logo" onerror="this.style.display='none'">
   </a>
-  <div style="display:flex;align-items:center;gap:8px;">
-    <div id="nav-quick-links" style="display:flex;align-items:center;gap:6px;"></div>
+  <div style="display:flex;flex-wrap:wrap;flex:1 1 auto;align-items:center;gap:clamp(6px,0.8vw,10px);">
+    <div id="nav-quick-links" style="display:flex;flex-wrap:wrap;flex:1 1 auto;align-items:center;gap:clamp(4px,0.6vw,8px);"></div>
     <div class="nav-links" id="nav-links">
-      <button class="nav-btn nav-btn-ghost" onclick="sayfaGoster('hakkimizda')" style="font-size:13px;">Hakkımızda</button>
+      <button class="nav-btn nav-btn-ghost" onclick="sayfaGoster('hakkimizda')" style="font-size:clamp(9px,1.3vw,16px);">Hakkımızda</button>
       <button class="nav-btn nav-btn-ghost" onclick="sayfaGoster('giris')">Giriş Yap</button>
       <button class="nav-btn nav-btn-primary" onclick="sayfaGoster('kayit')">Kayıt Ol</button>
     </div>
@@ -171,93 +171,93 @@
 </div>
 
 <!-- PLANLAR -->
-<div id="sayfa-planlar" style="display:none">
-  <div style="height:48px;"></div>
+<div id="sayfa-planlar" style="display:none;">
+  <div style="height:clamp(36px,4.8vh,58px);"></div>
   <div class="plans-section">
     <div class="section-title">Lisans Planları</div>
     <div class="section-sub">İhtiyacınıza göre bir plan seçin</div>
     <div class="plans" id="plan-listesi">
-      <div style="text-align:center;color:var(--muted);grid-column:1/-1;padding:40px;">Planlar yükleniyor...</div>
+      <div style="text-align:center;color:var(--muted);grid-column:1/-1;padding:clamp(30px,4.0vw,48px);">Planlar yükleniyor...</div>
     </div>
-    <div style="text-align:center;margin-top:32px;">
+    <div style="text-align:center;margin-top:clamp(24px,3.2vh,39px);">
       <button class="btn-hero btn-hero-primary" onclick="sayfaGoster('kayit')">Kayıt Ol ve Talep Gönder &rarr;</button>
     </div>
   </div>
 </div>
 
 <!-- HAKKIMIZDA -->
-<div id="sayfa-hakkimizda" style="display:none">
-  <div style="height:48px;"></div>
-  <div style="max-width:900px;margin:0 auto;padding:0 24px 80px;">
+<div id="sayfa-hakkimizda" style="display:none;">
+  <div style="height:clamp(36px,4.8vh,58px);"></div>
+  <div style="width:100%;max-width:clamp(300px,95vw,900px);margin:0 auto;padding:0 clamp(18px,2.4vw,29px) clamp(60px,8.0vw,96px);">
 
     <!-- Üst Başlık -->
-    <div style="text-align:center;margin-bottom:56px;">
-      <div style="display:inline-flex;align-items:center;gap:10px;background:var(--accent-dim,rgba(61,111,255,0.08));border:1px solid rgba(61,111,255,0.25);border-radius:40px;padding:8px 22px;font-size:13px;color:var(--accent,#3d6fff);font-weight:600;letter-spacing:.5px;margin-bottom:20px;">&#9670; Kurumsal Profil</div>
-      <h1 style="font-size:clamp(28px,5vw,46px);font-weight:800;line-height:1.15;margin:0 0 14px;">Nautilus Technology</h1>
-      <p style="font-size:17px;color:var(--muted);font-weight:500;margin:0;">Endüstriyel Haberleşme ve İleri Optimizasyon Çözümleri</p>
+    <div style="text-align:center;margin-bottom:clamp(42px,5.6vh,68px);">
+      <div style="display:inline-flex;align-items:center;gap:clamp(7px,1.0vw,12px);background:var(--accent-dim,rgba(61,111,255,0.08));border:1px solid rgba(61,111,255,0.25);border-radius:clamp(30px,4.0vw,48px);padding:clamp(6px,0.8vw,10px) clamp(16px,2.2vw,27px);font-size:clamp(9px,1.3vw,16px);color:var(--accent,#3d6fff);font-weight:600;letter-spacing:.5px;margin-bottom:clamp(15px,2.0vh,24px);">&#9670; Kurumsal Profil</div>
+      <h1 style="font-size:clamp(28px,5vw,46px);font-weight:800;line-height:1.15;margin:0 0 clamp(10px,1.4vw,17px);">Nautilus Technology</h1>
+      <p style="font-size:clamp(12px,1.7vw,21px);color:var(--muted);font-weight:500;margin:0;">Endüstriyel Haberleşme ve İleri Optimizasyon Çözümleri</p>
     </div>
 
     <!-- Vizyon Kartı -->
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:40px;margin-bottom:36px;position:relative;overflow:hidden;">
-      <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:linear-gradient(180deg,#3d6fff,#7c3aed);"></div>
-      <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--accent,#3d6fff);margin-bottom:16px;">&#9632; Vizyonumuz ve Teknolojik Altyapımız</div>
-      <p style="font-size:15px;line-height:1.85;color:var(--text);margin:0 0 18px;">Nautilus Technology, endüstriyel otomasyon ve veri haberleşmesi alanında yenilikçi, sürdürülebilir ve yüksek verimli yazılım çözümleri geliştirmek amacıyla kurulmuştur. Temel odak noktamız; modern <strong>SCADA, ERP ve IoT</strong> sistemleri ile sahadaki uç birimler arasında kesintisiz ve güvenli bir veri entegrasyonu sağlamaktır.</p>
-      <p style="font-size:15px;line-height:1.85;color:var(--text);margin:0 0 18px;">Endüstriyel tesislerin operasyonel sürekliliği göz önüne alınarak tasarlanan yazılım mimarimiz, sektördeki standart çözümlerin aksine <strong>donanım bağımsız</strong> bir verimlilik sunmaktadır. Geliştirdiğimiz özgün asenkron veri işleme teknolojisi, kısıtlı sistem kaynaklarına (düşük CPU ve RAM) sahip eski nesil donanımlarda dahi maksimum stabilite ile çalışmak üzere özel olarak optimize edilmiştir.</p>
-      <p style="font-size:15px;line-height:1.85;color:var(--text);margin:0;">Amacımız; tesislerin donanım yenileme maliyetlerini minimize ederken, yüksek hacimli etiket okuma süreçlerinde <strong>sıfır gecikme</strong>, yüksek sistem kararlılığı ve uluslararası mühendislik standartlarında bir altyapı hizmeti sunmaktır.</p>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:clamp(12px,1.6vw,20px);padding:clamp(30px,4.0vw,48px);margin-bottom:clamp(27px,3.6vh,44px);position:relative;overflow:hidden;">
+      <div style="position:absolute;top:0;left:0;width:100%;max-width:4px;height:100%;background:linear-gradient(180deg,#3d6fff,#7c3aed);"></div>
+      <div style="font-size:clamp(8px,1.1vw,14px);font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--accent,#3d6fff);margin-bottom:clamp(12px,1.6vh,20px);">&#9632; Vizyonumuz ve Teknolojik Altyapımız</div>
+      <p style="font-size:clamp(11px,1.5vw,18px);line-height:1.85;color:var(--text);margin:0 0 clamp(13px,1.8vw,22px);">Nautilus Technology, endüstriyel otomasyon ve veri haberleşmesi alanında yenilikçi, sürdürülebilir ve yüksek verimli yazılım çözümleri geliştirmek amacıyla kurulmuştur. Temel odak noktamız; modern <strong>SCADA, ERP ve IoT</strong> sistemleri ile sahadaki uç birimler arasında kesintisiz ve güvenli bir veri entegrasyonu sağlamaktır.</p>
+      <p style="font-size:clamp(11px,1.5vw,18px);line-height:1.85;color:var(--text);margin:0 0 clamp(13px,1.8vw,22px);">Endüstriyel tesislerin operasyonel sürekliliği göz önüne alınarak tasarlanan yazılım mimarimiz, sektördeki standart çözümlerin aksine <strong>donanım bağımsız</strong> bir verimlilik sunmaktadır. Geliştirdiğimiz özgün asenkron veri işleme teknolojisi, kısıtlı sistem kaynaklarına (düşük CPU ve RAM) sahip eski nesil donanımlarda dahi maksimum stabilite ile çalışmak üzere özel olarak optimize edilmiştir.</p>
+      <p style="font-size:clamp(11px,1.5vw,18px);line-height:1.85;color:var(--text);margin:0;">Amacımız; tesislerin donanım yenileme maliyetlerini minimize ederken, yüksek hacimli etiket okuma süreçlerinde <strong>sıfır gecikme</strong>, yüksek sistem kararlılığı ve uluslararası mühendislik standartlarında bir altyapı hizmeti sunmaktır.</p>
     </div>
 
     <!-- Özellikler Grid -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:48px;">
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;text-align:center;">
-        <div style="font-size:28px;margin-bottom:10px;">&#128268;</div>
-        <div style="font-weight:700;font-size:14px;margin-bottom:6px;">OPC UA / DA</div>
-        <div style="font-size:13px;color:var(--muted);line-height:1.5;">Endüstriyel protokol uzmanlığı</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:clamp(12px,1.6vw,20px);margin-bottom:clamp(36px,4.8vh,58px);">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:clamp(9px,1.2vw,15px);padding:clamp(18px,2.4vw,29px);text-align:center;">
+        <div style="font-size:clamp(21px,2.8vw,34px);margin-bottom:clamp(7px,1.0vh,12px);">&#128268;</div>
+        <div style="font-weight:700;font-size:clamp(10px,1.4vw,17px);margin-bottom:clamp(4px,0.6vh,8px);">OPC UA / DA</div>
+        <div style="font-size:clamp(9px,1.3vw,16px);color:var(--muted);line-height:1.5;">Endüstriyel protokol uzmanlığı</div>
       </div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;text-align:center;">
-        <div style="font-size:28px;margin-bottom:10px;">&#9889;</div>
-        <div style="font-weight:700;font-size:14px;margin-bottom:6px;">Asenkron Motor</div>
-        <div style="font-size:13px;color:var(--muted);line-height:1.5;">Sıfır gecikme veri işleme</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:clamp(9px,1.2vw,15px);padding:clamp(18px,2.4vw,29px);text-align:center;">
+        <div style="font-size:clamp(21px,2.8vw,34px);margin-bottom:clamp(7px,1.0vh,12px);">&#9889;</div>
+        <div style="font-weight:700;font-size:clamp(10px,1.4vw,17px);margin-bottom:clamp(4px,0.6vh,8px);">Asenkron Motor</div>
+        <div style="font-size:clamp(9px,1.3vw,16px);color:var(--muted);line-height:1.5;">Sıfır gecikme veri işleme</div>
       </div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;text-align:center;">
-        <div style="font-size:28px;margin-bottom:10px;">&#128170;</div>
-        <div style="font-weight:700;font-size:14px;margin-bottom:6px;">Donanım Bağımsız</div>
-        <div style="font-size:13px;color:var(--muted);line-height:1.5;">Eski sistemlerde tam performans</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:clamp(9px,1.2vw,15px);padding:clamp(18px,2.4vw,29px);text-align:center;">
+        <div style="font-size:clamp(21px,2.8vw,34px);margin-bottom:clamp(7px,1.0vh,12px);">&#128170;</div>
+        <div style="font-weight:700;font-size:clamp(10px,1.4vw,17px);margin-bottom:clamp(4px,0.6vh,8px);">Donanım Bağımsız</div>
+        <div style="font-size:clamp(9px,1.3vw,16px);color:var(--muted);line-height:1.5;">Eski sistemlerde tam performans</div>
       </div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;text-align:center;">
-        <div style="font-size:28px;margin-bottom:10px;">&#128737;</div>
-        <div style="font-weight:700;font-size:14px;margin-bottom:6px;">Güvenli Altyapı</div>
-        <div style="font-size:13px;color:var(--muted);line-height:1.5;">Uluslararası standartlar</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:clamp(9px,1.2vw,15px);padding:clamp(18px,2.4vw,29px);text-align:center;">
+        <div style="font-size:clamp(21px,2.8vw,34px);margin-bottom:clamp(7px,1.0vh,12px);">&#128737;</div>
+        <div style="font-weight:700;font-size:clamp(10px,1.4vw,17px);margin-bottom:clamp(4px,0.6vh,8px);">Güvenli Altyapı</div>
+        <div style="font-size:clamp(9px,1.3vw,16px);color:var(--muted);line-height:1.5;">Uluslararası standartlar</div>
       </div>
     </div>
 
     <!-- Ekip -->
-    <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);text-align:center;margin-bottom:28px;">&#9632; Yönetim ve Ar-Ge Kadromuz</div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px;margin-bottom:48px;">
+    <div style="font-size:clamp(8px,1.1vw,14px);font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);text-align:center;margin-bottom:clamp(21px,2.8vh,34px);">&#9632; Yönetim ve Ar-Ge Kadromuz</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:clamp(18px,2.4vw,29px);margin-bottom:clamp(36px,4.8vh,58px);">
 
       <!-- Kadir Han -->
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px;position:relative;overflow:hidden;transition:border-color .2s;" onmouseover="this.style.borderColor='rgba(61,111,255,0.5)'" onmouseout="this.style.borderColor='var(--border)'">
-        <div style="position:absolute;top:0;right:0;width:80px;height:80px;background:linear-gradient(135deg,rgba(61,111,255,0.08),transparent);border-radius:0 16px 0 80px;"></div>
-        <div style="width:54px;height:54px;border-radius:14px;background:linear-gradient(135deg,#3d6fff,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff;margin-bottom:18px;">K</div>
-        <div style="font-size:18px;font-weight:800;margin-bottom:4px;">Kadir Han Çobanoğlu</div>
-        <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(61,111,255,0.1);border:1px solid rgba(61,111,255,0.25);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;color:var(--accent,#3d6fff);margin-bottom:16px;">&#127775; Kurucu Ortak &amp; CEO</div>
-        <p style="font-size:14px;line-height:1.75;color:var(--muted);margin:0;">Nautilus Technology'nin genel yönetiminden, kurumsal işbirliklerinden ve stratejik iş geliştirme süreçlerinden sorumludur. Endüstriyel pazarın dinamiklerini ve müşteri gereksinimlerini analiz ederek şirketin uzun vadeli büyüme vizyonuna yön vermektedir.</p>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:clamp(12px,1.6vw,20px);padding:clamp(24px,3.2vw,39px);position:relative;overflow:hidden;transition:border-color .2s;" onmouseover="this.style.borderColor='rgba(61,111,255,0.5)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="position:absolute;top:0;right:0;width:100%;max-width:80px;height:clamp(60px,8.0vh,96px);background:linear-gradient(135deg,rgba(61,111,255,0.08),transparent);border-radius:0 clamp(12px,1.6vw,20px) 0 clamp(60px,8.0vw,96px);"></div>
+        <div style="width:100%;max-width:54px;height:clamp(40px,5.4vh,65px);border-radius:clamp(10px,1.4vw,17px);background:linear-gradient(135deg,#3d6fff,#7c3aed);display:flex;flex-wrap:wrap;flex:1 1 auto;align-items:center;justify-content:center;font-size:clamp(16px,2.2vw,27px);font-weight:800;color:#fff;margin-bottom:clamp(13px,1.8vh,22px);">K</div>
+        <div style="font-size:clamp(13px,1.8vw,22px);font-weight:800;margin-bottom:clamp(3px,0.4vh,5px);">Kadir Han Çobanoğlu</div>
+        <div style="display:inline-flex;align-items:center;gap:clamp(4px,0.6vw,8px);background:rgba(61,111,255,0.1);border:1px solid rgba(61,111,255,0.25);border-radius:clamp(15px,2.0vw,24px);padding:clamp(3px,0.4vw,5px) clamp(9px,1.2vw,15px);font-size:clamp(9px,1.2vw,15px);font-weight:600;color:var(--accent,#3d6fff);margin-bottom:clamp(12px,1.6vh,20px);">&#127775; Kurucu Ortak &amp; CEO</div>
+        <p style="font-size:clamp(10px,1.4vw,17px);line-height:1.75;color:var(--muted);margin:0;">Nautilus Technology'nin genel yönetiminden, kurumsal işbirliklerinden ve stratejik iş geliştirme süreçlerinden sorumludur. Endüstriyel pazarın dinamiklerini ve müşteri gereksinimlerini analiz ederek şirketin uzun vadeli büyüme vizyonuna yön vermektedir.</p>
       </div>
 
       <!-- Remzican Onur -->
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px;position:relative;overflow:hidden;transition:border-color .2s;" onmouseover="this.style.borderColor='rgba(124,58,237,0.5)'" onmouseout="this.style.borderColor='var(--border)'">
-        <div style="position:absolute;top:0;right:0;width:80px;height:80px;background:linear-gradient(135deg,rgba(124,58,237,0.08),transparent);border-radius:0 16px 0 80px;"></div>
-        <div style="width:54px;height:54px;border-radius:14px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff;margin-bottom:18px;">R</div>
-        <div style="font-size:18px;font-weight:800;margin-bottom:4px;">Remzican Onur Altunbaş</div>
-        <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.25);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;color:#a78bfa;margin-bottom:16px;">&#9881; Kurucu Ortak &amp; CTO</div>
-        <p style="font-size:14px;line-height:1.75;color:var(--muted);margin:0;">Nautilus Gateway sistemlerinin çekirdek mimari tasarımını, donanım optimizasyonlarını ve Ar-Ge süreçlerini yönetmektedir. Asenkron veri haberleşmesi alanındaki mühendislik uzmanlığı ile ürünlerimizin uluslararası teknoloji standartlarında geliştirilmesini ve sahada kusursuz çalışmasını sağlamaktadır.</p>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:clamp(12px,1.6vw,20px);padding:clamp(24px,3.2vw,39px);position:relative;overflow:hidden;transition:border-color .2s;" onmouseover="this.style.borderColor='rgba(124,58,237,0.5)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="position:absolute;top:0;right:0;width:100%;max-width:80px;height:clamp(60px,8.0vh,96px);background:linear-gradient(135deg,rgba(124,58,237,0.08),transparent);border-radius:0 clamp(12px,1.6vw,20px) 0 clamp(60px,8.0vw,96px);"></div>
+        <div style="width:100%;max-width:54px;height:clamp(40px,5.4vh,65px);border-radius:clamp(10px,1.4vw,17px);background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;flex-wrap:wrap;flex:1 1 auto;align-items:center;justify-content:center;font-size:clamp(16px,2.2vw,27px);font-weight:800;color:#fff;margin-bottom:clamp(13px,1.8vh,22px);">R</div>
+        <div style="font-size:clamp(13px,1.8vw,22px);font-weight:800;margin-bottom:clamp(3px,0.4vh,5px);">Remzican Onur Altunbaş</div>
+        <div style="display:inline-flex;align-items:center;gap:clamp(4px,0.6vw,8px);background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.25);border-radius:clamp(15px,2.0vw,24px);padding:clamp(3px,0.4vw,5px) clamp(9px,1.2vw,15px);font-size:clamp(9px,1.2vw,15px);font-weight:600;color:#a78bfa;margin-bottom:clamp(12px,1.6vh,20px);">&#9881; Kurucu Ortak &amp; CTO</div>
+        <p style="font-size:clamp(10px,1.4vw,17px);line-height:1.75;color:var(--muted);margin:0;">Nautilus Gateway sistemlerinin çekirdek mimari tasarımını, donanım optimizasyonlarını ve Ar-Ge süreçlerini yönetmektedir. Asenkron veri haberleşmesi alanındaki mühendislik uzmanlığı ile ürünlerimizin uluslararası teknoloji standartlarında geliştirilmesini ve sahada kusursuz çalışmasını sağlamaktadır.</p>
       </div>
     </div>
 
     <!-- CTA -->
-    <div style="text-align:center;background:linear-gradient(135deg,rgba(61,111,255,0.08),rgba(124,58,237,0.08));border:1px solid rgba(61,111,255,0.2);border-radius:16px;padding:40px 32px;">
-      <div style="font-size:20px;font-weight:800;margin-bottom:10px;">Teknolojiyi birlikte inşa edelim</div>
-      <p style="font-size:14px;color:var(--muted);margin:0 0 24px;">Endüstriyel dönüşüm yolculuğunuzda Nautilus Technology olarak yanınızdayız.</p>
-      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+    <div style="text-align:center;background:linear-gradient(135deg,rgba(61,111,255,0.08),rgba(124,58,237,0.08));border:1px solid rgba(61,111,255,0.2);border-radius:clamp(12px,1.6vw,20px);padding:clamp(30px,4.0vw,48px) clamp(24px,3.2vw,39px);">
+      <div style="font-size:clamp(15px,2.0vw,24px);font-weight:800;margin-bottom:clamp(7px,1.0vh,12px);">Teknolojiyi birlikte inşa edelim</div>
+      <p style="font-size:clamp(10px,1.4vw,17px);color:var(--muted);margin:0 0 clamp(18px,2.4vw,29px);">Endüstriyel dönüşüm yolculuğunuzda Nautilus Technology olarak yanınızdayız.</p>
+      <div style="display:flex;flex-wrap:wrap;flex:1 1 auto;gap:clamp(9px,1.2vw,15px);justify-content:center;flex-wrap:wrap;">
         <button class="btn-hero btn-hero-primary" onclick="sayfaGoster('kayit')">Hemen Başvurun &rarr;</button>
         <button class="btn-hero btn-hero-ghost" onclick="sayfaGoster('planlar')">Planları İncele</button>
       </div>
@@ -266,15 +266,15 @@
 </div>
 
 
-<div id="sayfa-offline" style="display:none">
-  <div style="height:48px;"></div>
-  <div class="form-container" style="max-width:520px;">
+<div id="sayfa-offline" style="display:none;">
+  <div style="height:clamp(36px,4.8vh,58px);"></div>
+  <div class="form-container" style="width:100%;max-width:clamp(300px,95vw,520px);">
     <div class="form-card">
       <div class="form-title">&#128274; Offline Aktivasyon Talebi</div>
       <div class="form-sub">İnternet bağlantısı olmayan sistemler için lisans talebinde bulunun. Giriş yapmış olmanız gerekir.</div>
       <div class="form-err" id="offline-hata"></div>
       <div class="form-ok" id="offline-ok"></div>
-      <div id="offline-giris-uyari" style="display:none;background:#f59e0b15;border:1px solid #f59e0b44;color:#fbbf24;border-radius:8px;padding:12px 16px;font-size:13px;margin-bottom:16px;">
+      <div id="offline-giris-uyari" style="display:none;background:#f59e0b15;border:1px solid #f59e0b44;color:#fbbf24;border-radius:clamp(6px,0.8vw,10px);padding:clamp(9px,1.2vw,15px) clamp(12px,1.6vw,20px);font-size:clamp(9px,1.3vw,16px);margin-bottom:clamp(12px,1.6vh,20px);">
         &#9888; Offline aktivasyon talebi göndermek için önce <a onclick="sayfaGoster('giris')" style="color:#3d6fff;cursor:pointer;font-weight:600;">giriş yapmalısınız</a>.
       </div>
       <div id="offline-form-icerik">
@@ -285,9 +285,9 @@
         <div class="form-group">
           <label class="form-label">Gateway İstek Kodu (REQ-...)</label>
           <input class="form-input" type="text" id="off-req-kod" placeholder="REQ-XXXXXXXXXXXXXXXXXXXX" style="font-family:monospace;letter-spacing:1px;" oninput="offReqKodKontrol()">
-          <div id="off-req-durum" style="font-size:12px;margin-top:4px;"></div>
+          <div id="off-req-durum" style="font-size:clamp(9px,1.2vw,15px);margin-top:clamp(3px,0.4vh,5px);"></div>
         </div>
-        <div style="background:#3d6fff0a;border:1px solid #3d6fff22;border-radius:8px;padding:12px 14px;font-size:12px;color:#8a9bc0;margin-bottom:16px;line-height:1.7;">
+        <div style="background:#3d6fff0a;border:1px solid #3d6fff22;border-radius:clamp(6px,0.8vw,10px);padding:clamp(9px,1.2vw,15px) clamp(10px,1.4vw,17px);font-size:clamp(9px,1.2vw,15px);color:#8a9bc0;margin-bottom:clamp(12px,1.6vh,20px);line-height:1.7;">
           &#128268; İstek kodunu almak için <b>OPC Gateway Pro</b> programını açıp <b>Offline Aktivasyon &rarr; İstek Kodu Oluştur</b> seçeneğini kullanın.
         </div>
         <button class="form-btn" id="off-talep-btn" onclick="offlineTalepGonder()">Offline Lisans Talebi Gönder</button>
@@ -297,8 +297,8 @@
 </div>
 
 <!-- KAYIT -->
-<div id="sayfa-kayit" style="display:none">
-  <div style="height:48px;"></div>
+<div id="sayfa-kayit" style="display:none;">
+  <div style="height:clamp(36px,4.8vh,58px);"></div>
   <div class="form-container">
     <div class="form-card">
       <div class="form-title">Hesap Oluştur</div>
@@ -338,14 +338,14 @@
         <input class="form-input" type="text" id="r-acik-adres" placeholder="Mahalle, Sokak, Kapı No...">
       </div>
       <button class="form-btn" onclick="kayitOl()">Hesap Oluştur</button>
-      <div class="form-alt">Kayıt olarak <a href="#" style="color:var(--accent)">kullanım koşullarını</a> kabul etmiş olursunuz.</div>
+      <div class="form-alt">Kayıt olarak <a href="#" style="color:var(--accent);">kullanım koşullarını</a> kabul etmiş olursunuz.</div>
     </div>
   </div>
 </div>
 
 <!-- GİRİŞ -->
-<div id="sayfa-giris" style="display:none">
-  <div style="height:48px;"></div>
+<div id="sayfa-giris" style="display:none;">
+  <div style="height:clamp(36px,4.8vh,58px);"></div>
   <div class="form-container">
     <div class="form-card">
       <div class="form-title">Giriş Yap</div>
@@ -367,24 +367,24 @@
 </div>
 
 <!-- DASHBOARD -->
-<div id="sayfa-dashboard" style="display:none">
-  <div style="max-width:1050px; margin:0 auto; padding: 32px 24px; display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap;">
+<div id="sayfa-dashboard" style="display:none;">
+  <div style="width:100%;max-width:clamp(300px,95vw,1050px);margin:0 auto;padding:clamp(24px,3.2vw,39px) clamp(18px,2.4vw,29px);display:flex;flex-wrap:wrap;flex:1 1 auto;gap:clamp(18px,2.4vw,29px);align-items:flex-start;flex-wrap:wrap;">
     
     <!-- SOL SÜTUN: İndirme ve Araçlar -->
-    <div style="flex:1; min-width:280px; max-width:320px;" id="dash-left-col">
-      <div class="dash-card" style="text-align:center; border:1px solid var(--border); border-radius:var(--radius);">
-        <h3 style="font-size:14px; font-weight:700; margin-bottom:16px; color:var(--text); letter-spacing:-0.2px;">Program İndir</h3>
-        <div class="dash-sub" style="margin-bottom:16px; line-height:1.5;">Lisansınız olsun veya olmasın güncel yazılımı her zaman buradan indirebilirsiniz.</div>
+    <div style="flex:1;min-width:clamp(180px,50vw,280px);width:100%;max-width:clamp(300px,95vw,320px);" id="dash-left-col">
+      <div class="dash-card" style="text-align:center;border:1px solid var(--border);border-radius:var(--radius);">
+        <h3 style="font-size:clamp(10px,1.4vw,17px);font-weight:700;margin-bottom:clamp(12px,1.6vh,20px);color:var(--text);letter-spacing:-0.2px;">Program İndir</h3>
+        <div class="dash-sub" style="margin-bottom:clamp(12px,1.6vh,20px);line-height:1.5;">Lisansınız olsun veya olmasın güncel yazılımı her zaman buradan indirebilirsiniz.</div>
         
-        <div id="dash-yeni-surum-badge" style="display:none; margin-bottom:14px;">
-          <span id="dash-yeni-surum-txt" style="display:inline-block;background:linear-gradient(90deg,#22d3ee,#38bdf8);color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;box-shadow:0 4px 12px #38bdf844;letter-spacing:0.5px;">&#128640; YENİ SÜRÜM YAYINDA!</span>
+        <div id="dash-yeni-surum-badge" style="display:none;margin-bottom:clamp(10px,1.4vh,17px);">
+          <span id="dash-yeni-surum-txt" style="display:inline-block;background:linear-gradient(90deg,#22d3ee,#38bdf8);color:#fff;padding:clamp(4px,0.6vw,8px) clamp(10px,1.4vw,17px);border-radius:clamp(15px,2.0vw,24px);font-size:clamp(9px,1.2vw,15px);font-weight:700;box-shadow:0 4px 12px #38bdf844;letter-spacing:0.5px;">&#128640; YENİ SÜRÜM YAYINDA!</span>
         </div>
 
-        <a id="sol-indir-btn" href="#" download style="display:inline-flex;align-items:center;justify-content:center;width:100%;gap:10px;background:var(--accent2);color:var(--bg);padding:14px;border-radius:var(--radius-sm);font-size:14px;font-weight:700;text-decoration:none;transition:opacity 0.2s;">
+        <a id="sol-indir-btn" href="#" download style="display:inline-flex;align-items:center;justify-content:center;width:100%;gap:clamp(7px,1.0vw,12px);background:var(--accent2);color:var(--bg);padding:clamp(10px,1.4vw,17px);border-radius:var(--radius-sm);font-size:clamp(10px,1.4vw,17px);font-weight:700;text-decoration:none;transition:opacity 0.2s;">
           &#11015; OPC Gateway'i İndir
         </a>
-        <div style="margin-top:16px;">
-          <a id="sol-vt-btn" href="#" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;width:100%;gap:8px;background:transparent;border:1px solid var(--success);color:var(--success);padding:10px;border-radius:var(--radius-sm);font-size:12px;font-weight:600;text-decoration:none;transition:background 0.2s;" onmouseover="this.style.background='rgba(34, 197, 94, 0.1)'" onmouseout="this.style.background='transparent'">
+        <div style="margin-top:clamp(12px,1.6vh,20px);">
+          <a id="sol-vt-btn" href="#" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;width:100%;gap:clamp(6px,0.8vw,10px);background:transparent;border:1px solid var(--success);color:var(--success);padding:clamp(7px,1.0vw,12px);border-radius:var(--radius-sm);font-size:clamp(9px,1.2vw,15px);font-weight:600;text-decoration:none;transition:background 0.2s;" onmouseover="this.style.background='rgba(34, 197, 94, 0.1)'" onmouseout="this.style.background='transparent'">
             &#128737; VirusTotal Raporu
           </a>
         </div>
@@ -392,10 +392,10 @@
     </div>
 
     <!-- SAĞ SÜTUN: Ana Dashboard -->
-    <div style="flex:2; min-width:400px; width:100%;">
-      <div class="dash-header" style="margin-bottom:16px;">
+    <div style="flex:2;min-width:clamp(300px,50vw,400px);width:100%;">
+      <div class="dash-header" style="margin-bottom:clamp(12px,1.6vh,20px);">
         <div class="dash-title" id="dash-hosgeldin">Hoş Geldiniz</div>
-        <button class="nav-btn nav-btn-ghost" onclick="cikisYap()" style="font-size:13px;">Çıkış</button>
+        <button class="nav-btn nav-btn-ghost" onclick="cikisYap()" style="font-size:clamp(9px,1.3vw,16px);">Çıkış</button>
       </div>
 
       <div class="dash-grid" id="dash-grid">
@@ -403,35 +403,35 @@
       </div>
 
       <!-- Lisans Talebi -->
-      <div class="dash-card full" id="talep-section" style="margin-top:1px;">
+      <div class="dash-card full" id="talep-section" style="margin-top:clamp(1px,0.1vh,2px);">
         <h3>Lisans Talebi</h3>
         <div id="talep-icerik"></div>
       </div>
 
       <!-- Lisans Geçmişi -->
-      <div class="dash-card full" id="gecmis-section" style="margin-top:1px;">
-        <h3 style="display:flex;align-items:center;justify-content:space-between;">
+      <div class="dash-card full" id="gecmis-section" style="margin-top:clamp(1px,0.1vh,2px);">
+        <h3 style="display:flex;flex-wrap:wrap;flex:1 1 auto;align-items:center;justify-content:space-between;">
           <span>&#128267; Lisans Geçmişi</span>
-          <button onclick="lisansGecmisiniYukle()" style="background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;">&#8635; Yenile</button>
+          <button onclick="lisansGecmisiniYukle()" style="background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:clamp(4px,0.6vw,8px);padding:clamp(3px,0.4vw,5px) clamp(9px,1.2vw,15px);font-size:clamp(9px,1.2vw,15px);cursor:pointer;">&#8635; Yenile</button>
         </h3>
-        <div id="gecmis-icerik"><div style="color:var(--muted);font-size:13px;">Yükleniyor&hellip;</div></div>
+        <div id="gecmis-icerik"><div style="color:var(--muted);font-size:clamp(9px,1.3vw,16px);">Yükleniyor&hellip;</div></div>
       </div>
 
       <!-- Mesajlar -->
-      <div class="dash-card full" style="margin-top:1px;">
+      <div class="dash-card full" style="margin-top:clamp(1px,0.1vh,2px);">
         <h3>Destek / Mesajlar</h3>
         <div class="msg-area" id="msg-area"></div>
         <textarea class="msg-input" id="msg-yaz" placeholder="Mesajınızı yazın&hellip; (Ctrl+Enter ile gönder)" onkeydown="if(event.ctrlKey&&event.key==='Enter')mesajGonder()"></textarea>
-        <button class="form-btn" style="margin-top:8px;padding:10px;" onclick="mesajGonder()">Gönder</button>
+        <button class="form-btn" style="margin-top:clamp(6px,0.8vh,10px);padding:clamp(7px,1.0vw,12px);" onclick="mesajGonder()">Gönder</button>
       </div>
 
       <!-- Şifre Değiştirme -->
-      <div style="margin-top:32px; padding-top:16px; border-top:1px solid var(--border); text-align:center;">
-        <div style="display:flex; justify-content:center; align-items:center; gap:8px;">
-          <input type="password" id="k-yeni-sifre" placeholder="Yeni şifreniz (en az 6 karakter)" style="background:transparent; border:1px solid var(--border); border-radius:6px; padding:6px 12px; font-size:12px; color:var(--text); width:200px;">
-          <button onclick="kullaniciSifreDegistir()" style="background:transparent; border:1px solid var(--border); color:var(--muted); padding:6px 12px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:600;">Şifremi Değiştir</button>
+      <div style="margin-top:clamp(24px,3.2vh,39px);padding-top:clamp(12px,1.6vh,20px);border-top:1px solid var(--border);text-align:center;">
+        <div style="display:flex;flex-wrap:wrap;flex:1 1 auto;justify-content:center;align-items:center;gap:clamp(6px,0.8vw,10px);">
+          <input type="password" id="k-yeni-sifre" placeholder="Yeni şifreniz (en az 6 karakter)" style="background:transparent;border:1px solid var(--border);border-radius:clamp(4px,0.6vw,8px);padding:clamp(4px,0.6vw,8px) clamp(9px,1.2vw,15px);font-size:clamp(9px,1.2vw,15px);color:var(--text);width:100%;max-width:200px;">
+          <button onclick="kullaniciSifreDegistir()" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:clamp(4px,0.6vw,8px) clamp(9px,1.2vw,15px);border-radius:clamp(4px,0.6vw,8px);font-size:clamp(9px,1.2vw,15px);cursor:pointer;font-weight:600;">Şifremi Değiştir</button>
         </div>
-        <div style="font-size:10px; color:var(--muted); margin-top:6px;">Hesabınızın şifresini eski şifrenizi girmeden hızlıca değiştirebilirsiniz.</div>
+        <div style="font-size:clamp(7px,1.0vw,12px);color:var(--muted);margin-top:clamp(4px,0.6vh,8px);">Hesabınızın şifresini eski şifrenizi girmeden hızlıca değiştirebilirsiniz.</div>
       </div>
     </div>
   </div>
@@ -439,11 +439,11 @@
 
 <!-- İPTAL MODALı -->
 <div id="iptal-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(6px);">
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px;width:480px;max-width:95vw;">
-    <div style="font-size:18px;font-weight:700;color:#f87171;margin-bottom:6px;">&#9888; Lisansı İptal Et</div>
-    <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">Bu işlem geri alınamaz. Lisansınız iptal edildikten sonra programı kullanamazsınız.</div>
-    <div style="font-size:13px;font-weight:500;margin-bottom:8px;color:#8a9bc0;">Neden iptal ediyorsunuz?</div>
-    <select id="iptal-neden-sec" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;font-family:'Sora',sans-serif;margin-bottom:8px;">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:clamp(12px,1.6vw,20px);padding:clamp(24px,3.2vw,39px);width:100%;max-width:480px;max-width:95vw;">
+    <div style="font-size:clamp(13px,1.8vw,22px);font-weight:700;color:#f87171;margin-bottom:clamp(4px,0.6vh,8px);">&#9888; Lisansı İptal Et</div>
+    <div style="font-size:clamp(9px,1.3vw,16px);color:var(--muted);margin-bottom:clamp(15px,2.0vh,24px);">Bu işlem geri alınamaz. Lisansınız iptal edildikten sonra programı kullanamazsınız.</div>
+    <div style="font-size:clamp(9px,1.3vw,16px);font-weight:500;margin-bottom:clamp(6px,0.8vh,10px);color:#8a9bc0;">Neden iptal ediyorsunuz?</div>
+    <select id="iptal-neden-sec" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:clamp(6px,0.8vw,10px);padding:clamp(7px,1.0vw,12px) clamp(10px,1.4vw,17px);color:var(--text);font-size:clamp(9px,1.3vw,16px);font-family:'Sora',sans-serif;margin-bottom:clamp(6px,0.8vh,10px);">
       <option value="">-- Neden seçin --</option>
       <option value="Artık kullanmıyorum">Artık kullanmıyorum</option>
       <option value="Fiyatı çok yüksek">Fiyatı çok yüksek</option>
@@ -452,48 +452,48 @@
       <option value="Geçici iptal">Geçici iptal</option>
       <option value="Diğer">Diğer</option>
     </select>
-    <textarea id="iptal-aciklama" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;font-family:'Sora',sans-serif;min-height:60px;resize:vertical;margin-bottom:16px;" placeholder="Ek açıklama (isteğe bağlı)"></textarea>
-    <div id="iptal-hata" style="color:#f87171;font-size:13px;margin-bottom:12px;display:none;"></div>
-    <div style="display:flex;gap:10px;">
-      <button onclick="lisansImIptalEt()" style="flex:1;background:linear-gradient(135deg,#ef4444,#b91c1c);color:white;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif;">Evet, İptal Et</button>
-      <button onclick="iptalModalKapat()" style="flex:1;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Sora',sans-serif;">Vazgeç</button>
+    <textarea id="iptal-aciklama" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:clamp(6px,0.8vw,10px);padding:clamp(7px,1.0vw,12px) clamp(10px,1.4vw,17px);color:var(--text);font-size:clamp(9px,1.3vw,16px);font-family:'Sora',sans-serif;min-height:clamp(45px,6.0vh,72px);resize:vertical;margin-bottom:clamp(12px,1.6vh,20px);" placeholder="Ek açıklama (isteğe bağlı)"></textarea>
+    <div id="iptal-hata" style="color:#f87171;font-size:clamp(9px,1.3vw,16px);margin-bottom:clamp(9px,1.2vh,15px);display:none;"></div>
+    <div style="display:flex;flex-wrap:wrap;flex:1 1 auto;gap:clamp(7px,1.0vw,12px);">
+      <button onclick="lisansImIptalEt()" style="flex:1;background:linear-gradient(135deg,#ef4444,#b91c1c);color:white;border:none;border-radius:clamp(6px,0.8vw,10px);padding:clamp(9px,1.2vw,15px);font-size:clamp(10px,1.4vw,17px);font-weight:700;cursor:pointer;font-family:'Sora',sans-serif;">Evet, İptal Et</button>
+      <button onclick="iptalModalKapat()" style="flex:1;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:clamp(6px,0.8vw,10px);padding:clamp(9px,1.2vw,15px);font-size:clamp(10px,1.4vw,17px);font-weight:600;cursor:pointer;font-family:'Sora',sans-serif;">Vazgeç</button>
     </div>
   </div>
 </div>
 
 <!-- FOOTER -->
-<footer id="site-footer" style="border-top:1px solid var(--border);margin-top:auto;padding:48px 24px 32px;">
-  <div style="max-width:1100px;margin:0 auto;">
-    <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:40px;margin-bottom:40px;">
+<footer id="site-footer" style="border-top:1px solid var(--border);margin-top:auto;padding:clamp(36px,4.8vw,58px) clamp(18px,2.4vw,29px) clamp(24px,3.2vw,39px);">
+  <div style="width:100%;max-width:clamp(300px,95vw,1100px);margin:0 auto;">
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:clamp(30px,4.0vw,48px);margin-bottom:clamp(30px,4.0vh,48px);">
       <div>
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
-          <img src="/static/logo.png" alt="Nautilus" class="footer-logo" style="height:28px;" onerror="this.style.display='none'">
-          <span style="font-size:16px;font-weight:800;">Nautilus Technology</span>
+        <div style="display:flex;flex-wrap:wrap;flex:1 1 auto;align-items:center;gap:clamp(7px,1.0vw,12px);margin-bottom:clamp(10px,1.4vh,17px);">
+          <img src="/static/logo.png" alt="Nautilus" class="footer-logo" style="height:clamp(21px,2.8vh,34px);" onerror="this.style.display='none'">
+          <span style="font-size:clamp(12px,1.6vw,20px);font-weight:800;">Nautilus Technology</span>
         </div>
-        <p style="font-size:13px;color:var(--muted);line-height:1.7;max-width:280px;margin:0;">Endüstriyel otomasyon ve veri haberleşmesi alanında yenilikçi, yüksek verimli yazılım çözümleri.</p>
+        <p style="font-size:clamp(9px,1.3vw,16px);color:var(--muted);line-height:1.7;width:100%;max-width:clamp(300px,95vw,280px);margin:0;">Endüstriyel otomasyon ve veri haberleşmesi alanında yenilikçi, yüksek verimli yazılım çözümleri.</p>
       </div>
       <div>
-        <div style="font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:14px;">Hızlı Erişim</div>
-        <div style="display:flex;flex-direction:column;gap:10px;">
-          <a onclick="sayfaGoster('anasayfa')" style="font-size:14px;color:var(--text);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Ana Sayfa</a>
-          <a onclick="sayfaGoster('hakkimizda')" style="font-size:14px;color:var(--text);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Hakkımızda</a>
-          <a onclick="sayfaGoster('planlar')" style="font-size:14px;color:var(--text);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Lisans Planları</a>
+        <div style="font-size:clamp(9px,1.2vw,15px);font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:clamp(10px,1.4vh,17px);">Hızlı Erişim</div>
+        <div style="display:flex;flex-wrap:wrap;flex:1 1 auto;flex-direction:column;gap:clamp(7px,1.0vw,12px);">
+          <a onclick="sayfaGoster('anasayfa')" style="font-size:clamp(10px,1.4vw,17px);color:var(--text);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Ana Sayfa</a>
+          <a onclick="sayfaGoster('hakkimizda')" style="font-size:clamp(10px,1.4vw,17px);color:var(--text);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Hakkımızda</a>
+          <a onclick="sayfaGoster('planlar')" style="font-size:clamp(10px,1.4vw,17px);color:var(--text);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Lisans Planları</a>
         </div>
       </div>
       <div>
-        <div style="font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:14px;">Hesap</div>
-        <div style="display:flex;flex-direction:column;gap:10px;">
-          <a onclick="sayfaGoster('giris')" style="font-size:14px;color:var(--text);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Giriş Yap</a>
-          <a onclick="sayfaGoster('kayit')" style="font-size:14px;color:var(--text);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Kayıt Ol</a>
-          <a onclick="sayfaGoster('offline')" style="font-size:14px;color:var(--text);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Offline Aktivasyon</a>
+        <div style="font-size:clamp(9px,1.2vw,15px);font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:clamp(10px,1.4vh,17px);">Hesap</div>
+        <div style="display:flex;flex-wrap:wrap;flex:1 1 auto;flex-direction:column;gap:clamp(7px,1.0vw,12px);">
+          <a onclick="sayfaGoster('giris')" style="font-size:clamp(10px,1.4vw,17px);color:var(--text);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Giriş Yap</a>
+          <a onclick="sayfaGoster('kayit')" style="font-size:clamp(10px,1.4vw,17px);color:var(--text);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Kayıt Ol</a>
+          <a onclick="sayfaGoster('offline')" style="font-size:clamp(10px,1.4vw,17px);color:var(--text);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Offline Aktivasyon</a>
         </div>
       </div>
     </div>
-    <div style="border-top:1px solid var(--border);padding-top:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-      <div style="font-size:13px;color:var(--muted);">&copy; 2025 Nautilus Technology. Tüm hakları saklıdır.</div>
-      <div style="display:flex;gap:16px;">
-        <a onclick="sayfaGoster('hakkimizda')" style="font-size:13px;color:var(--muted);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Hakkımızda</a>
-        <a href="mailto:info@nautilustechnology.com.tr" style="font-size:13px;color:var(--muted);text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">İletişim</a>
+    <div style="border-top:1px solid var(--border);padding-top:clamp(18px,2.4vh,29px);display:flex;flex-wrap:wrap;flex:1 1 auto;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:clamp(9px,1.2vw,15px);">
+      <div style="font-size:clamp(9px,1.3vw,16px);color:var(--muted);">&copy; 2025 Nautilus Technology. Tüm hakları saklıdır.</div>
+      <div style="display:flex;flex-wrap:wrap;flex:1 1 auto;gap:clamp(12px,1.6vw,20px);">
+        <a onclick="sayfaGoster('hakkimizda')" style="font-size:clamp(9px,1.3vw,16px);color:var(--muted);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Hakkımızda</a>
+        <a href="mailto:info@nautilustechnology.com.tr" style="font-size:clamp(9px,1.3vw,16px);color:var(--muted);text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">İletişim</a>
       </div>
     </div>
   </div>
@@ -542,7 +542,7 @@ async function planlariYukle() {
   const r = await fetch("/api/uyelik-turleri-public");
   planlar = await r.json();
   const el = document.getElementById("plan-listesi");
-  if (!planlar.length) { el.innerHTML = '<div style="text-align:center;color:var(--muted);grid-column:1/-1;padding:40px;">Henüz plan eklenmemiş.</div>'; return; }
+  if (!planlar.length) { el.innerHTML = '<div style="text-align:center;color:var(--muted);grid-column:1/-1;padding:clamp(30px,4.0vw,48px);">Henüz plan eklenmemiş.</div>'; return; }
   el.innerHTML = planlar.map(p => `
     <div class="plan-card" id="plan-${p.kod}" onclick="planSec('${p.kod}')">
       <div class="plan-name">${p.ad} ${p.is_offline ? '&#128274;' : ''}</div>
@@ -710,7 +710,7 @@ function lisansGridRender(p, grid) {
       <div class="dash-card full">
         <h3>Lisans Durumu</h3>
         <span class="status-badge status-none">&#9679; Lisans Yok</span>
-        <div class="dash-sub" style="margin-top:8px;">Aşağıdan lisans talebinde bulunabilirsiniz.</div>
+        <div class="dash-sub" style="margin-top:clamp(6px,0.8vh,10px);">Aşağıdan lisans talebinde bulunabilirsiniz.</div>
       </div>`;
     return;
   }
@@ -719,7 +719,7 @@ function lisansGridRender(p, grid) {
       <div class="dash-card">
         <h3>Lisans Durumu</h3>
         <span class="status-badge status-active">&#9679; Aktif</span>
-        <div class="dash-sub" style="margin-top:8px;">${l.tur}</div>
+        <div class="dash-sub" style="margin-top:clamp(6px,0.8vh,10px);">${l.tur}</div>
       </div>
       <div class="dash-card">
         <h3>Kalan Süre</h3>
@@ -733,8 +733,8 @@ function lisansGridRender(p, grid) {
           <div class="license-sub">Bu kodu program aktivasyonunda kullanın</div>
         </div>
       </div>
-      <div class="dash-card full" style="text-align:center;padding-top:8px;">
-        <button onclick="iptalModalAc()" style="background:transparent;border:1px solid #ef444455;color:#f87171;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Sora',sans-serif;transition:all 0.2s;" onmouseover="this.style.background='#ef444415'" onmouseout="this.style.background='transparent'">
+      <div class="dash-card full" style="text-align:center;padding-top:clamp(6px,0.8vh,10px);">
+        <button onclick="iptalModalAc()" style="background:transparent;border:1px solid #ef444455;color:#f87171;border-radius:clamp(6px,0.8vw,10px);padding:clamp(6px,0.9vw,11px) clamp(15px,2.0vw,24px);font-size:clamp(9px,1.3vw,16px);font-weight:600;cursor:pointer;font-family:'Sora',sans-serif;transition:all 0.2s;" onmouseover="this.style.background='#ef444415'" onmouseout="this.style.background='transparent'">
           &#9888; Lisansı İptal Et
         </button>
       </div>`;
@@ -743,18 +743,18 @@ function lisansGridRender(p, grid) {
       <div class="dash-card full">
         <h3>Lisans Durumu</h3>
         <span class="status-badge" style="background:#f59e0b15;color:#fbbf24;border:1px solid #f59e0b33;">&#9679; Süresi Dolmuş</span>
-        <div class="dash-sub" style="margin-top:8px;">${l.tur} &middot; Bitiş: ${l.bitis}</div>
-        <div class="dash-sub" style="margin-top:6px;color:#7eb8ff;">Lisans kodunuz: <strong style="font-family:monospace;">${l.kod}</strong></div>
-        <div class="dash-sub" style="margin-top:8px;">Süreniz dolmuş. Yenilemek için aşağıdan yeni bir talep gönderin.</div>
+        <div class="dash-sub" style="margin-top:clamp(6px,0.8vh,10px);">${l.tur} &middot; Bitiş: ${l.bitis}</div>
+        <div class="dash-sub" style="margin-top:clamp(4px,0.6vh,8px);color:#7eb8ff;">Lisans kodunuz: <strong style="font-family:monospace;">${l.kod}</strong></div>
+        <div class="dash-sub" style="margin-top:clamp(6px,0.8vh,10px);">Süreniz dolmuş. Yenilemek için aşağıdan yeni bir talep gönderin.</div>
       </div>`;
   } else if (l.durum === "iptal") {
     grid.innerHTML = `
       <div class="dash-card full">
         <h3>Lisans Durumu</h3>
         <span class="status-badge status-none">&#9679; İptal Edildi</span>
-        <div class="dash-sub" style="margin-top:8px;">${l.tur} &middot; Lisans kodunuz: <strong style="font-family:monospace;">${l.kod}</strong></div>
-        ${l.iptal_nedeni ? `<div class="dash-sub" style="margin-top:6px;">Neden: ${l.iptal_nedeni}</div>` : ''}
-        <div class="dash-sub" style="margin-top:8px;">Yeni lisans için aşağıdan talep gönderebilirsiniz.</div>
+        <div class="dash-sub" style="margin-top:clamp(6px,0.8vh,10px);">${l.tur} &middot; Lisans kodunuz: <strong style="font-family:monospace;">${l.kod}</strong></div>
+        ${l.iptal_nedeni ? `<div class="dash-sub" style="margin-top:clamp(4px,0.6vh,8px);">Neden: ${l.iptal_nedeni}</div>` : ''}
+        <div class="dash-sub" style="margin-top:clamp(6px,0.8vh,10px);">Yeni lisans için aşağıdan talep gönderebilirsiniz.</div>
       </div>`;
   }
 }
@@ -764,7 +764,7 @@ async function dashboardYukle() {
   if (!r.ok) { sayfaGoster("giris"); return; }
   const p = await r.json();
   document.getElementById("dash-hosgeldin").innerHTML = "Merhaba, " + p.ad_soyad + " &#128075;";
-  document.getElementById("nav-links").innerHTML = `<span style="font-size:13px;color:var(--muted);margin-right:8px;">${p.email}</span><button class="nav-btn nav-btn-ghost" onclick="cikisYap()">Cıkış</button>`;
+  document.getElementById("nav-links").innerHTML = `<span style="font-size:clamp(9px,1.3vw,16px);color:var(--muted);margin-right:clamp(6px,0.8vw,10px);">${p.email}</span><button class="nav-btn nav-btn-ghost" onclick="cikisYap()">Cıkış</button>`;
   
   // Sol kolon indirme linkleri (lisans durumundan bağımsız)
   if (p.indirme_linki) {
@@ -855,11 +855,11 @@ async function taleplerYukle() {
   const durumYazi = {beklemede:"Beklemede",onaylandi:"Onaylandı",reddedildi:"Reddedildi"};
   let html = "";
   talepler.forEach(t => {
-    let aktGosterim = (t.talep_tipi === 'offline' && t.aktivasyon_kodu) ? `<div style="font-size:11px;margin-top:6px;color:#4ade80;font-family:monospace;background:#22c55e15;padding:6px 10px;border-radius:4px;display:inline-block;border:1px solid #22c55e44;">Aktivasyon Kodunuz:<br>${t.aktivasyon_kodu}</div>` : '';
+    let aktGosterim = (t.talep_tipi === 'offline' && t.aktivasyon_kodu) ? `<div style="font-size:clamp(8px,1.1vw,14px);margin-top:clamp(4px,0.6vh,8px);color:#4ade80;font-family:monospace;background:#22c55e15;padding:clamp(4px,0.6vw,8px) clamp(7px,1.0vw,12px);border-radius:clamp(3px,0.4vw,5px);display:inline-block;border:1px solid #22c55e44;">Aktivasyon Kodunuz:<br>${t.aktivasyon_kodu}</div>` : '';
     html += `<div class="talep-item">
       <div>
-        <div style="font-size:14px;font-weight:600;">${t.tur} <span style="font-size:10px;padding:2px 6px;border-radius:4px;background:#3d6fff22;color:#3d6fff;margin-left:6px;border:1px solid #3d6fff44;">${(t.talep_tipi || 'online').toUpperCase()}</span></div>
-        <div style="font-size:12px;color:var(--muted);">${t.tarih}${t.admin_notu ? " &middot; " + t.admin_notu : ""}</div>
+        <div style="font-size:clamp(10px,1.4vw,17px);font-weight:600;">${t.tur} <span style="font-size:clamp(7px,1.0vw,12px);padding:clamp(1px,0.2vw,3px) clamp(4px,0.6vw,8px);border-radius:clamp(3px,0.4vw,5px);background:#3d6fff22;color:#3d6fff;margin-left:clamp(4px,0.6vw,8px);border:1px solid #3d6fff44;">${(t.talep_tipi || 'online').toUpperCase()}</span></div>
+        <div style="font-size:clamp(9px,1.2vw,15px);color:var(--muted);">${t.tarih}${t.admin_notu ? " &middot; " + t.admin_notu : ""}</div>
         ${aktGosterim}
       </div>
       <span class="badge-sm ${durumBadge[t.durum]||""}">${durumYazi[t.durum]||t.durum}</span>
@@ -871,43 +871,43 @@ async function taleplerYukle() {
   if (!bekleyen) {
     const planlarResp = await fetch("/api/uyelik-turleri-public");
     const planlarData = await planlarResp.json();
-    html += `<div style="margin-top:16px;">
-      <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Yeni lisans talep edin:</div>
+    html += `<div style="margin-top:clamp(12px,1.6vh,20px);">
+      <div style="font-size:clamp(9px,1.3vw,16px);color:var(--muted);margin-bottom:clamp(9px,1.2vh,15px);">Yeni lisans talep edin:</div>
 
-      <div style="display:flex;gap:0;margin-bottom:16px;background:var(--surface);border-radius:8px;border:1px solid var(--border);overflow:hidden;">
-        <label style="flex:1;font-size:13px;display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 16px;" id="lbl-online">
+      <div style="display:flex;flex-wrap:wrap;flex:1 1 auto;gap:0;margin-bottom:clamp(12px,1.6vh,20px);background:var(--surface);border-radius:clamp(6px,0.8vw,10px);border:1px solid var(--border);overflow:hidden;">
+        <label style="flex:1;font-size:clamp(9px,1.3vw,16px);display:flex;flex-wrap:wrap;flex:1 1 auto;align-items:center;gap:clamp(6px,0.8vw,10px);cursor:pointer;padding:clamp(7px,1.0vw,12px) clamp(12px,1.6vw,20px);" id="lbl-online">
           <input type="radio" name="talep_tipi" value="online" ${_dashTalepTipi !== 'offline' ? 'checked' : ''} onchange="talepTipiDegisti()">
           <span>&#127760;</span> <span>Online Lisans</span>
         </label>
-        <div style="width:1px;background:var(--border);"></div>
-        <label style="flex:1;font-size:13px;display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 16px;" id="lbl-offline">
+        <div style="width:100%;max-width:1px;background:var(--border);"></div>
+        <label style="flex:1;font-size:clamp(9px,1.3vw,16px);display:flex;flex-wrap:wrap;flex:1 1 auto;align-items:center;gap:clamp(6px,0.8vw,10px);cursor:pointer;padding:clamp(7px,1.0vw,12px) clamp(12px,1.6vw,20px);" id="lbl-offline">
           <input type="radio" name="talep_tipi" value="offline" ${_dashTalepTipi === 'offline' ? 'checked' : ''} onchange="talepTipiDegisti()">
           <span>&#128274;</span> <span>Offline Lisans</span>
         </label>
       </div>
 
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
-        ${planlarData.map(p => `<div class="plan-card ${dashSecilenPlan === p.kod ? 'selected' : ''}" id="dp-${p.kod}" data-is-offline="${p.is_offline ? 'true' : 'false'}" style="padding:12px 16px;min-width:140px;cursor:pointer; display:${(_dashTalepTipi === 'offline') == !!p.is_offline ? 'block' : 'none'};" onclick="dashPlanSec('${p.kod}')">
-          <div style="font-size:13px;font-weight:600;">${p.ad} ${p.is_offline ? '&#128274;' : ''}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:3px;">${p.aciklama||""}</div>
+      <div style="display:flex;flex-wrap:wrap;flex:1 1 auto;gap:clamp(7px,1.0vw,12px);flex-wrap:wrap;margin-bottom:clamp(10px,1.4vh,17px);">
+        ${planlarData.map(p => `<div class="plan-card ${dashSecilenPlan === p.kod ? 'selected' : ''}" id="dp-${p.kod}" data-is-offline="${p.is_offline ? 'true' : 'false'}" style="padding:clamp(9px,1.2vw,15px) clamp(12px,1.6vw,20px);min-width:clamp(100px,50vw,140px);cursor:pointer;display:${(_dashTalepTipi === 'offline') == !!p.is_offline ? 'block' : 'none'};" onclick="dashPlanSec('${p.kod}')">
+          <div style="font-size:clamp(9px,1.3vw,16px);font-weight:600;">${p.ad} ${p.is_offline ? '&#128274;' : ''}</div>
+          <div style="font-size:clamp(8px,1.1vw,14px);color:var(--muted);margin-top:clamp(2px,0.3vh,4px);">${p.aciklama||""}</div>
         </div>`).join("")}
       </div>
 
-      <div id="offline-istek-alan" style="display:${_dashTalepTipi === 'offline' ? '' : 'none'};margin-bottom:14px;background:#3d6fff08;border:1px solid #3d6fff22;border-radius:8px;padding:14px;">
-        <label style="font-size:12px;color:#8a9bc0;display:block;margin-bottom:6px;font-weight:600;">Gateway İstek Kodu</label>
+      <div id="offline-istek-alan" style="display:${_dashTalepTipi === 'offline' ? '' : 'none'};margin-bottom:clamp(10px,1.4vh,17px);background:#3d6fff08;border:1px solid #3d6fff22;border-radius:clamp(6px,0.8vw,10px);padding:clamp(10px,1.4vw,17px);">
+        <label style="font-size:clamp(9px,1.2vw,15px);color:#8a9bc0;display:block;margin-bottom:clamp(4px,0.6vh,8px);font-weight:600;">Gateway İstek Kodu</label>
         <input type="text" id="talep-istek-kodu" placeholder="REQ-XXXXXXXXXXXXXXXXXXXX"
-          class="form-input" style="font-family:monospace;letter-spacing:1px;max-width:360px;margin-bottom:4px;"
+          class="form-input" style="font-family:monospace;letter-spacing:1px;width:100%;max-width:clamp(300px,95vw,360px);margin-bottom:clamp(3px,0.4vh,5px);"
           value="${_dashReqKodu.replace(/"/g, '&quot;')}"
           oninput="_dashReqKodu=this.value;dashReqKodKontrol()">
-        <div id="dash-req-durum" style="font-size:12px;min-height:18px;"></div>
-        <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.6;">
+        <div id="dash-req-durum" style="font-size:clamp(9px,1.2vw,15px);min-height:clamp(13px,1.8vh,22px);"></div>
+        <div style="font-size:clamp(8px,1.1vw,14px);color:var(--muted);margin-top:clamp(6px,0.8vh,10px);line-height:1.6;">
           &#128268; İstek kodunu almak için <b>OPC Gateway Pro</b> programını açıp <b>Offline Aktivasyon &rarr; İstek Kodu Oluştur</b> seçeneğini kullanın.
         </div>
       </div>
 
-      <button class="form-btn" id="talep-gonder-btn" style="max-width:220px;padding:10px;" onclick="talepGonder()">${_dashTalepTipi === 'offline' ? '&#128274; Offline Talep Gönder' : '&#127760; Online Talep Gönder'}</button>
-      <div class="form-err" id="talep-hata" style="margin-top:10px;"></div>
-      <div class="form-ok" id="talep-ok" style="margin-top:10px;"></div>
+      <button class="form-btn" id="talep-gonder-btn" style="width:100%;max-width:clamp(300px,95vw,220px);padding:clamp(7px,1.0vw,12px);" onclick="talepGonder()">${_dashTalepTipi === 'offline' ? '&#128274; Offline Talep Gönder' : '&#127760; Online Talep Gönder'}</button>
+      <div class="form-err" id="talep-hata" style="margin-top:clamp(7px,1.0vh,12px);"></div>
+      <div class="form-ok" id="talep-ok" style="margin-top:clamp(7px,1.0vh,12px);"></div>
     </div>`;
   }
   document.getElementById("talep-icerik").innerHTML = html;
@@ -1069,7 +1069,7 @@ async function lisansGecmisiniYukle() {
   const liste = await r.json();
   const el = document.getElementById("gecmis-icerik");
   if (!liste.length) {
-    el.innerHTML = '<div style="color:var(--muted);font-size:13px;">Henüz lisans kaydı yok.</div>';
+    el.innerHTML = '<div style="color:var(--muted);font-size:clamp(9px,1.3vw,16px);">Henüz lisans kaydı yok.</div>';
     return;
   }
   const durumBilgi = {
@@ -1079,16 +1079,16 @@ async function lisansGecmisiniYukle() {
   };
   const turIkon = { aylik: '&#128467;', yillik: '&#128197;', omur_boyu: '&#9854;', deneme: '&#128300;' };
   el.innerHTML = `<div style="overflow-x:auto;">
-    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+    <table style="width:100%;border-collapse:collapse;font-size:clamp(9px,1.3vw,16px);">
       <thead>
-        <tr style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:0.5px;">
-          <th style="padding:8px 12px;text-align:left;">Lisans / ACT Kodu</th>
-          <th style="padding:8px 12px;text-align:left;">Tür</th>
-          <th style="padding:8px 12px;text-align:left;">Tip</th>
-          <th style="padding:8px 12px;text-align:left;">İstek Kodu (REQ)</th>
-          <th style="padding:8px 12px;text-align:left;">Durum</th>
-          <th style="padding:8px 12px;text-align:left;">Oluşturulma</th>
-          <th style="padding:8px 12px;text-align:left;">Bitiş</th>
+        <tr style="color:var(--muted);font-size:clamp(8px,1.1vw,14px);text-transform:uppercase;letter-spacing:0.5px;">
+          <th style="padding:clamp(6px,0.8vw,10px) clamp(9px,1.2vw,15px);text-align:left;">Lisans / ACT Kodu</th>
+          <th style="padding:clamp(6px,0.8vw,10px) clamp(9px,1.2vw,15px);text-align:left;">Tür</th>
+          <th style="padding:clamp(6px,0.8vw,10px) clamp(9px,1.2vw,15px);text-align:left;">Tip</th>
+          <th style="padding:clamp(6px,0.8vw,10px) clamp(9px,1.2vw,15px);text-align:left;">İstek Kodu (REQ)</th>
+          <th style="padding:clamp(6px,0.8vw,10px) clamp(9px,1.2vw,15px);text-align:left;">Durum</th>
+          <th style="padding:clamp(6px,0.8vw,10px) clamp(9px,1.2vw,15px);text-align:left;">Oluşturulma</th>
+          <th style="padding:clamp(6px,0.8vw,10px) clamp(9px,1.2vw,15px);text-align:left;">Bitiş</th>
         </tr>
       </thead>
       <tbody>
@@ -1098,19 +1098,19 @@ async function lisansGecmisiniYukle() {
           const kalanTxt = l.kalan_gun != null ? ` &middot; ${l.kalan_gun} gün kaldı` : '';
           const kodRenk = l.tip === 'offline' ? '#4ade80' : '#7eb8ff';
           const tipBadge = l.tip === 'offline'
-            ? `<span style="font-size:10px;padding:2px 6px;border-radius:4px;background:#22c55e15;color:#4ade80;border:1px solid #22c55e44;">&#128274; OFFLİNE</span>`
-            : `<span style="font-size:10px;padding:2px 6px;border-radius:4px;background:#3d6fff15;color:#7eb8ff;border:1px solid #3d6fff44;">&#127760; ONLİNE</span>`;
+            ? `<span style="font-size:clamp(7px,1.0vw,12px);padding:clamp(1px,0.2vw,3px) clamp(4px,0.6vw,8px);border-radius:clamp(3px,0.4vw,5px);background:#22c55e15;color:#4ade80;border:1px solid #22c55e44;">&#128274; OFFLİNE</span>`
+            : `<span style="font-size:clamp(7px,1.0vw,12px);padding:clamp(1px,0.2vw,3px) clamp(4px,0.6vw,8px);border-radius:clamp(3px,0.4vw,5px);background:#3d6fff15;color:#7eb8ff;border:1px solid #3d6fff44;">&#127760; ONLİNE</span>`;
           const istekKoduCell = l.tip === 'offline' && l.istek_kodu
-            ? `<code style="font-family:monospace;font-size:11px;background:var(--bg);padding:2px 6px;border-radius:4px;color:#a78bfa;">${l.istek_kodu}</code>`
+            ? `<code style="font-family:monospace;font-size:clamp(8px,1.1vw,14px);background:var(--bg);padding:clamp(1px,0.2vw,3px) clamp(4px,0.6vw,8px);border-radius:clamp(3px,0.4vw,5px);color:#a78bfa;">${l.istek_kodu}</code>`
             : `<span style="color:var(--muted);">&mdash;</span>`;
           return `<tr style="border-top:1px solid var(--border);">
-            <td style="padding:10px 12px;"><code style="font-family:monospace;font-size:12px;background:var(--bg);padding:3px 8px;border-radius:4px;color:${kodRenk};">${l.kod}</code></td>
-            <td style="padding:10px 12px;">${ikon} ${l.tur.replace('_',' ')}</td>
-            <td style="padding:10px 12px;">${tipBadge}</td>
-            <td style="padding:10px 12px;">${istekKoduCell}</td>
-            <td style="padding:10px 12px;"><span class="badge-sm ${d.cls}" style="white-space:nowrap;">${d.yazi}${kalanTxt}</span></td>
-            <td style="padding:10px 12px;color:var(--muted);">${l.olusturma}</td>
-            <td style="padding:10px 12px;color:${l.durum==='suresi_dolmus'?'#f87171':'var(--muted)'};">${l.bitis}</td>
+            <td style="padding:clamp(7px,1.0vw,12px) clamp(9px,1.2vw,15px);"><code style="font-family:monospace;font-size:clamp(9px,1.2vw,15px);background:var(--bg);padding:clamp(2px,0.3vw,4px) clamp(6px,0.8vw,10px);border-radius:clamp(3px,0.4vw,5px);color:${kodRenk};">${l.kod}</code></td>
+            <td style="padding:clamp(7px,1.0vw,12px) clamp(9px,1.2vw,15px);">${ikon} ${l.tur.replace('_',' ')}</td>
+            <td style="padding:clamp(7px,1.0vw,12px) clamp(9px,1.2vw,15px);">${tipBadge}</td>
+            <td style="padding:clamp(7px,1.0vw,12px) clamp(9px,1.2vw,15px);">${istekKoduCell}</td>
+            <td style="padding:clamp(7px,1.0vw,12px) clamp(9px,1.2vw,15px);"><span class="badge-sm ${d.cls}" style="white-space:nowrap;">${d.yazi}${kalanTxt}</span></td>
+            <td style="padding:clamp(7px,1.0vw,12px) clamp(9px,1.2vw,15px);color:var(--muted);">${l.olusturma}</td>
+            <td style="padding:clamp(7px,1.0vw,12px) clamp(9px,1.2vw,15px);color:${l.durum==='suresi_dolmus'?'#f87171':'var(--muted)'};">${l.bitis}</td>
           </tr>`;
         }).join('')}
       </tbody>
@@ -1177,7 +1177,7 @@ let _sitePollTimer = null;
   if (r.ok) {
     sayfaGoster("dashboard");
     const p = await r.json();
-    document.getElementById("nav-links").innerHTML = `<span style="font-size:13px;color:var(--muted);margin-right:8px;">${p.email}</span><button class="nav-btn nav-btn-ghost" onclick="sayfaGoster('offline')" style="border-color:#3d6fff44;color:#7eb8ff;">&#128274; Offline</button><button class="nav-btn nav-btn-ghost" onclick="cikisYap()">Cıkış</button>`;
+    document.getElementById("nav-links").innerHTML = `<span style="font-size:clamp(9px,1.3vw,16px);color:var(--muted);margin-right:clamp(6px,0.8vw,10px);">${p.email}</span><button class="nav-btn nav-btn-ghost" onclick="sayfaGoster('offline')" style="border-color:#3d6fff44;color:#7eb8ff;">&#128274; Offline</button><button class="nav-btn nav-btn-ghost" onclick="cikisYap()">Cıkış</button>`;
     baslatSitePoll();
   }
 })();
