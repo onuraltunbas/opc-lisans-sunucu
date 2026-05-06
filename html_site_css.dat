@@ -43,11 +43,16 @@ html, body {
   background: var(--bg);
   color: var(--text);
   transition: background 0.2s, color 0.2s;
+  display: flex;
+  flex-direction: column;
 }
 body {
   background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
   background-size: 48px 48px;
   background-position: -1px -1px;
+}
+body > div[id^="sayfa-"] {
+  flex: 1;
 }
 
 /* &#9472;&#9472; NAVBAR &#9472;&#9472; */
