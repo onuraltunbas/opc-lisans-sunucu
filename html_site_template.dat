@@ -265,43 +265,7 @@
   </div>
 </div>
 
-<!-- FOOTER -->
-<footer id="site-footer" style="border-top:1px solid var(--border);margin-top:auto;padding:48px 24px 32px;">
-  <div style="max-width:1100px;margin:0 auto;">
-    <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:40px;margin-bottom:40px;">
-      <div>
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
-          <img src="/static/logo.png" alt="Nautilus" class="footer-logo" style="height:28px;" onerror="this.style.display='none'">
-          <span style="font-size:16px;font-weight:800;">Nautilus Technology</span>
-        </div>
-        <p style="font-size:13px;color:var(--muted);line-height:1.7;max-width:280px;margin:0;">Endüstriyel otomasyon ve veri haberleşmesi alanında yenilikçi, yüksek verimli yazılım çözümleri.</p>
-      </div>
-      <div>
-        <div style="font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:14px;">Hızlı Erişim</div>
-        <div style="display:flex;flex-direction:column;gap:10px;">
-          <a onclick="sayfaGoster('anasayfa')" style="font-size:14px;color:var(--text);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Ana Sayfa</a>
-          <a onclick="sayfaGoster('hakkimizda')" style="font-size:14px;color:var(--text);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Hakkımızda</a>
-          <a onclick="sayfaGoster('planlar')" style="font-size:14px;color:var(--text);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Lisans Planları</a>
-        </div>
-      </div>
-      <div>
-        <div style="font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:14px;">Hesap</div>
-        <div style="display:flex;flex-direction:column;gap:10px;">
-          <a onclick="sayfaGoster('giris')" style="font-size:14px;color:var(--text);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Giriş Yap</a>
-          <a onclick="sayfaGoster('kayit')" style="font-size:14px;color:var(--text);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Kayıt Ol</a>
-          <a onclick="sayfaGoster('offline')" style="font-size:14px;color:var(--text);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Offline Aktivasyon</a>
-        </div>
-      </div>
-    </div>
-    <div style="border-top:1px solid var(--border);padding-top:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-      <div style="font-size:13px;color:var(--muted);">&copy; 2025 Nautilus Technology. Tüm hakları saklıdır.</div>
-      <div style="display:flex;gap:16px;">
-        <a onclick="sayfaGoster('hakkimizda')" style="font-size:13px;color:var(--muted);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Hakkımızda</a>
-        <a href="mailto:info@nautilustechnology.com.tr" style="font-size:13px;color:var(--muted);text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">İletişim</a>
-      </div>
-    </div>
-  </div>
-</footer>
+
 <div id="sayfa-offline" style="display:none">
   <div style="height:48px;"></div>
   <div class="form-container" style="max-width:520px;">
@@ -496,6 +460,44 @@
     </div>
   </div>
 </div>
+
+<!-- FOOTER -->
+<footer id="site-footer" style="border-top:1px solid var(--border);margin-top:auto;padding:48px 24px 32px;">
+  <div style="max-width:1100px;margin:0 auto;">
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:40px;margin-bottom:40px;">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+          <img src="/static/logo.png" alt="Nautilus" class="footer-logo" style="height:28px;" onerror="this.style.display='none'">
+          <span style="font-size:16px;font-weight:800;">Nautilus Technology</span>
+        </div>
+        <p style="font-size:13px;color:var(--muted);line-height:1.7;max-width:280px;margin:0;">Endüstriyel otomasyon ve veri haberleşmesi alanında yenilikçi, yüksek verimli yazılım çözümleri.</p>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:14px;">Hızlı Erişim</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <a onclick="sayfaGoster('anasayfa')" style="font-size:14px;color:var(--text);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Ana Sayfa</a>
+          <a onclick="sayfaGoster('hakkimizda')" style="font-size:14px;color:var(--text);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Hakkımızda</a>
+          <a onclick="sayfaGoster('planlar')" style="font-size:14px;color:var(--text);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Lisans Planları</a>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:14px;">Hesap</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <a onclick="sayfaGoster('giris')" style="font-size:14px;color:var(--text);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Giriş Yap</a>
+          <a onclick="sayfaGoster('kayit')" style="font-size:14px;color:var(--text);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Kayıt Ol</a>
+          <a onclick="sayfaGoster('offline')" style="font-size:14px;color:var(--text);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Offline Aktivasyon</a>
+        </div>
+      </div>
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <div style="font-size:13px;color:var(--muted);">&copy; 2025 Nautilus Technology. Tüm hakları saklıdır.</div>
+      <div style="display:flex;gap:16px;">
+        <a onclick="sayfaGoster('hakkimizda')" style="font-size:13px;color:var(--muted);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Hakkımızda</a>
+        <a href="mailto:info@nautilustechnology.com.tr" style="font-size:13px;color:var(--muted);text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">İletişim</a>
+      </div>
+    </div>
+  </div>
+</footer>
 
 <script>
 let planlar = [];
