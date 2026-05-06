@@ -181,12 +181,14 @@ def profil(request: Request, s: Session = Depends(db)):
     except Exception:
         _yeni_surum = False
 
+    exe_path = os.path.join("dosyalar", "OPC_Gateway_Pro.exe")
+
     return {
         "ad_soyad": k.ad_soyad,
         "email": k.email,
         "kayit_tar": safe_format_date(k.kayit_tar),
         "lisans": l_bilgi,
-        "indirme_linki": "/api/program-indir" if (l_bilgi and l_bilgi["durum"]=="aktif") else None,
+        "indirme_linki": "/api/program-indir" if os.path.exists(exe_path) else None,
         "vt_hash": get_exe_hash(),
         "son_guncelleme": get_exe_date(),
         "yeni_surum_banner": _yeni_surum

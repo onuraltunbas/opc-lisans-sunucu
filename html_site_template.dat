@@ -416,7 +416,7 @@
           <span id="dash-yeni-surum-txt" style="display:inline-block;background:linear-gradient(90deg,#22d3ee,#38bdf8);color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;box-shadow:0 4px 12px #38bdf844;letter-spacing:0.5px;">&#128640; YENİ SÜRÜM YAYINDA!</span>
         </div>
 
-        <a id="sol-indir-btn" href="#" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;width:100%;gap:10px;background:var(--accent2);color:var(--bg);padding:14px;border-radius:var(--radius-sm);font-size:14px;font-weight:700;text-decoration:none;transition:opacity 0.2s;">
+        <a id="sol-indir-btn" href="#" download style="display:inline-flex;align-items:center;justify-content:center;width:100%;gap:10px;background:var(--accent2);color:var(--bg);padding:14px;border-radius:var(--radius-sm);font-size:14px;font-weight:700;text-decoration:none;transition:opacity 0.2s;">
           &#11015; OPC Gateway'i İndir
         </a>
         <div style="margin-top:16px;">
@@ -765,8 +765,17 @@ async function dashboardYukle() {
   document.getElementById("nav-links").innerHTML = `<span style="font-size:13px;color:var(--muted);margin-right:8px;">${p.email}</span><button class="nav-btn nav-btn-ghost" onclick="cikisYap()">Cıkış</button>`;
   
   // Sol kolon indirme linkleri (lisans durumundan bağımsız)
-  if (p.indirme_linki) document.getElementById("sol-indir-btn").href = p.indirme_linki;
-  if (p.vt_hash) document.getElementById("sol-vt-btn").href = "https://www.virustotal.com/gui/file/" + p.vt_hash;
+  if (p.indirme_linki) {
+    document.getElementById("sol-indir-btn").href = p.indirme_linki;
+  } else {
+    document.getElementById("sol-indir-btn").onclick = function(e) { e.preventDefault(); alert('Program sunucuda mevcut değil.'); };
+  }
+  
+  if (p.vt_hash) {
+    document.getElementById("sol-vt-btn").href = "https://www.virustotal.com/gui/file/" + p.vt_hash;
+  } else {
+    document.getElementById("sol-vt-btn").onclick = function(e) { e.preventDefault(); alert('Rapor bulunamadı.'); };
+  }
   
   // Yeni sürüm banner'ı
   const ysBadge = document.getElementById("dash-yeni-surum-badge");
@@ -1244,26 +1253,7 @@ let _sitePollTimer = null;
 })();
 </script>
 
-<script>
-(async function(){
-  try {
-    const r = await fetch("/api/public-info");
-    if (!r.ok) return;
-    const d = await r.json();
-    const q = document.getElementById("nav-quick-links");
-    if (!q) return;
-    q.innerHTML = "";
-    if (d.indirme_linki) {
-      q.innerHTML += `<a href="${d.indirme_linki}" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(90deg,#06b6d4,#3b82f6);color:#fff;padding:6px 10px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;">&#11015; İndir</a>`;
-    } else {
-      q.innerHTML += `<a href="#" onclick="alert('Program sunucuda mevcut değil.')" style="display:inline-flex;align-items:center;gap:6px;background:#ef44447a;color:#fff;padding:6px 10px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;">&#11015; İndir</a>`;
-    }
-    if (d.vt_hash) {
-      q.innerHTML += `<a href="https://www.virustotal.com/gui/file/${d.vt_hash}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#111;color:#fff;padding:6px 10px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;margin-left:6px;">&#128737; VT</a>`;
-    }
-  } catch(e) {}
-})();
-</script>
+
 <script>
 // ===== TEMA YÖNETİMİ (dark/light) =====
 (function() {
