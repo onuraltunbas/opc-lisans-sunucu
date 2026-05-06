@@ -60,8 +60,10 @@ body {
 }
 .nav-brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--text); }
 .nav-logo { height: 60px; width: auto; display: block; transition: filter 0.2s; }
+.footer-logo { transition: filter 0.2s; }
 /* Karanlık temada logonun siyah kısımları beyaz olur */
-[data-theme="dark"] .nav-logo, :root:not([data-theme="light"]) .nav-logo { filter: invert(1); }
+[data-theme="dark"] .nav-logo, :root:not([data-theme="light"]) .nav-logo,
+[data-theme="dark"] .footer-logo, :root:not([data-theme="light"]) .footer-logo { filter: invert(1); }
 .nav-brand-text { font-size: 14px; font-weight: 800; letter-spacing: -0.3px; color: var(--text); display: flex; flex-direction: column; line-height: 1.1; }
 .nav-brand-text span { font-size: 10px; font-weight: 400; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; }
 .nav-links { display: flex; align-items: center; gap: 6px; }

@@ -271,7 +271,7 @@
     <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:40px;margin-bottom:40px;">
       <div>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
-          <img src="/static/logo.png" alt="Nautilus" style="height:28px;" onerror="this.style.display='none'">
+          <img src="/static/logo.png" alt="Nautilus" class="footer-logo" style="height:28px;" onerror="this.style.display='none'">
           <span style="font-size:16px;font-weight:800;">Nautilus Technology</span>
         </div>
         <p style="font-size:13px;color:var(--muted);line-height:1.7;max-width:280px;margin:0;">Endüstriyel otomasyon ve veri haberleşmesi alanında yenilikçi, yüksek verimli yazılım çözümleri.</p>
@@ -507,7 +507,7 @@ function sayfaGoster(ad, pushState) {
   });
   // Footer: sadece public sayfalarda göster
   var footer = document.getElementById("site-footer");
-  if (footer) footer.style.display = ["anasayfa","planlar","hakkimizda","giris","kayit"].includes(ad) ? "" : "none";
+  if (footer) footer.style.display = ["anasayfa","planlar","hakkimizda","giris","kayit","dashboard"].includes(ad) ? "" : "none";
   if (ad === "planlar") planlariYukle();
   if (ad === "dashboard") dashboardYukle();
   if (ad === "offline") offlineSayfasiYukle();
