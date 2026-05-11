@@ -124,8 +124,6 @@
   <div style="display:flex;flex-wrap:wrap;flex:1 1 auto;align-items:center;gap:clamp(6px,0.8vw,10px);">
     <div id="nav-quick-links" style="display:flex;flex-wrap:wrap;flex:1 1 auto;align-items:center;gap:clamp(4px,0.6vw,8px);"></div>
     <div class="nav-links" id="nav-links">
-      <button class="nav-btn nav-btn-ghost" onclick="sayfaGoster('hakkimizda')" style="font-size:clamp(9px,1.3vw,16px);">Hakkımızda</button>
-      <button class="nav-btn nav-btn-ghost" onclick="sayfaGoster('iletisim')">İletişim</button>
       <button class="nav-btn nav-btn-ghost" onclick="sayfaGoster('giris')">Giriş Yap</button>
       <button class="nav-btn nav-btn-primary" onclick="sayfaGoster('kayit')">Kayıt Ol</button>
     </div>
@@ -301,6 +299,87 @@
           <a href="https://wa.me/905530166847" target="_blank" style="display:inline-flex;align-items:center;gap:clamp(7px,1.0vw,12px);color:var(--text);text-decoration:none;font-size:clamp(11px,1.5vw,18px);font-weight:500;transition:opacity .15s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'"><span style="color:#25D366;font-size:1.2em;">&#128172;</span> +90 553 016 68 47</a>
           <a href="tel:+905530166847" style="display:inline-flex;align-items:center;gap:clamp(7px,1.0vw,12px);color:var(--text);text-decoration:none;font-size:clamp(11px,1.5vw,18px);font-weight:500;transition:opacity .15s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'"><span style="color:#a78bfa;font-size:1.2em;">&#128222;</span> +90 553 016 68 47</a>
           <a href="mailto:onnuraltunbass@gmail.com" style="display:inline-flex;align-items:center;gap:clamp(7px,1.0vw,12px);color:var(--text);text-decoration:none;font-size:clamp(11px,1.5vw,18px);font-weight:500;transition:opacity .15s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'"><span style="color:#f43f5e;font-size:1.2em;">&#128231;</span> onnuraltunbass@gmail.com</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SİSTEM GEREKSİNİMLERİ -->
+<div id="sayfa-gereksinimler" style="display:none;">
+  <div style="height:clamp(36px,4.8vh,58px);"></div>
+  <div style="width:100%;max-width:clamp(300px,95vw,900px);margin:0 auto;padding:0 clamp(18px,2.4vw,29px) clamp(60px,8.0vw,96px);">
+    <div style="text-align:center;margin-bottom:clamp(42px,5.6vh,68px);">
+      <div style="display:inline-flex;align-items:center;gap:clamp(7px,1.0vw,12px);background:var(--accent-dim,rgba(61,111,255,0.08));border:1px solid rgba(61,111,255,0.25);border-radius:clamp(30px,4.0vw,48px);padding:clamp(6px,0.8vw,10px) clamp(16px,2.2vw,27px);font-size:clamp(9px,1.3vw,16px);color:var(--accent,#3d6fff);font-weight:600;letter-spacing:.5px;margin-bottom:clamp(15px,2.0vh,24px);">&#9881; Sistem Gereksinimleri</div>
+      <h1 style="font-size:clamp(28px,5vw,46px);font-weight:800;line-height:1.15;margin:0 0 clamp(10px,1.4vw,17px);">Donanım ve Yazılım Altyapısı</h1>
+      <p style="font-size:clamp(12px,1.7vw,21px);color:var(--muted);font-weight:500;margin:0;">OPC Gateway yazılımının sorunsuz ve yüksek performansla çalışabilmesi için önerilen sistem konfigürasyonları.</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:clamp(18px,2.4vw,29px);">
+      <!-- Minimum -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:clamp(12px,1.6vw,20px);padding:clamp(24px,3.2vw,39px);position:relative;overflow:hidden;">
+        <div style="position:absolute;top:0;left:0;width:100%;max-width:4px;height:100%;background:var(--muted);"></div>
+        <div style="font-size:clamp(15px,2vw,24px);font-weight:800;margin-bottom:clamp(15px,2.0vh,24px);color:var(--text);">Minimum Gereksinimler</div>
+        <p style="font-size:clamp(10px,1.4vw,17px);color:var(--muted);margin-bottom:clamp(18px,2.4vh,29px);line-height:1.6;">Düşük etiket hacimli (max 1,000 etiket) temel veri okuma/yazma işlemleri için.</p>
+        <div style="display:flex;flex-direction:column;gap:clamp(9px,1.2vw,15px);">
+          <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:clamp(6px,0.8vw,10px);">
+            <span style="font-size:clamp(10px,1.4vw,17px);font-weight:600;color:var(--muted);">İşletim Sistemi</span>
+            <span style="font-size:clamp(10px,1.4vw,17px);color:var(--text);font-weight:500;">Windows 10 / Win Server 2016</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:clamp(6px,0.8vw,10px);">
+            <span style="font-size:clamp(10px,1.4vw,17px);font-weight:600;color:var(--muted);">İşlemci (CPU)</span>
+            <span style="font-size:clamp(10px,1.4vw,17px);color:var(--text);font-weight:500;">Çift Çekirdekli 2.0 GHz+ (Intel i3 / Ryzen 3)</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:clamp(6px,0.8vw,10px);">
+            <span style="font-size:clamp(10px,1.4vw,17px);font-weight:600;color:var(--muted);">Bellek (RAM)</span>
+            <span style="font-size:clamp(10px,1.4vw,17px);color:var(--text);font-weight:500;">2 GB RAM</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:clamp(6px,0.8vw,10px);">
+            <span style="font-size:clamp(10px,1.4vw,17px);font-weight:600;color:var(--muted);">Depolama</span>
+            <span style="font-size:clamp(10px,1.4vw,17px);color:var(--text);font-weight:500;">150 MB (Yazılım İçin)</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:clamp(6px,0.8vw,10px);">
+            <span style="font-size:clamp(10px,1.4vw,17px);font-weight:600;color:var(--muted);">Ekran Kartı (GPU)</span>
+            <span style="font-size:clamp(10px,1.4vw,17px);color:var(--text);font-weight:500;">Standart Paylaşımlı Grafik</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:clamp(6px,0.8vw,10px);">
+            <span style="font-size:clamp(10px,1.4vw,17px);font-weight:600;color:var(--muted);">Bağlantı</span>
+            <span style="font-size:clamp(10px,1.4vw,17px);color:var(--text);font-weight:500;">Sabit IP / LAN Bağlantısı</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Önerilen -->
+      <div style="background:var(--surface);border:1px solid var(--accent);border-radius:clamp(12px,1.6vw,20px);padding:clamp(24px,3.2vw,39px);position:relative;overflow:hidden;box-shadow:0 10px 30px rgba(61,111,255,0.1);">
+        <div style="position:absolute;top:0;left:0;width:100%;max-width:4px;height:100%;background:linear-gradient(180deg,#3d6fff,#7c3aed);"></div>
+        <div style="position:absolute;top:clamp(12px,1.6vw,20px);right:clamp(12px,1.6vw,20px);background:rgba(61,111,255,0.1);color:var(--accent);font-size:clamp(9px,1.2vw,15px);font-weight:700;padding:clamp(4px,0.6vw,8px) clamp(9px,1.2vw,15px);border-radius:clamp(15px,2.0vw,24px);">Önerilen</div>
+        <div style="font-size:clamp(15px,2vw,24px);font-weight:800;margin-bottom:clamp(15px,2.0vh,24px);color:var(--text);">Önerilen Gereksinimler</div>
+        <p style="font-size:clamp(10px,1.4vw,17px);color:var(--muted);margin-bottom:clamp(18px,2.4vh,29px);line-height:1.6;">Yüksek hacimli (10,000+ etiket), asenkron hızlı veri transferi ve loglama gerektiren operasyonlar için.</p>
+        <div style="display:flex;flex-direction:column;gap:clamp(9px,1.2vw,15px);">
+          <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:clamp(6px,0.8vw,10px);">
+            <span style="font-size:clamp(10px,1.4vw,17px);font-weight:600;color:var(--muted);">İşletim Sistemi</span>
+            <span style="font-size:clamp(10px,1.4vw,17px);color:var(--text);font-weight:500;">Windows 11 / Win Server 2022</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:clamp(6px,0.8vw,10px);">
+            <span style="font-size:clamp(10px,1.4vw,17px);font-weight:600;color:var(--muted);">İşlemci (CPU)</span>
+            <span style="font-size:clamp(10px,1.4vw,17px);color:var(--text);font-weight:500;">4 Çekirdekli 3.0 GHz+ (Intel i5 / Ryzen 5)</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:clamp(6px,0.8vw,10px);">
+            <span style="font-size:clamp(10px,1.4vw,17px);font-weight:600;color:var(--muted);">Bellek (RAM)</span>
+            <span style="font-size:clamp(10px,1.4vw,17px);color:var(--text);font-weight:500;">8 GB RAM veya Üzeri</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:clamp(6px,0.8vw,10px);">
+            <span style="font-size:clamp(10px,1.4vw,17px);font-weight:600;color:var(--muted);">Depolama</span>
+            <span style="font-size:clamp(10px,1.4vw,17px);color:var(--text);font-weight:500;">1 GB Boş Alan (Loglama İçin SSD)</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:clamp(6px,0.8vw,10px);">
+            <span style="font-size:clamp(10px,1.4vw,17px);font-weight:600;color:var(--muted);">Ekran Kartı (GPU)</span>
+            <span style="font-size:clamp(10px,1.4vw,17px);color:var(--text);font-weight:500;">Gerektirmez (Sunucu Tarafında Kullanılmaz)</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:clamp(6px,0.8vw,10px);">
+            <span style="font-size:clamp(10px,1.4vw,17px);font-weight:600;color:var(--muted);">Bağlantı</span>
+            <span style="font-size:clamp(10px,1.4vw,17px);color:var(--text);font-weight:500;">Gigabit Ethernet (1000 Mbps) LAN</span>
+          </div>
         </div>
       </div>
     </div>
@@ -522,8 +601,8 @@
         <div style="display:flex;flex-wrap:wrap;flex:1 1 auto;flex-direction:column;gap:clamp(7px,1.0vw,12px);">
           <a onclick="sayfaGoster('anasayfa')" style="font-size:clamp(10px,1.4vw,17px);color:var(--text);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Ana Sayfa</a>
           <a onclick="sayfaGoster('hakkimizda')" style="font-size:clamp(10px,1.4vw,17px);color:var(--text);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Hakkımızda</a>
-          <a onclick="sayfaGoster('planlar')" style="font-size:clamp(10px,1.4vw,17px);color:var(--text);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Lisans Planları</a>
           <a onclick="sayfaGoster('iletisim')" style="font-size:clamp(10px,1.4vw,17px);color:var(--text);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">İletişim</a>
+          <a onclick="sayfaGoster('gereksinimler')" style="font-size:clamp(10px,1.4vw,17px);color:var(--text);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Sistem Gereksinimleri</a>
         </div>
       </div>
       <div>
@@ -546,12 +625,12 @@ let planlar = [];
 
 // ===== SAYFA YÖNETİMİ =====
 function sayfaGoster(ad, pushState) {
-  ["anasayfa","planlar","kayit","giris","dashboard","offline","hakkimizda","iletisim"].forEach(s => {
+  ["anasayfa","planlar","kayit","giris","dashboard","offline","hakkimizda","iletisim","gereksinimler"].forEach(s => {
     document.getElementById("sayfa-" + s).style.display = s === ad ? "" : "none";
   });
   // Footer: sadece public sayfalarda göster
   var footer = document.getElementById("site-footer");
-  if (footer) footer.style.display = ["anasayfa","planlar","hakkimizda","iletisim","giris","kayit","dashboard"].includes(ad) ? "" : "none";
+  if (footer) footer.style.display = ["anasayfa","planlar","hakkimizda","iletisim","gereksinimler","giris","kayit","dashboard"].includes(ad) ? "" : "none";
   if (ad === "planlar") planlariYukle();
   if (ad === "dashboard") dashboardYukle();
   if (ad === "offline") offlineSayfasiYukle();
@@ -574,7 +653,7 @@ window.addEventListener("popstate", function(e) {
 // Sayfa ilk yuklendiginde mevcut URL'e gore sayfayi ayarla (refresh destegi)
 (function() {
   var path = window.location.pathname.replace("/", "").replace(/\/$/,"") || "anasayfa";
-  var gecerli = ["anasayfa","planlar","kayit","giris","dashboard","offline","hakkimizda","iletisim"];
+  var gecerli = ["anasayfa","planlar","kayit","giris","dashboard","offline","hakkimizda","iletisim","gereksinimler"];
   if (!gecerli.includes(path)) path = "anasayfa";
   // history'de ilk durumu kaydet
   history.replaceState({ sayfa: path }, "", window.location.pathname);
