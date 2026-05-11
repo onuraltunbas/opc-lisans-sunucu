@@ -515,7 +515,7 @@
           <img src="/static/logo.png" alt="Nautilus" class="footer-logo" style="height:clamp(21px,2.8vh,34px);" onerror="this.style.display='none'">
           <span style="font-size:clamp(12px,1.6vw,20px);font-weight:800;">Nautilus Technology</span>
         </div>
-        <p style="font-size:clamp(9px,1.3vw,16px);color:var(--muted);line-height:1.7;width:100%;max-width:clamp(300px,95vw,280px);margin:0;">Endüstriyel otomasyon ve veri haberleşmesi alanında yenilikçi, yüksek verimli yazılım çözümleri.</p>
+        <p style="font-size:clamp(9px,1.3vw,16px);color:var(--text);line-height:1.7;width:100%;max-width:clamp(300px,95vw,280px);margin:0;">Endüstriyel otomasyon ve veri haberleşmesi alanında yenilikçi, yüksek verimli yazılım çözümleri.</p>
       </div>
       <div>
         <div style="font-size:clamp(9px,1.2vw,15px);font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:clamp(10px,1.4vh,17px);">Hızlı Erişim</div>
@@ -536,7 +536,7 @@
       </div>
     </div>
     <div style="border-top:1px solid var(--border);padding-top:clamp(18px,2.4vh,29px);display:flex;flex-wrap:wrap;flex:1 1 auto;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:clamp(9px,1.2vw,15px);">
-      <div style="font-size:clamp(9px,1.3vw,16px);color:var(--muted);">&copy; 2025 Nautilus Technology. Tüm hakları saklıdır.</div>
+      <div style="font-size:clamp(9px,1.3vw,16px);color:var(--text);">&copy; 2025 Nautilus Technology. Tüm hakları saklıdır.</div>
     </div>
   </div>
 </footer>
@@ -556,6 +556,7 @@ function sayfaGoster(ad, pushState) {
   if (ad === "dashboard") dashboardYukle();
   if (ad === "offline") offlineSayfasiYukle();
   if (ad === "kayit") initAdres();
+  if (ad === "giris") formGirisDoldur();
   // Tarayici gecmisine ekle (geri/ileri tus destegi)
   if (pushState !== false) {
     var url = ad === "anasayfa" ? "/" : "/" + ad;
@@ -577,7 +578,21 @@ window.addEventListener("popstate", function(e) {
   if (!gecerli.includes(path)) path = "anasayfa";
   // history'de ilk durumu kaydet
   history.replaceState({ sayfa: path }, "", window.location.pathname);
+  formGirisDoldur();
 })();
+
+function formGirisDoldur() {
+  const kEmail = localStorage.getItem("nautilus_saved_email");
+  const kSifre = localStorage.getItem("nautilus_saved_sifre");
+  if (kEmail && kSifre) {
+    const elE = document.getElementById("g-email");
+    const elS = document.getElementById("g-sifre");
+    const elB = document.getElementById("g-beni-hatirla");
+    if (elE) elE.value = kEmail;
+    if (elS) elS.value = kSifre;
+    if (elB) elB.checked = true;
+  }
+}
 
 // ===== PLANLAR =====
 async function planlariYukle() {
@@ -698,6 +713,13 @@ async function girisYap() {
   if (btn) { btn.disabled = false; btn.innerHTML = "Giriş Yap"; }
 
   if (r.ok) {
+    if (beni_hatirla) {
+      localStorage.setItem("nautilus_saved_email", email);
+      localStorage.setItem("nautilus_saved_sifre", sifre);
+    } else {
+      localStorage.removeItem("nautilus_saved_email");
+      localStorage.removeItem("nautilus_saved_sifre");
+    }
     mesajGoster("giris-ok", "&#9989; Giriş başarılı! Yönlendiriliyorsunuz&hellip;");
     setTimeout(() => {
       mesajGizle("giris-ok");
