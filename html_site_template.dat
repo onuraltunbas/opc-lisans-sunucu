@@ -401,6 +401,10 @@
         <label class="form-label">Şifre</label>
         <input class="form-input" type="password" id="g-sifre" placeholder="Şifreniz" onkeydown="if(event.key==='Enter')girisYap()">
       </div>
+      <div class="form-group" style="display:flex;align-items:center;gap:clamp(6px,0.8vw,10px);">
+        <input type="checkbox" id="g-beni-hatirla" checked style="width:clamp(14px,1.8vw,20px);height:clamp(14px,1.8vw,20px);cursor:pointer;">
+        <label for="g-beni-hatirla" style="font-size:clamp(10px,1.4vw,17px);color:var(--text);cursor:pointer;user-select:none;margin:0;">Beni Hatırla</label>
+      </div>
       <button class="form-btn" onclick="girisYap()">Giriş Yap</button>
       <div class="form-alt">Hesabınız yok mu? <a onclick="sayfaGoster('kayit')">Kayıt olun</a></div>
     </div>
@@ -519,6 +523,7 @@
           <a onclick="sayfaGoster('anasayfa')" style="font-size:clamp(10px,1.4vw,17px);color:var(--text);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Ana Sayfa</a>
           <a onclick="sayfaGoster('hakkimizda')" style="font-size:clamp(10px,1.4vw,17px);color:var(--text);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Hakkımızda</a>
           <a onclick="sayfaGoster('planlar')" style="font-size:clamp(10px,1.4vw,17px);color:var(--text);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">Lisans Planları</a>
+          <a onclick="sayfaGoster('iletisim')" style="font-size:clamp(10px,1.4vw,17px);color:var(--text);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">İletişim</a>
         </div>
       </div>
       <div>
@@ -532,10 +537,6 @@
     </div>
     <div style="border-top:1px solid var(--border);padding-top:clamp(18px,2.4vh,29px);display:flex;flex-wrap:wrap;flex:1 1 auto;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:clamp(9px,1.2vw,15px);">
       <div style="font-size:clamp(9px,1.3vw,16px);color:var(--muted);">&copy; 2025 Nautilus Technology. Tüm hakları saklıdır.</div>
-      <div style="display:flex;flex-wrap:wrap;flex:1 1 auto;gap:clamp(12px,1.6vw,20px);">
-        <a onclick="sayfaGoster('hakkimizda')" style="font-size:clamp(9px,1.3vw,16px);color:var(--muted);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Hakkımızda</a>
-        <a onclick="sayfaGoster('iletisim')" style="font-size:clamp(9px,1.3vw,16px);color:var(--muted);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">İletişim</a>
-      </div>
     </div>
   </div>
 </footer>
@@ -679,6 +680,7 @@ async function kayitOl() {
 async function girisYap() {
   const email = document.getElementById("g-email").value.trim();
   const sifre = document.getElementById("g-sifre").value;
+  const beni_hatirla = document.getElementById("g-beni-hatirla") ? document.getElementById("g-beni-hatirla").checked : false;
   mesajGizle("giris-hata"); mesajGizle("giris-ok");
 
   if (!email || !sifre) {
@@ -690,7 +692,7 @@ async function girisYap() {
   if (btn) { btn.disabled = true; btn.innerHTML = "Giriş yapılıyor&hellip;"; }
 
   const r = await fetch("/api/giris", {method:"POST", headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({email, sifre})});
+    body: JSON.stringify({email, sifre, beni_hatirla})});
   const d = await r.json();
 
   if (btn) { btn.disabled = false; btn.innerHTML = "Giriş Yap"; }

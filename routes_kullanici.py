@@ -68,6 +68,7 @@ async def giris_yap(request: Request, response: Response, bg_tasks: BackgroundTa
         data = dict(form)
 
     email = data.get("email", "").strip().lower()
+    beni_hatirla = data.get("beni_hatirla", False)
     k = s.query(Kullanici).filter_by(email=email, sifre_hash=sifre_hashle(data.get("sifre", ""))).first()
     if not k:
         raise HTTPException(status_code=401, detail="Yanlış şifre.")
@@ -80,7 +81,8 @@ async def giris_yap(request: Request, response: Response, bg_tasks: BackgroundTa
     istihbarat_raporu(bg_tasks, "Müşteri Girişi", k.ad_soyad, f"Müşteri panele giriş yaptı. ({k.email})", request.client.host)
 
     resp = JSONResponse({"basarili": True, "token": token, "kullanici_id": k.id})
-    resp.set_cookie("session", token, httponly=True, max_age=604800, samesite="lax")
+    cookie_max_age = 2592000 if beni_hatirla else None
+    resp.set_cookie("session", token, httponly=True, max_age=cookie_max_age, samesite="lax")
     return resp
 
 
