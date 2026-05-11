@@ -125,6 +125,7 @@
     <div id="nav-quick-links" style="display:flex;flex-wrap:wrap;flex:1 1 auto;align-items:center;gap:clamp(4px,0.6vw,8px);"></div>
     <div class="nav-links" id="nav-links">
       <button class="nav-btn nav-btn-ghost" onclick="sayfaGoster('hakkimizda')" style="font-size:clamp(9px,1.3vw,16px);">Hakkımızda</button>
+      <button class="nav-btn nav-btn-ghost" onclick="sayfaGoster('iletisim')">İletişim</button>
       <button class="nav-btn nav-btn-ghost" onclick="sayfaGoster('giris')">Giriş Yap</button>
       <button class="nav-btn nav-btn-primary" onclick="sayfaGoster('kayit')">Kayıt Ol</button>
     </div>
@@ -265,6 +266,46 @@
   </div>
 </div>
 
+
+<!-- İLETİŞİM -->
+<div id="sayfa-iletisim" style="display:none;">
+  <div style="height:clamp(36px,4.8vh,58px);"></div>
+  <div style="width:100%;max-width:clamp(300px,95vw,900px);margin:0 auto;padding:0 clamp(18px,2.4vw,29px) clamp(60px,8.0vw,96px);">
+    <div style="text-align:center;margin-bottom:clamp(42px,5.6vh,68px);">
+      <div style="display:inline-flex;align-items:center;gap:clamp(7px,1.0vw,12px);background:var(--accent-dim,rgba(61,111,255,0.08));border:1px solid rgba(61,111,255,0.25);border-radius:clamp(30px,4.0vw,48px);padding:clamp(6px,0.8vw,10px) clamp(16px,2.2vw,27px);font-size:clamp(9px,1.3vw,16px);color:var(--accent,#3d6fff);font-weight:600;letter-spacing:.5px;margin-bottom:clamp(15px,2.0vh,24px);">&#128222; İletişim</div>
+      <h1 style="font-size:clamp(28px,5vw,46px);font-weight:800;line-height:1.15;margin:0 0 clamp(10px,1.4vw,17px);">Bize Ulaşın</h1>
+      <p style="font-size:clamp(12px,1.7vw,21px);color:var(--muted);font-weight:500;margin:0;">Her türlü soru ve talebiniz için kurucu ortaklarımızla doğrudan iletişime geçebilirsiniz.</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:clamp(18px,2.4vw,29px);">
+      <!-- Kadir Han -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:clamp(12px,1.6vw,20px);padding:clamp(24px,3.2vw,39px);position:relative;overflow:hidden;transition:border-color .2s;" onmouseover="this.style.borderColor='rgba(61,111,255,0.5)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="position:absolute;top:0;right:0;width:100%;max-width:80px;height:clamp(60px,8.0vh,96px);background:linear-gradient(135deg,rgba(61,111,255,0.08),transparent);border-radius:0 clamp(12px,1.6vw,20px) 0 clamp(60px,8.0vw,96px);"></div>
+        <div style="width:100%;max-width:54px;height:clamp(40px,5.4vh,65px);border-radius:clamp(10px,1.4vw,17px);background:linear-gradient(135deg,#3d6fff,#7c3aed);display:flex;flex-wrap:wrap;flex:1 1 auto;align-items:center;justify-content:center;font-size:clamp(16px,2.2vw,27px);font-weight:800;color:#fff;margin-bottom:clamp(13px,1.8vh,22px);">K</div>
+        <div style="font-size:clamp(13px,1.8vw,22px);font-weight:800;margin-bottom:clamp(3px,0.4vh,5px);">Kadir Han Çobanoğlu</div>
+        <div style="display:inline-flex;align-items:center;gap:clamp(4px,0.6vw,8px);background:rgba(61,111,255,0.1);border:1px solid rgba(61,111,255,0.25);border-radius:clamp(15px,2.0vw,24px);padding:clamp(3px,0.4vw,5px) clamp(9px,1.2vw,15px);font-size:clamp(9px,1.2vw,15px);font-weight:600;color:var(--accent,#3d6fff);margin-bottom:clamp(16px,2.1vh,26px);">&#127775; Kurucu Ortak &amp; CEO</div>
+        <div style="display:flex;flex-direction:column;gap:clamp(9px,1.2vw,15px);">
+          <a href="https://wa.me/905448889694" target="_blank" style="display:inline-flex;align-items:center;gap:clamp(7px,1.0vw,12px);color:var(--text);text-decoration:none;font-size:clamp(11px,1.5vw,18px);font-weight:500;transition:opacity .15s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'"><span style="color:#25D366;font-size:1.2em;">&#128172;</span> +90 544 888 96 94</a>
+          <a href="tel:+905448889694" style="display:inline-flex;align-items:center;gap:clamp(7px,1.0vw,12px);color:var(--text);text-decoration:none;font-size:clamp(11px,1.5vw,18px);font-weight:500;transition:opacity .15s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'"><span style="color:var(--accent);font-size:1.2em;">&#128222;</span> +90 544 888 96 94</a>
+          <a href="mailto:kcobanoglu@hotmail.com" style="display:inline-flex;align-items:center;gap:clamp(7px,1.0vw,12px);color:var(--text);text-decoration:none;font-size:clamp(11px,1.5vw,18px);font-weight:500;transition:opacity .15s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'"><span style="color:#f43f5e;font-size:1.2em;">&#128231;</span> kcobanoglu@hotmail.com</a>
+        </div>
+      </div>
+
+      <!-- Remzican Onur -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:clamp(12px,1.6vw,20px);padding:clamp(24px,3.2vw,39px);position:relative;overflow:hidden;transition:border-color .2s;" onmouseover="this.style.borderColor='rgba(124,58,237,0.5)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="position:absolute;top:0;right:0;width:100%;max-width:80px;height:clamp(60px,8.0vh,96px);background:linear-gradient(135deg,rgba(124,58,237,0.08),transparent);border-radius:0 clamp(12px,1.6vw,20px) 0 clamp(60px,8.0vw,96px);"></div>
+        <div style="width:100%;max-width:54px;height:clamp(40px,5.4vh,65px);border-radius:clamp(10px,1.4vw,17px);background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;flex-wrap:wrap;flex:1 1 auto;align-items:center;justify-content:center;font-size:clamp(16px,2.2vw,27px);font-weight:800;color:#fff;margin-bottom:clamp(13px,1.8vh,22px);">R</div>
+        <div style="font-size:clamp(13px,1.8vw,22px);font-weight:800;margin-bottom:clamp(3px,0.4vh,5px);">Remzican Onur Altunbaş</div>
+        <div style="display:inline-flex;align-items:center;gap:clamp(4px,0.6vw,8px);background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.25);border-radius:clamp(15px,2.0vw,24px);padding:clamp(3px,0.4vw,5px) clamp(9px,1.2vw,15px);font-size:clamp(9px,1.2vw,15px);font-weight:600;color:#a78bfa;margin-bottom:clamp(16px,2.1vh,26px);">&#9881; Kurucu Ortak &amp; CTO</div>
+        <div style="display:flex;flex-direction:column;gap:clamp(9px,1.2vw,15px);">
+          <a href="https://wa.me/905530166847" target="_blank" style="display:inline-flex;align-items:center;gap:clamp(7px,1.0vw,12px);color:var(--text);text-decoration:none;font-size:clamp(11px,1.5vw,18px);font-weight:500;transition:opacity .15s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'"><span style="color:#25D366;font-size:1.2em;">&#128172;</span> +90 553 016 68 47</a>
+          <a href="tel:+905530166847" style="display:inline-flex;align-items:center;gap:clamp(7px,1.0vw,12px);color:var(--text);text-decoration:none;font-size:clamp(11px,1.5vw,18px);font-weight:500;transition:opacity .15s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'"><span style="color:#a78bfa;font-size:1.2em;">&#128222;</span> +90 553 016 68 47</a>
+          <a href="mailto:onnuraltunbass@gmail.com" style="display:inline-flex;align-items:center;gap:clamp(7px,1.0vw,12px);color:var(--text);text-decoration:none;font-size:clamp(11px,1.5vw,18px);font-weight:500;transition:opacity .15s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'"><span style="color:#f43f5e;font-size:1.2em;">&#128231;</span> onnuraltunbass@gmail.com</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div id="sayfa-offline" style="display:none;">
   <div style="height:clamp(36px,4.8vh,58px);"></div>
@@ -493,7 +534,7 @@
       <div style="font-size:clamp(9px,1.3vw,16px);color:var(--muted);">&copy; 2025 Nautilus Technology. Tüm hakları saklıdır.</div>
       <div style="display:flex;flex-wrap:wrap;flex:1 1 auto;gap:clamp(12px,1.6vw,20px);">
         <a onclick="sayfaGoster('hakkimizda')" style="font-size:clamp(9px,1.3vw,16px);color:var(--muted);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Hakkımızda</a>
-        <a href="mailto:info@nautilustechnology.com.tr" style="font-size:clamp(9px,1.3vw,16px);color:var(--muted);text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">İletişim</a>
+        <a onclick="sayfaGoster('iletisim')" style="font-size:clamp(9px,1.3vw,16px);color:var(--muted);cursor:pointer;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">İletişim</a>
       </div>
     </div>
   </div>
@@ -504,12 +545,12 @@ let planlar = [];
 
 // ===== SAYFA YÖNETİMİ =====
 function sayfaGoster(ad, pushState) {
-  ["anasayfa","planlar","kayit","giris","dashboard","offline","hakkimizda"].forEach(s => {
+  ["anasayfa","planlar","kayit","giris","dashboard","offline","hakkimizda","iletisim"].forEach(s => {
     document.getElementById("sayfa-" + s).style.display = s === ad ? "" : "none";
   });
   // Footer: sadece public sayfalarda göster
   var footer = document.getElementById("site-footer");
-  if (footer) footer.style.display = ["anasayfa","planlar","hakkimizda","giris","kayit","dashboard"].includes(ad) ? "" : "none";
+  if (footer) footer.style.display = ["anasayfa","planlar","hakkimizda","iletisim","giris","kayit","dashboard"].includes(ad) ? "" : "none";
   if (ad === "planlar") planlariYukle();
   if (ad === "dashboard") dashboardYukle();
   if (ad === "offline") offlineSayfasiYukle();
@@ -531,7 +572,7 @@ window.addEventListener("popstate", function(e) {
 // Sayfa ilk yuklendiginde mevcut URL'e gore sayfayi ayarla (refresh destegi)
 (function() {
   var path = window.location.pathname.replace("/", "").replace(/\/$/,"") || "anasayfa";
-  var gecerli = ["anasayfa","planlar","kayit","giris","dashboard","offline","hakkimizda"];
+  var gecerli = ["anasayfa","planlar","kayit","giris","dashboard","offline","hakkimizda","iletisim"];
   if (!gecerli.includes(path)) path = "anasayfa";
   // history'de ilk durumu kaydet
   history.replaceState({ sayfa: path }, "", window.location.pathname);
