@@ -196,7 +196,7 @@ def panel_kullanicilar(user: PanelUserDto = Depends(panel_dogrula), s: Session =
     sonuc = []
     for k in kullanicilar:
         l = s.query(Lisans).filter_by(musteri_email=k.email, aktif=True).first()
-        sonuc.append({"id": k.id, "ad_soyad": k.ad_soyad, "email": k.email, "email_dogrulandi": k.email_dogrulandi, "kayit_tar": k.kayit_tar.strftime("%d.%m.%Y"), "son_giris": k.son_giris.strftime("%d.%m.%Y") if k.son_giris else "Hiç", "son_ip": k.son_ip or "-", "lisans_kodu": l.lisans_kodu if l else None, "lisans_tur": l.tur if l else None})
+        sonuc.append({"id": k.id, "ad_soyad": k.ad_soyad, "email": k.email, "email_dogrulandi": k.email_dogrulandi, "kayit_tar": k.kayit_tar.strftime("%d.%m.%Y"), "son_giris": k.son_giris.strftime("%d.%m.%Y") if k.son_giris else "Hiç", "son_ip": k.son_ip or "-", "lisans_kodu": l.lisans_kodu if l else None, "lisans_tur": l.tur if l else None, "firma_ismi": getattr(k, 'firma_ismi', None), "detayli_adres": getattr(k, 'detayli_adres', None)})
     return sonuc
 
 @router.delete("/panel/kullanici-sil/{kullanici_id}")

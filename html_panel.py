@@ -426,7 +426,7 @@ code { font-family: monospace; font-size: 12px; background: #222540; padding: 2p
       </div>
       <div class="tbl-wrap">
         <table>
-          <thead><tr><th>Ad Soyad</th><th>E-posta</th><th>Doğrulandı</th><th>Kayıt</th><th>Son Giriş</th><th>Son IP</th><th>Lisans</th><th>İşlem</th></tr></thead>
+          <thead><tr><th>Ad Soyad</th><th>Firma</th><th>E-posta</th><th>İl/İlçe/Adres</th><th>Doğrulandı</th><th>Kayıt</th><th>Son Giriş</th><th>Son IP</th><th>Lisans</th><th>İşlem</th></tr></thead>
           <tbody id="kullanici-tablo"></tbody>
         </table>
       </div>
@@ -1275,7 +1275,9 @@ function kullanicilariYukle() {
     document.getElementById("kullanici-tablo").innerHTML = liste.map(k => `
       <tr>
         <td>${k.ad_soyad}</td>
+        <td><span style="font-weight:600;color:#5b8cff;">${k.firma_ismi || "-"}</span></td>
         <td>${k.email}</td>
+        <td><span style="font-size:11px;color:#888;">${k.detayli_adres || "-"}</span></td>
         <td><span class="badge ${k.email_dogrulandi?'b-aktif':'b-pasif'}">${k.email_dogrulandi?'✔':'✗'}</span></td>
         <td>${k.kayit_tar}</td>
         <td>${k.son_giris}</td>
