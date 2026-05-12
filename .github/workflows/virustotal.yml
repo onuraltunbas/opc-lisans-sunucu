@@ -3,7 +3,7 @@ name: VirusTotal Otomatik Tarama
 on:
   push:
     paths:
-      - 'dosyalar/OPC_Gateway_Pro.exe'
+      - 'dosyalar/Nautilus_Gateway.exe'
 
 jobs:
   scan:
