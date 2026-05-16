@@ -26,6 +26,8 @@ img, video, iframe, input, textarea, select, button {
   --warn:      #f59e0b;
   --radius:    clamp(2px, 0.5vw, 4px);
   --radius-sm: clamp(1px, 0.2vw, 2px);
+  --nav-footer-bg: #5C635F; 
+  --nav-footer-text: #ffffff;
 }
 
 /* ─── Light mode ─── */
@@ -41,6 +43,8 @@ img, video, iframe, input, textarea, select, button {
   --text:      #1a1a1a;
   --text2:     #4a4a4a;
   --muted:     #909090;
+  --nav-footer-bg: #2A322E; 
+  --nav-footer-text: #e0e0e0;
 }
 
 html {
@@ -68,7 +72,8 @@ body > div[id^="sayfa-"] {
   padding: clamp(8px, 1.5vw, 12px) clamp(16px, 4vw, 32px);
   min-height: clamp(50px, 8vh, 70px);
   border-bottom: none;
-  background: color-mix(in srgb, var(--bg), transparent 10%);
+  background: color-mix(in srgb, var(--nav-footer-bg), transparent 10%);
+  color: var(--nav-footer-text);
   position: sticky; top: 0; z-index: 200;
 }
 .nav-brand { display: flex; align-items: center; gap: clamp(8px, 1.5vw, 12px); text-decoration: none; color: var(--text); flex: 1 1 auto; }
@@ -77,11 +82,11 @@ body > div[id^="sayfa-"] {
 /* Karanlık temada logonun siyah kısımları beyaz olur */
 [data-theme="dark"] .nav-logo, :root:not([data-theme="light"]) .nav-logo,
 [data-theme="dark"] .footer-logo, :root:not([data-theme="light"]) .footer-logo { filter: invert(1); }
-.nav-brand-text { font-size: clamp(12px, 1.5vw, 14px); font-weight: 800; letter-spacing: -0.3px; color: var(--text); display: flex; flex-direction: column; line-height: 1.1; }
+.nav-brand-text { font-size: clamp(12px, 1.5vw, 14px); font-weight: 800; letter-spacing: -0.3px; color: var(--nav-footer-text); display: flex; flex-direction: column; line-height: 1.1; }
 .nav-brand-text span { font-size: clamp(9px, 1.2vw, 10px); font-weight: 400; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; }
 .nav-links { display: flex; align-items: center; gap: clamp(4px, 1vw, 6px); flex-wrap: wrap; flex: 1 1 auto; justify-content: flex-end; }
 .nav-btn { padding: clamp(4px, 1vw, 6px) clamp(10px, 2vw, 16px); border-radius: var(--radius); font-size: clamp(11px, 1.2vw, 13px); font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; font-family: 'Inter', sans-serif; white-space: nowrap; }
-.nav-btn-ghost { background: transparent; color: var(--text2); border-color: var(--border2); }
+.nav-btn-ghost { background: transparent; color: var(--nav-footer-text); border-color: rgba(255,255,255,0.2); }
 .nav-btn-ghost:hover { color: var(--text); border-color: var(--accent); }
 .nav-btn-primary { background: var(--accent2); color: var(--bg); border-color: var(--accent2); }
 .nav-btn-primary:hover { opacity: 0.85; }
