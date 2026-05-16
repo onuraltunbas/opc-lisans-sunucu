@@ -43,7 +43,7 @@ img, video, iframe, input, textarea, select, button {
   --text:      #1a1a1a;
   --text2:     #4a4a4a;
   --muted:     #909090;
-  --nav-footer-bg: #2A322E; 
+  --nav-footer-bg: #8b8b8bc5; 
   --nav-footer-text: #e0e0e0;
 }
 
