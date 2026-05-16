@@ -68,7 +68,7 @@ body > div[id^="sayfa-"] {
   padding: clamp(8px, 1.5vw, 12px) clamp(16px, 4vw, 32px);
   min-height: clamp(50px, 8vh, 70px);
   border-bottom: none;
-  background: color-mix(in srgb, var(--bg), transparent 5%);
+  background: color-mix(in srgb, var(--bg), transparent 25%);
   position: sticky; top: 0; z-index: 200;
 }
 .nav-brand { display: flex; align-items: center; gap: clamp(8px, 1.5vw, 12px); text-decoration: none; color: var(--text); flex: 1 1 auto; }
