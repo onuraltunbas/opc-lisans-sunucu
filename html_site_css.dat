@@ -54,7 +54,7 @@ body {
   transition: background 0.2s, color 0.2s;
   display: flex;
   flex-direction: column;
-  background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  /* background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px); */
   background-size: clamp(32px, 5vw, 48px) clamp(32px, 5vw, 48px);
   background-position: -1px -1px;
 }
