@@ -26,11 +26,11 @@ img, video, iframe, input, textarea, select, button {
   --warn:      #f59e0b;
   --radius:    clamp(2px, 0.5vw, 4px);
   --radius-sm: clamp(1px, 0.2vw, 2px);
-  --nav-footer-bg: #5C635F; 
+  --nav-footer-bg: #8b8b8bc5; 
   --nav-footer-text: #ffffff;
 }
 
-/* ─── Light mode ─── */
+/* ─── Light mode -─── */
 [data-theme="light"] {
   --bg:        #f4f4f4;
   --bg2:       #ffffff;
