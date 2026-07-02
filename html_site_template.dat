@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Nautilus Technology | Endüstriyel Gateway ve Otomasyon Çözümleri</title>
-<meta name="description" content="Nautilus Technology, endüstriyel tesislerin dijital dönüşümü için güvenilir OPC UA / OPC DA tabanlı Gateway ve otomasyon yazılımları geliştirir.">
-<meta name="keywords" content="Nautilus Technology,nautilus, opc, plc, ua,da, gateway, endüstriyel gateway, OPC UA, OPC DA, otomasyon yazılımı, endüstriyel yazılım, scada entegrasyonu">
+{{ title }}
+{{ description }}
+{{ keywords }}
 <meta name="author" content="Nautilus Technology">
 <meta name="google-site-verification" content="5PWZlgIA2ix0hNSBohcMBFv76V76GvmZN7-5mLJMF3k" />
 
@@ -122,7 +122,7 @@
     <img src="/static/logo.png" alt="Nautilus Technology" class="nav-logo" onerror="this.style.display='none'">
   </a>
   <div style="display:flex;flex-wrap:wrap;flex:1 1 auto;align-items:center;gap:clamp(6px,0.8vw,10px);">
-    <div id="nav-quick-links" style="display:flex;flex-wrap:wrap;flex:1 1 auto;align-items:center;gap:clamp(4px,0.6vw,8px);"></div>
+    <div id="nav-quick-links" style="display:flex;flex-wrap:wrap;flex:1 1 auto;align-items:center;gap:clamp(4px,0.6vw,8px);"><a onclick="sayfaGoster('blog')" style="font-size:clamp(9px,1.3vw,16px);color:var(--text);cursor:pointer;text-decoration:none;padding:clamp(4px,0.6vw,8px) clamp(10px,1.4vw,17px);border-radius:clamp(15px,2.0vw,24px);transition:background .15s;" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background='transparent'">Teknik Blog</a></div>
     <div class="nav-links" id="nav-links">
       <button class="nav-btn nav-btn-ghost" onclick="sayfaGoster('giris')">Giriş Yap</button>
       <button class="nav-btn nav-btn-primary" onclick="sayfaGoster('kayit')">Kayıt Ol</button>
@@ -137,8 +137,8 @@
 <div id="sayfa-anasayfa">
   <div class="hero">
     <div class="hero-badge">&#9889; OPC Gateway Lisans Sistemi</div>
-    <h1>Endüstriyel Otomasyon<br><span>Lisans Yönetimi</span></h1>
-    <p>OPC Gateway yazılımı için güvenli, hızlı ve kolay lisans aktivasyon sistemi.</p>
+    <h1>PLC ve Endüstriyel Otomasyon<br><span>Gateway Sistemleri</span></h1>
+    <p>Siemens, Delta, Schneider gibi tüm PLC'ler ile tam uyumlu OPC Gateway yazılımı için güvenli, hızlı ve donanım bağımsız lisans yönetim sistemi.</p>
     <div class="hero-btns">
       <button class="btn-hero btn-hero-primary" onclick="sayfaGoster('kayit')">Hemen Başla &rarr;</button>
       <button class="btn-hero btn-hero-ghost" onclick="sayfaGoster('planlar')">Planları İncele</button>
@@ -165,6 +165,11 @@
       <div class="feature-icon">&#128260;</div>
       <h3>Esnek Planlar</h3>
       <p>Aylık, yıllık veya ömür boyu seçeneklerden ihtiyacınıza uygun planı seçin.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">&#9881;</div>
+      <h3>PLC ve SCADA Uyumu</h3>
+      <p>Siemens, Delta, Schneider ve daha fazlası — tüm marka PLC'ler ve SCADA sistemleriyle tam uyumlu OPC Gateway entegrasyonu.</p>
     </div>
   </div>
 </div>
@@ -200,8 +205,8 @@
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:clamp(12px,1.6vw,20px);padding:clamp(30px,4.0vw,48px);margin-bottom:clamp(27px,3.6vh,44px);position:relative;overflow:hidden;">
       <div style="position:absolute;top:0;left:0;width:100%;max-width:4px;height:100%;background:linear-gradient(180deg,#3d6fff,#7c3aed);"></div>
       <div style="font-size:clamp(8px,1.1vw,14px);font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--accent,#3d6fff);margin-bottom:clamp(12px,1.6vh,20px);">&#9632; Vizyonumuz ve Teknolojik Altyapımız</div>
-      <p style="font-size:clamp(11px,1.5vw,18px);line-height:1.85;color:var(--text);margin:0 0 clamp(13px,1.8vw,22px);">Nautilus Technology, endüstriyel otomasyon ve veri haberleşmesi alanında yenilikçi, sürdürülebilir ve yüksek verimli yazılım çözümleri geliştirmek amacıyla kurulmuştur. Temel odak noktamız; modern <strong>SCADA, ERP ve IoT</strong> sistemleri ile sahadaki uç birimler arasında kesintisiz ve güvenli bir veri entegrasyonu sağlamaktır.</p>
-      <p style="font-size:clamp(11px,1.5vw,18px);line-height:1.85;color:var(--text);margin:0 0 clamp(13px,1.8vw,22px);">Endüstriyel tesislerin operasyonel sürekliliği göz önüne alınarak tasarlanan yazılım mimarimiz, sektördeki standart çözümlerin aksine <strong>donanım bağımsız</strong> bir verimlilik sunmaktadır. Geliştirdiğimiz özgün asenkron veri işleme teknolojisi, kısıtlı sistem kaynaklarına (düşük CPU ve RAM) sahip eski nesil donanımlarda dahi maksimum stabilite ile çalışmak üzere özel olarak optimize edilmiştir.</p>
+      <p style="font-size:clamp(11px,1.5vw,18px);line-height:1.85;color:var(--text);margin:0 0 clamp(13px,1.8vw,22px);">Nautilus Technology, <strong>PLC otomasyon</strong> ve veri haberleşmesi alanında yenilikçi, sürdürülebilir ve yüksek verimli yazılım çözümleri geliştirmek amacıyla kurulmuştur. Temel odak noktamız; modern <strong>SCADA, ERP ve IoT</strong> sistemleri ile sahadaki uç birimler arasında kesintisiz ve güvenli bir veri entegrasyonu sağlamaktır.</p>
+      <p style="font-size:clamp(11px,1.5vw,18px);line-height:1.85;color:var(--text);margin:0 0 clamp(13px,1.8vw,22px);"><strong>Farklı marka PLC'ler</strong> ile sorunsuz çalışmak üzere tasarlanan yazılım mimarimiz, sektördeki standart çözümlerin aksine <strong>donanım bağımsız</strong> bir verimlilik sunmaktadır. Geliştirdiğimiz özgün asenkron veri işleme teknolojisi, kısıtlı sistem kaynaklarına (düşük CPU ve RAM) sahip eski nesil donanımlarda dahi maksimum stabilite ile çalışmak üzere özel olarak optimize edilmiştir.</p>
       <p style="font-size:clamp(11px,1.5vw,18px);line-height:1.85;color:var(--text);margin:0;">Amacımız; tesislerin donanım yenileme maliyetlerini minimize ederken, yüksek hacimli etiket okuma süreçlerinde <strong>sıfır gecikme</strong>, yüksek sistem kararlılığı ve uluslararası mühendislik standartlarında bir altyapı hizmeti sunmaktır.</p>
     </div>
 
@@ -585,6 +590,24 @@
   </div>
 </div>
 
+<!-- BLOG -->
+<div id="sayfa-blog" style="display:none;">
+  <div style="height:clamp(36px,4.8vh,58px);"></div>
+  <div style="width:100%;max-width:clamp(300px,95vw,900px);margin:0 auto;padding:0 clamp(18px,2.4vw,29px) clamp(60px,8.0vw,96px);">
+    <div style="text-align:center;margin-bottom:clamp(42px,5.6vh,68px);">
+      <div style="display:inline-flex;align-items:center;gap:clamp(7px,1.0vw,12px);background:var(--accent-dim,rgba(61,111,255,0.08));border:1px solid rgba(61,111,255,0.25);border-radius:clamp(30px,4.0vw,48px);padding:clamp(6px,0.8vw,10px) clamp(16px,2.2vw,27px);font-size:clamp(9px,1.3vw,16px);color:var(--accent,#3d6fff);font-weight:600;letter-spacing:.5px;margin-bottom:clamp(15px,2.0vh,24px);">&#9997; Teknik Kütüphane</div>
+      <h1 style="font-size:clamp(28px,5vw,46px);font-weight:800;line-height:1.15;margin:0 0 clamp(10px,1.4vw,17px);">Teknik Blog</h1>
+      <p style="font-size:clamp(12px,1.7vw,21px);color:var(--muted);font-weight:500;margin:0;">Teknik Kütüphane - PLC otomasyon makaleleri yakında burada olacak.</p>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:clamp(12px,1.6vw,20px);padding:clamp(30px,4.0vw,48px);text-align:center;">
+      <div style="font-size:clamp(30px,4vw,48px);margin-bottom:clamp(12px,1.6vh,20px);">&#128218;</div>
+      <div style="font-size:clamp(13px,1.8vw,22px);font-weight:700;margin-bottom:clamp(7px,1.0vh,12px);">Yakında!</div>
+      <p style="font-size:clamp(11px,1.5vw,18px);color:var(--muted);margin:0 0 clamp(18px,2.4vw,29px);">PLC otomasyon, OPC UA/DA protokolleri, SCADA entegrasyonu ve endüstriyel haberleşme konularında teknik makaleler hazırlanmaktadır.</p>
+      <button class="btn-hero btn-hero-ghost" onclick="sayfaGoster('anasayfa')">Ana Sayfaya Dön</button>
+    </div>
+  </div>
+</div>
+
 <!-- FOOTER -->
 <footer id="site-footer" style="border-top:1px solid var(--border);margin-top:auto;padding:clamp(36px,4.8vw,58px) clamp(18px,2.4vw,29px) clamp(24px,3.2vw,39px);">
   <div style="width:100%;max-width:clamp(300px,95vw,1100px);margin:0 auto;">
@@ -625,12 +648,12 @@ let planlar = [];
 
 // ===== SAYFA YÖNETİMİ =====
 function sayfaGoster(ad, pushState) {
-  ["anasayfa","planlar","kayit","giris","dashboard","offline","hakkimizda","iletisim","gereksinimler"].forEach(s => {
+  ["anasayfa","planlar","kayit","giris","dashboard","offline","hakkimizda","iletisim","gereksinimler","blog"].forEach(s => {
     document.getElementById("sayfa-" + s).style.display = s === ad ? "" : "none";
   });
   // Footer: sadece public sayfalarda göster
   var footer = document.getElementById("site-footer");
-  if (footer) footer.style.display = ["anasayfa","planlar","hakkimizda","iletisim","gereksinimler","giris","kayit","dashboard"].includes(ad) ? "" : "none";
+  if (footer) footer.style.display = ["anasayfa","planlar","hakkimizda","iletisim","gereksinimler","giris","kayit","dashboard","blog"].includes(ad) ? "" : "none";
   if (ad === "planlar") planlariYukle();
   if (ad === "dashboard") dashboardYukle();
   if (ad === "offline") offlineSayfasiYukle();
@@ -652,9 +675,17 @@ window.addEventListener("popstate", function(e) {
 
 // Sayfa ilk yuklendiginde mevcut URL'e gore sayfayi ayarla (refresh destegi)
 (function() {
-  var path = window.location.pathname.replace("/", "").replace(/\/$/,"") || "anasayfa";
-  var gecerli = ["anasayfa","planlar","kayit","giris","dashboard","offline","hakkimizda","iletisim","gereksinimler"];
-  if (!gecerli.includes(path)) path = "anasayfa";
+  var gecerli = ["anasayfa","planlar","kayit","giris","dashboard","offline","hakkimizda","iletisim","gereksinimler","blog"];
+  var sunucuSayfa = "{{ current_page }}";
+  var path;
+  // Sunucudan gelen gecerli bir sayfa adi varsa onu kullan
+  if (sunucuSayfa && !sunucuSayfa.includes("{") && gecerli.includes(sunucuSayfa)) {
+    path = sunucuSayfa;
+  } else {
+    // Fallback: URL'den oku
+    path = window.location.pathname.replace(/^\//, "").replace(/\/$/,"") || "anasayfa";
+    if (!gecerli.includes(path)) path = "anasayfa";
+  }
   // history'de ilk durumu kaydet
   history.replaceState({ sayfa: path }, "", window.location.pathname);
   formGirisDoldur();
