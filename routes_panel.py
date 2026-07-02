@@ -32,6 +32,7 @@ class LisansOlusturIstek(BaseModel):
     deneme_saat: Optional[int] = 24
     ozel_gun: Optional[int] = None
     notlar: Optional[str] = None
+    urun: Optional[str] = "gateway"
 
 @router.post("/panel/lisans-olustur")
 def lisans_olustur(istek: LisansOlusturIstek, request: Request, bg_tasks: BackgroundTasks, user: PanelUserDto = Depends(yetki_kontrol("lisans_olustur")), s: Session = Depends(db)):
@@ -47,7 +48,7 @@ def lisans_olustur(istek: LisansOlusturIstek, request: Request, bg_tasks: Backgr
     else:
         bitis = bitis_tarihi_hesapla(istek.tur, s, istek.deneme_saat)
         
-    s.add(Lisans(lisans_kodu=kod, musteri_adi=istek.musteri_adi, musteri_email=istek.musteri_email, tur=istek.tur, bitis_tarihi=bitis, notlar=istek.notlar))
+    s.add(Lisans(lisans_kodu=kod, musteri_adi=istek.musteri_adi, musteri_email=istek.musteri_email, tur=istek.tur, bitis_tarihi=bitis, notlar=istek.notlar, urun=istek.urun or "gateway"))
     s.commit()
     istihbarat_raporu(bg_tasks, "Online Lisans Üretildi", user.tam_isim, f"Müşteri: {istek.musteri_adi}\nTür: {istek.tur}\nKod: {kod}", request.client.host)
     return {"lisans_kodu": kod, "bitis_tarihi": bitis.isoformat() if bitis else "Ömür boyu", "mesaj": f"Lisans oluşturuldu: {kod}"}

@@ -268,6 +268,10 @@ code { font-family: monospace; font-size: 12px; background: #222540; padding: 2p
       <div class="sub-pane active" id="pane-yeni-online">
         <input type="text" id="l-adi" placeholder="Müşteri adı soyadı *">
         <input type="email" id="l-email" placeholder="E-posta (teşekkür maili için)">
+        <select id="l-urun" style="margin-bottom:8px;">
+          <option value="gateway">🖥️ Gateway</option>
+          <option value="viewer">👁️ Viewer</option>
+        </select>
         <select id="l-tur">
           <option value="aylik">Aylık (30 gün)</option>
         </select>
@@ -868,6 +872,7 @@ function lisansOlustur() {
     musteri_adi: document.getElementById("l-adi").value,
     musteri_email: document.getElementById("l-email").value,
     tur: document.getElementById("l-tur").value,
+    urun: document.getElementById("l-urun").value,
     deneme_saat: parseInt(document.getElementById("l-saat").value) || 24,
     ozel_gun: ozel_val !== "" ? parseInt(ozel_val) : null,
     notlar: document.getElementById("l-not").value,

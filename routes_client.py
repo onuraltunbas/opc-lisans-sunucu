@@ -25,10 +25,12 @@ def app_sirri_dogrula(request: Request):
 class AktivasoyonIstek(BaseModel):
     hwid: str
     lisans_kodu: str
+    urun: str = "gateway"
 
 class KontrolIstek(BaseModel):
     hwid: str
     lisans_kodu: str
+    urun: str = "gateway"
 
 
 @router.post("/api/aktive-et", dependencies=[Depends(app_sirri_dogrula)])
@@ -40,6 +42,8 @@ def aktive_et(istek: AktivasoyonIstek, request: Request, s: Session = Depends(db
 
     lisans = s.query(Lisans).filter_by(lisans_kodu=kod).first()
     if not lisans: raise HTTPException(status_code=404, detail="Lisans kodu bulunamadı.")
+    lisans_urun = (getattr(lisans, "urun", None) or "gateway").lower()
+    if lisans_urun != istek.urun.lower(): raise HTTPException(status_code=403, detail="Geçersiz Lisans")
     if not lisans.aktif: raise HTTPException(status_code=403, detail="Bu lisans iptal edilmiştir.")
     if lisans.bitis_tarihi and datetime.datetime.utcnow() > lisans.bitis_tarihi: raise HTTPException(status_code=403, detail="Lisans süresi dolmuştur.")
     if lisans.hwid and lisans.hwid != hwid: raise HTTPException(status_code=403, detail="Bu lisans başka bilgisayara kayıtlı.")
@@ -61,6 +65,8 @@ def kontrol(istek: KontrolIstek, request: Request, s: Session = Depends(db)):
     hwid = istek.hwid.strip()
     lisans = s.query(Lisans).filter_by(lisans_kodu=kod).first()
     if not lisans or not lisans.aktif: return {"gecerli": False, "mesaj": "Lisans geçersiz."}
+    lisans_urun = (getattr(lisans, "urun", None) or "gateway").lower()
+    if lisans_urun != istek.urun.lower(): return {"gecerli": False, "mesaj": "Geçersiz Lisans"}
     if lisans.hwid != hwid: return {"gecerli": False, "mesaj": "HWID uyuşmazlığı."}
     if lisans.bitis_tarihi and datetime.datetime.utcnow() > lisans.bitis_tarihi: return {"gecerli": False, "mesaj": "Süre dolmuştur."}
     lisans.son_checkin = datetime.datetime.utcnow()

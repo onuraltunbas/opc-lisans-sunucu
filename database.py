@@ -66,6 +66,7 @@ class Lisans(Base):
     uretilen_tip   = Column(String, default="online")
     istek_kodu_db  = Column(String, nullable=True)
     sure_gun_db    = Column(Integer, nullable=True)
+    urun           = Column(Text, default="gateway")
 
 class Log(Base):
     __tablename__ = "loglar"
@@ -215,6 +216,7 @@ def _db_migrate():
         f"ALTER TABLE lisanslar ADD COLUMN {_ifne}uretilen_tip VARCHAR(20) DEFAULT 'online'",
         f"ALTER TABLE lisanslar ADD COLUMN {_ifne}istek_kodu_db VARCHAR(100)",
         f"ALTER TABLE lisanslar ADD COLUMN {_ifne}sure_gun_db INTEGER",
+        f"ALTER TABLE lisanslar ADD COLUMN {_ifne}urun TEXT DEFAULT 'gateway'",
         f"ALTER TABLE kullanicilar ADD COLUMN {_ifne}firma_ismi VARCHAR(255)",
         f"ALTER TABLE kullanicilar ADD COLUMN {_ifne}detayli_adres TEXT",
     ]
