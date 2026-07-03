@@ -16,7 +16,7 @@ from database import (
 from helpers import (
     sifre_hashle, session_olustur, session_sil, session_dogrula,
     get_kullanici_id, safe_format_date, safe_format_datetime,
-    safe_days_left, get_exe_hash, get_exe_date, istihbarat_raporu,
+    safe_days_left, get_exe_hash, get_exe_date, get_exe_path, istihbarat_raporu,
     ip_banlimi
 )
 
@@ -183,14 +183,14 @@ def profil(request: Request, s: Session = Depends(db)):
     except Exception:
         _yeni_surum = False
 
-    exe_path = os.path.join("dosyalar", "OPC_Gateway_Pro.exe")
+    exe_path = get_exe_path()
 
     return {
         "ad_soyad": k.ad_soyad,
         "email": k.email,
         "kayit_tar": safe_format_date(k.kayit_tar),
         "lisans": l_bilgi,
-        "indirme_linki": "/api/program-indir" if os.path.exists(exe_path) else None,
+        "indirme_linki": "/api/program-indir" if exe_path else None,
         "vt_hash": get_exe_hash(),
         "son_guncelleme": get_exe_date(),
         "yeni_surum_banner": _yeni_surum
@@ -261,10 +261,11 @@ def program_indir(request: Request):
     kid = get_kullanici_id(request)
     if not kid: raise HTTPException(status_code=401, detail="Lütfen önce giriş yapın.")
 
-    exe_path = os.path.join("dosyalar", "OPC_Gateway_Pro.exe")
-    if not os.path.exists(exe_path):
+    exe_path = get_exe_path()
+    if not exe_path:
         raise HTTPException(status_code=404, detail="Program dosyası sunucuda bulunamadı.")
-    return FileResponse(exe_path, media_type="application/vnd.microsoft.portable-executable", filename="OPC_Gateway_Pro.exe")
+    dosya_adi = os.path.basename(exe_path)
+    return FileResponse(exe_path, media_type="application/vnd.microsoft.portable-executable", filename=dosya_adi)
 
 
 @router.get("/api/public-info")
@@ -272,9 +273,9 @@ def public_info(request: Request):
     kid = get_kullanici_id(request)
     if not kid: raise HTTPException(status_code=401)
 
-    exe_path = os.path.join("dosyalar", "OPC_Gateway_Pro.exe")
+    exe_path = get_exe_path()
     return {
-        "indirme_linki": "/api/program-indir" if os.path.exists(exe_path) else None,
+        "indirme_linki": "/api/program-indir" if exe_path else None,
         "vt_hash": get_exe_hash(),
         "son_guncelleme": get_exe_date()
     }

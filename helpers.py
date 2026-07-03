@@ -26,8 +26,22 @@ from database import (
 # =====================================================================
 # EXE YARDIMCI FONKSİYONLARI
 # =====================================================================
+def get_exe_path() -> Optional[str]:
+    """dosyalar/ klasöründeki ilk .exe dosyasının tam yolunu döner.
+    Dosya adından bağımsız çalışır; klasöre yeni exe atılsa bile otomatik bulur."""
+    folder = "dosyalar"
+    try:
+        for f in os.listdir(folder):
+            if f.lower().endswith(".exe"):
+                return os.path.join(folder, f)
+    except Exception:
+        pass
+    return None
+
 def get_exe_hash() -> str:
-    exe_path = os.path.join("dosyalar", "OPC_Gateway_Pro.exe")
+    exe_path = get_exe_path()
+    if not exe_path:
+        return ""
     try:
         with open(exe_path, "rb") as f:
             return hashlib.sha256(f.read()).hexdigest()
@@ -35,7 +49,9 @@ def get_exe_hash() -> str:
         return ""
 
 def get_exe_date() -> str:
-    exe_path = os.path.join("dosyalar", "OPC_Gateway_Pro.exe")
+    exe_path = get_exe_path()
+    if not exe_path:
+        return ""
     try:
         ts = os.path.getmtime(exe_path)
         return datetime.datetime.fromtimestamp(ts).strftime("%d.%m.%Y")
@@ -44,7 +60,9 @@ def get_exe_date() -> str:
 
 def is_exe_new() -> bool:
     """EXE dosyası son 24 saat içinde mi güncellendi?"""
-    exe_path = os.path.join("dosyalar", "OPC_Gateway_Pro.exe")
+    exe_path = get_exe_path()
+    if not exe_path:
+        return False
     try:
         ts = os.path.getmtime(exe_path)
         diff = datetime.datetime.now() - datetime.datetime.fromtimestamp(ts)
