@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'dosyalar/*.exe'
+  workflow_dispatch:  # GitHub arayüzünden manuel tetikleme butonu
 
 jobs:
   scan:
