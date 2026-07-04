@@ -148,8 +148,8 @@
   <div class="features">
     <div class="feature">
       <div class="feature-icon">&#128272;</div>
-      <h3>Güvenli Aktivasyon</h3>
-      <p>HWID tabanlı lisans sistemi ile yazılımınızı yetkisiz kullanıma karşı koruyun.</p>
+      <h3>Üst Düzey Güvenlik</h3>
+      <p>HMAC-SHA-256, XOR ve Fernet şifreleme katmanlarıyla desteklenen HWID tabanlı altyapı, yazılımınızı güvence altına alır.</p>
     </div>
     <div class="feature">
       <div class="feature-icon">&#9889;</div>
@@ -164,12 +164,12 @@
     <div class="feature">
       <div class="feature-icon">&#128260;</div>
       <h3>Esnek Planlar</h3>
-      <p>Aylık, yıllık veya ömür boyu seçeneklerden ihtiyacınıza uygun planı seçin.</p>
+      <p>İhtiyacınıza uygun süreli planı seçin.</p>
     </div>
     <div class="feature">
       <div class="feature-icon">&#9881;</div>
       <h3>PLC ve SCADA Uyumu</h3>
-      <p>Siemens, Delta, Schneider ve daha fazlası — tüm marka PLC'ler ve SCADA sistemleriyle tam uyumlu OPC Gateway entegrasyonu.</p>
+      <p>Siemens, Delta, Schneider ve daha fazlası — tüm marka PLC'ler ve SCADA sistemleriyle tam uyumludur.</p>
     </div>
   </div>
 </div>
