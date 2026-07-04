@@ -56,6 +56,18 @@ app.add_middleware(
 )
 
 # =====================================================================
+# GODOT 4 WEB EXPORT GÜVENLİK BAŞLIKLARI (MIDDLEWARE)
+# =====================================================================
+@app.middleware("http")
+async def add_godot_headers(request: Request, call_next):
+    response = await call_next(request)
+    # Eğer istek FlappyElectronics oyununa geliyorsa, SharedArrayBuffer izinlerini ver:
+    if request.url.path.startswith("/flappyelectronics"):
+        response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+        response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
+    return response
+
+# =====================================================================
 # GLOBAL EXCEPTION HANDLER
 # =====================================================================
 @app.exception_handler(Exception)
@@ -104,6 +116,14 @@ import pathlib
 _static_dir = pathlib.Path(__file__).parent / "static"
 _static_dir.mkdir(exist_ok=True)
 app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
+
+# =====================================================================
+# FLAPPYELECTRONICS OYUN DOSYALARI
+# =====================================================================
+_flappy_dir = pathlib.Path(__file__).parent / "flappyelectronics"
+_flappy_dir.mkdir(exist_ok=True)
+# html=True parametresi sayesinde /flappyelectronics yazılınca otomatik index.html açılır
+app.mount("/flappyelectronics", StaticFiles(directory=str(_flappy_dir), html=True), name="flappyelectronics")
 
 # =====================================================================
 # ROUTER KAYITLARI
