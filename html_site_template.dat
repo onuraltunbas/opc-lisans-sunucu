@@ -137,8 +137,8 @@
 <div id="sayfa-anasayfa">
   <div class="hero">
     <div class="hero-badge">&#9889; OPC Gateway Lisans Sistemi</div>
-    <h1>PLC ve Endüstriyel Otomasyon<br><span>Gateway Sistemleri</span></h1>
-    <p>Siemens, Delta, Schneider gibi tüm PLC'ler ile tam uyumlu OPC Gateway yazılımı için güvenli, hızlı ve donanım bağımsız lisans yönetim sistemi.</p>
+    <h1>PLC ve Endüstriyel Otomasyon<br><span>Gateway ve Viewer Sistemleri</span></h1>
+    <p>Siemens, Delta, Schneider gibi tüm PLC'ler ile tam uyumlu OPC DA to UA Gateway ve OPC UA Viewer yazılımı.</p>
     <div class="hero-btns">
       <button class="btn-hero btn-hero-primary" onclick="sayfaGoster('kayit')">Hemen Başla &rarr;</button>
       <button class="btn-hero btn-hero-ghost" onclick="sayfaGoster('planlar')">Planları İncele</button>
