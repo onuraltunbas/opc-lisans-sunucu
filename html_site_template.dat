@@ -141,6 +141,7 @@
     <p>Siemens, Delta, Schneider gibi tüm PLC'ler ile tam uyumlu OPC DA to UA Gateway ve OPC UA Viewer yazılımı.</p>
     <div class="hero-btns">
       <button class="btn-hero btn-hero-primary" onclick="sayfaGoster('kayit')">Hemen Başla &rarr;</button>
+      <button class="btn-hero btn-hero-compare" onclick="sayfaGoster('karsilastir')" style="background:linear-gradient(135deg,rgba(61,111,255,0.15),rgba(124,58,237,0.15));border:1px solid rgba(61,111,255,0.45);color:var(--accent,#3d6fff);border-radius:clamp(20px,2.6vw,32px);padding:clamp(10px,1.4vw,17px) clamp(18px,2.4vw,29px);font-size:clamp(11px,1.5vw,18px);font-weight:700;cursor:pointer;transition:all .25s;letter-spacing:.3px;" onmouseover="this.style.background='linear-gradient(135deg,rgba(61,111,255,0.28),rgba(124,58,237,0.28))';this.style.borderColor='rgba(61,111,255,0.75)'" onmouseout="this.style.background='linear-gradient(135deg,rgba(61,111,255,0.15),rgba(124,58,237,0.15))';this.style.borderColor='rgba(61,111,255,0.45)'">&#9878; Programları Karşılaştır</button>
       <button class="btn-hero btn-hero-ghost" onclick="sayfaGoster('planlar')">Planları İncele</button>
     </div>
   </div>
@@ -171,6 +172,162 @@
       <h3>PLC ve SCADA Uyumu</h3>
       <p>Siemens, Delta, Schneider ve daha fazlası — tüm marka PLC'ler ve SCADA sistemleriyle tam uyumludur.</p>
     </div>
+  </div>
+</div>
+
+<!-- KARŞILAŞTIRMA -->
+<div id="sayfa-karsilastir" style="display:none;">
+  <div style="height:clamp(36px,4.8vh,58px);"></div>
+  <div style="width:100%;max-width:clamp(300px,95vw,1100px);margin:0 auto;padding:0 clamp(18px,2.4vw,29px) clamp(60px,8.0vw,96px);">
+
+    <!-- Başlık -->
+    <div style="text-align:center;margin-bottom:clamp(36px,4.8vh,58px);">
+      <div style="display:inline-flex;align-items:center;gap:clamp(7px,1.0vw,12px);background:rgba(61,111,255,0.08);border:1px solid rgba(61,111,255,0.25);border-radius:clamp(30px,4.0vw,48px);padding:clamp(6px,0.8vw,10px) clamp(16px,2.2vw,27px);font-size:clamp(9px,1.3vw,16px);color:var(--accent,#3d6fff);font-weight:600;letter-spacing:.5px;margin-bottom:clamp(15px,2.0vh,24px);">&#9878; Ürün Karşılaştırma</div>
+      <h1 style="font-size:clamp(26px,4.5vw,48px);font-weight:800;line-height:1.2;margin:0 0 clamp(10px,1.4vw,17px);">Gateway <span style="color:var(--accent,#3d6fff);">vs</span> NautilusViewer</h1>
+      <p style="font-size:clamp(11px,1.5vw,18px);color:var(--muted);max-width:clamp(300px,70vw,640px);margin:0 auto;">İhtiyacınıza en uygun ürünü seçmek için aşağıdaki teknik karşılaştırmayı inceleyin.</p>
+    </div>
+
+    <!-- Kart Başlıkları -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:clamp(14px,2.0vw,24px);margin-bottom:clamp(24px,3.2vh,39px);">
+
+      <!-- Gateway Kartı -->
+      <div style="background:linear-gradient(135deg,rgba(61,111,255,0.10),rgba(61,111,255,0.04));border:1px solid rgba(61,111,255,0.30);border-radius:clamp(14px,1.8vw,22px);padding:clamp(22px,3.0vw,36px);position:relative;overflow:hidden;">
+        <div style="position:absolute;top:0;left:0;width:100%;max-width:4px;height:100%;background:linear-gradient(180deg,#3d6fff,#7c3aed);"></div>
+        <div style="font-size:clamp(24px,3.2vw,38px);margin-bottom:clamp(8px,1.0vh,13px);">&#128268;</div>
+        <div style="font-size:clamp(14px,2.0vw,24px);font-weight:800;margin-bottom:clamp(4px,0.6vh,8px);">OPC DA → UA Gateway</div>
+        <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(61,111,255,0.12);border:1px solid rgba(61,111,255,0.3);border-radius:20px;padding:4px 14px;font-size:clamp(9px,1.2vw,14px);font-weight:600;color:var(--accent,#3d6fff);">gateway_v5.0.py</div>
+        <p style="font-size:clamp(10px,1.4vw,17px);color:var(--muted);margin:clamp(10px,1.4vh,17px) 0 0;line-height:1.7;">OPC DA protokolünü OPC UA'ya dönüştüren köprü yazılım. Eski nesil PLC sistemlerini modern altyapılara entegre eder.</p>
+      </div>
+
+      <!-- NautilusViewer Kartı -->
+      <div style="background:linear-gradient(135deg,rgba(34,197,94,0.10),rgba(34,197,94,0.04));border:1px solid rgba(34,197,94,0.30);border-radius:clamp(14px,1.8vw,22px);padding:clamp(22px,3.0vw,36px);position:relative;overflow:hidden;">
+        <div style="position:absolute;top:0;left:0;width:100%;max-width:4px;height:100%;background:linear-gradient(180deg,#22c55e,#16a34a);"></div>
+        <div style="font-size:clamp(24px,3.2vw,38px);margin-bottom:clamp(8px,1.0vh,13px);">&#128202;</div>
+        <div style="font-size:clamp(14px,2.0vw,24px);font-weight:800;margin-bottom:clamp(4px,0.6vh,8px);">OPC UA Viewer</div>
+        <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);border-radius:20px;padding:4px 14px;font-size:clamp(9px,1.2vw,14px);font-weight:600;color:#22c55e;">NautilusViewer.py</div>
+        <p style="font-size:clamp(10px,1.4vw,17px);color:var(--muted);margin:clamp(10px,1.4vh,17px) 0 0;line-height:1.7;">OPC UA sunucularına bağlanarak gerçek zamanlı veri izleme ve görselleştirme sağlayan istemci uygulaması.</p>
+      </div>
+    </div>
+
+    <!-- Karşılaştırma Tablosu -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:clamp(14px,1.8vw,22px);overflow:hidden;margin-bottom:clamp(30px,4.0vh,48px);">
+
+      <!-- Tablo Başlığı -->
+      <div style="display:grid;grid-template-columns:1.6fr 1fr 1fr;background:rgba(61,111,255,0.06);border-bottom:1px solid var(--border);">
+        <div style="padding:clamp(12px,1.6vw,20px) clamp(16px,2.2vw,27px);font-size:clamp(9px,1.2vw,15px);font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);">Özellik</div>
+        <div style="padding:clamp(12px,1.6vw,20px) clamp(16px,2.2vw,27px);font-size:clamp(9px,1.2vw,15px);font-weight:700;color:var(--accent,#3d6fff);text-align:center;">&#128268; Gateway</div>
+        <div style="padding:clamp(12px,1.6vw,20px) clamp(16px,2.2vw,27px);font-size:clamp(9px,1.2vw,15px);font-weight:700;color:#22c55e;text-align:center;">&#128202; Viewer</div>
+      </div>
+
+      <!-- Satır 1 -->
+      <div style="display:grid;grid-template-columns:1.6fr 1fr 1fr;border-bottom:1px solid var(--border);transition:background .15s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background=''">
+        <div style="padding:clamp(12px,1.6vw,20px) clamp(16px,2.2vw,27px);">
+          <div style="font-size:clamp(10px,1.4vw,17px);font-weight:600;">Temel İşlev</div>
+          <div style="font-size:clamp(9px,1.2vw,15px);color:var(--muted);margin-top:3px;">Yazılımın birincil amacı</div>
+        </div>
+        <div style="padding:clamp(12px,1.6vw,20px);text-align:center;font-size:clamp(9px,1.3vw,16px);color:var(--text);display:flex;align-items:center;justify-content:center;"><span style="background:rgba(61,111,255,0.08);border-radius:8px;padding:6px 12px;">OPC DA → OPC UA protokol dönüşümü ve köprüleme</span></div>
+        <div style="padding:clamp(12px,1.6vw,20px);text-align:center;font-size:clamp(9px,1.3vw,16px);color:var(--text);display:flex;align-items:center;justify-content:center;"><span style="background:rgba(34,197,94,0.08);border-radius:8px;padding:6px 12px;">OPC UA sunucusuna bağlanarak veri izleme ve görselleştirme</span></div>
+      </div>
+
+      <!-- Satır 2 -->
+      <div style="display:grid;grid-template-columns:1.6fr 1fr 1fr;border-bottom:1px solid var(--border);transition:background .15s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background=''">
+        <div style="padding:clamp(12px,1.6vw,20px) clamp(16px,2.2vw,27px);">
+          <div style="font-size:clamp(10px,1.4vw,17px);font-weight:600;">Protokol Desteği</div>
+          <div style="font-size:clamp(9px,1.2vw,15px);color:var(--muted);margin-top:3px;">Desteklenen endüstriyel protokoller</div>
+        </div>
+        <div style="padding:clamp(12px,1.6vw,20px);text-align:center;font-size:clamp(9px,1.3vw,16px);color:var(--text);display:flex;align-items:center;justify-content:center;"><span style="background:rgba(61,111,255,0.08);border-radius:8px;padding:6px 12px;">OPC DA (Klasik) + OPC UA (sunucu tarafı)</span></div>
+        <div style="padding:clamp(12px,1.6vw,20px);text-align:center;font-size:clamp(9px,1.3vw,16px);color:var(--text);display:flex;align-items:center;justify-content:center;"><span style="background:rgba(34,197,94,0.08);border-radius:8px;padding:6px 12px;">Yalnızca OPC UA (istemci tarafı)</span></div>
+      </div>
+
+      <!-- Satır 3 -->
+      <div style="display:grid;grid-template-columns:1.6fr 1fr 1fr;border-bottom:1px solid var(--border);transition:background .15s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background=''">
+        <div style="padding:clamp(12px,1.6vw,20px) clamp(16px,2.2vw,27px);">
+          <div style="font-size:clamp(10px,1.4vw,17px);font-weight:600;">PLC / SCADA Uyumu</div>
+          <div style="font-size:clamp(9px,1.2vw,15px);color:var(--muted);margin-top:3px;">Desteklenen donanım ve sistemler</div>
+        </div>
+        <div style="padding:clamp(12px,1.6vw,20px);text-align:center;font-size:clamp(9px,1.3vw,16px);color:var(--text);display:flex;align-items:center;justify-content:center;"><span style="background:rgba(61,111,255,0.08);border-radius:8px;padding:6px 12px;">Siemens, Delta, Schneider ve tüm OPC DA uyumlu PLC'ler</span></div>
+        <div style="padding:clamp(12px,1.6vw,20px);text-align:center;font-size:clamp(9px,1.3vw,16px);color:var(--text);display:flex;align-items:center;justify-content:center;"><span style="background:rgba(34,197,94,0.08);border-radius:8px;padding:6px 12px;">OPC UA standartlı her sunucu ve SCADA sistemi</span></div>
+      </div>
+
+      <!-- Satır 4 -->
+      <div style="display:grid;grid-template-columns:1.6fr 1fr 1fr;border-bottom:1px solid var(--border);transition:background .15s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background=''">
+        <div style="padding:clamp(12px,1.6vw,20px) clamp(16px,2.2vw,27px);">
+          <div style="font-size:clamp(10px,1.4vw,17px);font-weight:600;">Veri İşleme Mimarisi</div>
+          <div style="font-size:clamp(9px,1.2vw,15px);color:var(--muted);margin-top:3px;">Çalışma modeli ve performans</div>
+        </div>
+        <div style="padding:clamp(12px,1.6vw,20px);text-align:center;font-size:clamp(9px,1.3vw,16px);color:var(--text);display:flex;align-items:center;justify-content:center;"><span style="background:rgba(61,111,255,0.08);border-radius:8px;padding:6px 12px;">asyncio + çok işlemci (multiprocessing) asenkron motor, heapq öncelik kuyruğu</span></div>
+        <div style="padding:clamp(12px,1.6vw,20px);text-align:center;font-size:clamp(9px,1.3vw,16px);color:var(--text);display:flex;align-items:center;justify-content:center;"><span style="background:rgba(34,197,94,0.08);border-radius:8px;padding:6px 12px;">asyncio + QThread ile çift katmanlı asenkron abonelik motoru</span></div>
+      </div>
+
+      <!-- Satır 5 -->
+      <div style="display:grid;grid-template-columns:1.6fr 1fr 1fr;border-bottom:1px solid var(--border);transition:background .15s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background=''">
+        <div style="padding:clamp(12px,1.6vw,20px) clamp(16px,2.2vw,27px);">
+          <div style="font-size:clamp(10px,1.4vw,17px);font-weight:600;">Lisans Güvenlik Altyapısı</div>
+          <div style="font-size:clamp(9px,1.2vw,15px);color:var(--muted);margin-top:3px;">Kullanılan şifreleme ve doğrulama katmanları</div>
+        </div>
+        <div style="padding:clamp(12px,1.6vw,20px);text-align:center;font-size:clamp(9px,1.3vw,16px);color:var(--text);display:flex;align-items:center;justify-content:center;"><span style="background:rgba(61,111,255,0.08);border-radius:8px;padding:6px 12px;">HMAC-SHA-256 · XOR şifreleme · Fernet · HWID çift kayıt (dosya + registry)</span></div>
+        <div style="padding:clamp(12px,1.6vw,20px);text-align:center;font-size:clamp(9px,1.3vw,16px);color:var(--text);display:flex;align-items:center;justify-content:center;"><span style="background:rgba(34,197,94,0.08);border-radius:8px;padding:6px 12px;">HMAC-SHA-256 · XOR şifreleme · Fernet · HWID çift kayıt (dosya + registry)</span></div>
+      </div>
+
+      <!-- Satır 6 -->
+      <div style="display:grid;grid-template-columns:1.6fr 1fr 1fr;border-bottom:1px solid var(--border);transition:background .15s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background=''">
+        <div style="padding:clamp(12px,1.6vw,20px) clamp(16px,2.2vw,27px);">
+          <div style="font-size:clamp(10px,1.4vw,17px);font-weight:600;">Çevrimdışı (Air-Gapped) Destek</div>
+          <div style="font-size:clamp(9px,1.2vw,15px);color:var(--muted);margin-top:3px;">İnternet bağlantısı olmadan çalışma</div>
+        </div>
+        <div style="padding:clamp(12px,1.6vw,20px);text-align:center;display:flex;align-items:center;justify-content:center;"><span style="background:#22c55e15;color:#4ade80;border:1px solid #22c55e44;border-radius:20px;padding:4px 14px;font-size:clamp(9px,1.2vw,14px);font-weight:700;">&#10003; Evet — Challenge/Response aktivasyonu</span></div>
+        <div style="padding:clamp(12px,1.6vw,20px);text-align:center;display:flex;align-items:center;justify-content:center;"><span style="background:#22c55e15;color:#4ade80;border:1px solid #22c55e44;border-radius:20px;padding:4px 14px;font-size:clamp(9px,1.2vw,14px);font-weight:700;">&#10003; Evet — Challenge/Response aktivasyonu</span></div>
+      </div>
+
+      <!-- Satır 7 -->
+      <div style="display:grid;grid-template-columns:1.6fr 1fr 1fr;border-bottom:1px solid var(--border);transition:background .15s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background=''">
+        <div style="padding:clamp(12px,1.6vw,20px) clamp(16px,2.2vw,27px);">
+          <div style="font-size:clamp(10px,1.4vw,17px);font-weight:600;">Kullanıcı Arayüzü</div>
+          <div style="font-size:clamp(9px,1.2vw,15px);color:var(--muted);margin-top:3px;">Grafik arayüz ve etkileşim modeli</div>
+        </div>
+        <div style="padding:clamp(12px,1.6vw,20px);text-align:center;font-size:clamp(9px,1.3vw,16px);color:var(--text);display:flex;align-items:center;justify-content:center;"><span style="background:rgba(61,111,255,0.08);border-radius:8px;padding:6px 12px;">PyQt5 tabanlı kurumsal GUI; etiket yönetimi, log izleme ve yapılandırma paneli</span></div>
+        <div style="padding:clamp(12px,1.6vw,20px);text-align:center;font-size:clamp(9px,1.3vw,16px);color:var(--text);display:flex;align-items:center;justify-content:center;"><span style="background:rgba(34,197,94,0.08);border-radius:8px;padding:6px 12px;">PyQt5 tabanlı görsel izleme paneli; gerçek zamanlı değer tablosu ve bağlantı yönetimi</span></div>
+      </div>
+
+      <!-- Satır 8 -->
+      <div style="display:grid;grid-template-columns:1.6fr 1fr 1fr;border-bottom:1px solid var(--border);transition:background .15s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background=''">
+        <div style="padding:clamp(12px,1.6vw,20px) clamp(16px,2.2vw,27px);">
+          <div style="font-size:clamp(10px,1.4vw,17px);font-weight:600;">Anti-Tamper Koruma</div>
+          <div style="font-size:clamp(9px,1.2vw,15px);color:var(--muted);margin-top:3px;">Yetkisiz müdahale tespiti</div>
+        </div>
+        <div style="padding:clamp(12px,1.6vw,20px);text-align:center;font-size:clamp(9px,1.3vw,16px);color:var(--text);display:flex;align-items:center;justify-content:center;"><span style="background:rgba(61,111,255,0.08);border-radius:8px;padding:6px 12px;">IsDebuggerPresent tespiti, burn-in listesi ve Soft-Lock saat geri koruması</span></div>
+        <div style="padding:clamp(12px,1.6vw,20px);text-align:center;font-size:clamp(9px,1.3vw,16px);color:var(--text);display:flex;align-items:center;justify-content:center;"><span style="background:rgba(34,197,94,0.08);border-radius:8px;padding:6px 12px;">IsDebuggerPresent tespiti, burn-in listesi ve saat geri alma koruması</span></div>
+      </div>
+
+      <!-- Satır 9 -->
+      <div style="display:grid;grid-template-columns:1.6fr 1fr 1fr;border-bottom:1px solid var(--border);transition:background .15s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background=''">
+        <div style="padding:clamp(12px,1.6vw,20px) clamp(16px,2.2vw,27px);">
+          <div style="font-size:clamp(10px,1.4vw,17px);font-weight:600;">Ürün İzolasyonu</div>
+          <div style="font-size:clamp(9px,1.2vw,15px);color:var(--muted);margin-top:3px;">Lisans çakışma önlemi</div>
+        </div>
+        <div style="padding:clamp(12px,1.6vw,20px);text-align:center;font-size:clamp(9px,1.3vw,16px);color:var(--text);display:flex;align-items:center;justify-content:center;"><span style="background:rgba(61,111,255,0.08);border-radius:8px;padding:6px 12px;">URUN_TIPI=&quot;gateway&quot; — HMAC imzasına dahil, Viewer lisansını reddeder</span></div>
+        <div style="padding:clamp(12px,1.6vw,20px);text-align:center;font-size:clamp(9px,1.3vw,16px);color:var(--text);display:flex;align-items:center;justify-content:center;"><span style="background:rgba(34,197,94,0.08);border-radius:8px;padding:6px 12px;">URUN_TIPI=&quot;viewer&quot; — HMAC imzasına dahil, Gateway lisansını reddeder</span></div>
+      </div>
+
+      <!-- Satır 10 -->
+      <div style="display:grid;grid-template-columns:1.6fr 1fr 1fr;transition:background .15s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background=''">
+        <div style="padding:clamp(12px,1.6vw,20px) clamp(16px,2.2vw,27px);">
+          <div style="font-size:clamp(10px,1.4vw,17px);font-weight:600;">Hedef Kullanıcı</div>
+          <div style="font-size:clamp(9px,1.2vw,15px);color:var(--muted);margin-top:3px;">Birincil hedef kitle ve kullanım senaryosu</div>
+        </div>
+        <div style="padding:clamp(12px,1.6vw,20px);text-align:center;font-size:clamp(9px,1.3vw,16px);color:var(--text);display:flex;align-items:center;justify-content:center;"><span style="background:rgba(61,111,255,0.08);border-radius:8px;padding:6px 12px;">Otomasyon mühendisleri; OPC DA altyapısını modernize etmek isteyenler</span></div>
+        <div style="padding:clamp(12px,1.6vw,20px);text-align:center;font-size:clamp(9px,1.3vw,16px);color:var(--text);display:flex;align-items:center;justify-content:center;"><span style="background:rgba(34,197,94,0.08);border-radius:8px;padding:6px 12px;">SCADA / MES operatörleri; OPC UA verilerini izleyip raporlamak isteyenler</span></div>
+      </div>
+
+    </div>
+
+    <!-- Alt Eylemler -->
+    <div style="text-align:center;display:flex;flex-wrap:wrap;justify-content:center;gap:clamp(10px,1.4vw,17px);">
+      <button class="btn-hero btn-hero-primary" onclick="sayfaGoster('kayit')">Hemen Başla &rarr;</button>
+      <button class="btn-hero btn-hero-ghost" onclick="sayfaGoster('planlar')">Planları İncele</button>
+      <button class="btn-hero btn-hero-ghost" onclick="sayfaGoster('anasayfa')">&#8592; Ana Sayfaya Dön</button>
+    </div>
+
   </div>
 </div>
 
@@ -648,12 +805,12 @@ let planlar = [];
 
 // ===== SAYFA YÖNETİMİ =====
 function sayfaGoster(ad, pushState) {
-  ["anasayfa","planlar","kayit","giris","dashboard","offline","hakkimizda","iletisim","gereksinimler","blog"].forEach(s => {
+  ["anasayfa","planlar","kayit","giris","dashboard","offline","hakkimizda","iletisim","gereksinimler","blog","karsilastir"].forEach(s => {
     document.getElementById("sayfa-" + s).style.display = s === ad ? "" : "none";
   });
   // Footer: sadece public sayfalarda göster
   var footer = document.getElementById("site-footer");
-  if (footer) footer.style.display = ["anasayfa","planlar","hakkimizda","iletisim","gereksinimler","giris","kayit","dashboard","blog"].includes(ad) ? "" : "none";
+  if (footer) footer.style.display = ["anasayfa","planlar","hakkimizda","iletisim","gereksinimler","giris","kayit","dashboard","blog","karsilastir"].includes(ad) ? "" : "none";
   if (ad === "planlar") planlariYukle();
   if (ad === "dashboard") dashboardYukle();
   if (ad === "offline") offlineSayfasiYukle();
@@ -675,7 +832,7 @@ window.addEventListener("popstate", function(e) {
 
 // Sayfa ilk yuklendiginde mevcut URL'e gore sayfayi ayarla (refresh destegi)
 (function() {
-  var gecerli = ["anasayfa","planlar","kayit","giris","dashboard","offline","hakkimizda","iletisim","gereksinimler","blog"];
+  var gecerli = ["anasayfa","planlar","kayit","giris","dashboard","offline","hakkimizda","iletisim","gereksinimler","blog","karsilastir"];
   var sunucuSayfa = "{{ current_page }}";
   var path;
   // Sunucudan gelen gecerli bir sayfa adi varsa onu kullan
