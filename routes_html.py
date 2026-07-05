@@ -3,8 +3,11 @@
 HTML Sayfa Route'ları — Panel ve kullanıcı sitesi HTML endpoint'leri.
 """
 
+import os
+import pathlib
+
 from fastapi import APIRouter
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 
 from html_panel import PANEL_HTML
 from html_site import SITE_CSS, SITE_HTML_TEMPLATE
@@ -181,3 +184,89 @@ def blog_sayfasi():
             "Siemens PLC programlama, Delta PLC, Schneider otomasyon, Gateway kurulum"
         ),
     )
+
+
+# ===== EFE SAYFASI (FOTOĞRAF / VİDEO) =====
+
+_STATIC_DIR = pathlib.Path(__file__).parent / "static"
+_EFE_DIR = _STATIC_DIR / "efeyicokseviyorum"
+
+# Desteklenen uzantılar
+_IMAGE_EXT = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif"}
+_VIDEO_EXT = {".mp4", ".webm", ".mov", ".mkv"}
+
+
+def _efe_dosya_bul():
+    """static/efe/ klasöründeki ilk fotoğraf veya videoyu döner."""
+    if not _EFE_DIR.exists():
+        return None, None
+    for f in _EFE_DIR.iterdir():
+        ext = f.suffix.lower()
+        if ext in _IMAGE_EXT:
+            return f, "image"
+        if ext in _VIDEO_EXT:
+            return f, "video"
+    return None, None
+
+
+@router.get("/efeyicokseviyorum", response_class=HTMLResponse)
+def efe_sayfasi():
+    dosya, tur = _efe_dosya_bul()
+
+    if dosya is None:
+        return HTMLResponse(content="""<!DOCTYPE html>
+<html lang='tr'><head><meta charset='UTF-8'>
+<title>Efe</title>
+<style>
+  body{background:#0a0a0a;color:#fff;font-family:sans-serif;
+       display:flex;align-items:center;justify-content:center;height:100vh;margin:0;}
+  p{opacity:.5;font-size:1.2rem;}
+</style></head>
+<body><p>Henüz bir dosya yüklenmedi.</p></body></html>""", status_code=404)
+
+    # URL yolu: /static/efe/<dosya_adı>
+    url = f"/static/efe/{dosya.name}"
+
+    if tur == "image":
+        medya_html = f"""<img src="{url}" alt="Efe"
+            style="max-width:100%;max-height:100%;object-fit:contain;border-radius:12px;
+                   box-shadow:0 8px 48px rgba(0,0,0,.7);">"""
+    else:
+        medya_html = f"""<video src="{url}" controls autoplay loop muted
+            style="max-width:100%;max-height:100%;object-fit:contain;border-radius:12px;
+                   box-shadow:0 8px 48px rgba(0,0,0,.7);">
+        </video>"""
+
+    html = f"""<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Efe</title>
+  <style>
+    *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
+    html, body {{
+      height: 100%;
+      background: #0a0a0a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }}
+    .container {{
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100vw;
+      height: 100vh;
+      padding: 24px;
+    }}
+  </style>
+</head>
+<body>
+  <div class="container">
+    {medya_html}
+  </div>
+</body>
+</html>"""
+    return HTMLResponse(content=html)
