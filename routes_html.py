@@ -224,8 +224,8 @@ def efe_sayfasi():
 </style></head>
 <body><p>Henüz bir dosya yüklenmedi.</p></body></html>""", status_code=404)
 
-    # URL yolu: /static/efe/<dosya_adı>
-    url = f"/static/efe/{dosya.name}"
+    # URL yolu: /static/efeyicokseviyorum/<dosya_adı>
+    url = f"/static/{_EFE_DIR.name}/{dosya.name}"
 
     if tur == "image":
         medya_html = f"""<img src="{url}" alt="Efe"
@@ -243,6 +243,90 @@ def efe_sayfasi():
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Efe</title>
+  <style>
+    *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
+    html, body {{
+      height: 100%;
+      background: #0a0a0a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }}
+    .container {{
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100vw;
+      height: 100vh;
+      padding: 24px;
+    }}
+  </style>
+</head>
+<body>
+  <div class="container">
+    {medya_html}
+  </div>
+</body>
+</html>"""
+    return HTMLResponse(content=html)
+
+
+# ===== 121222 SAYFASI (FOTOĞRAF / VİDEO) =====
+# 👇 Yeni sayfa eklemek için bu 3 parçayı kopyalayıp özelleştirin:
+#    1) _XXX_DIR  →  klasör adı
+#    2) _xxx_dosya_bul()  →  fonksiyon adı
+#    3) @router.get("/xxx")  →  URL adresi
+
+_121222_DIR = _STATIC_DIR / "121222"   # ← klasör adı (static/ altında)
+
+
+def _121222_dosya_bul():
+    """static/121222/ klasöründeki ilk fotoğraf veya videoyu döner."""
+    if not _121222_DIR.exists():
+        return None, None
+    for f in _121222_DIR.iterdir():
+        ext = f.suffix.lower()
+        if ext in _IMAGE_EXT:
+            return f, "image"
+        if ext in _VIDEO_EXT:
+            return f, "video"
+    return None, None
+
+
+@router.get("/121222", response_class=HTMLResponse)   # ← URL adresi
+def sayfa_121222():
+    dosya, tur = _121222_dosya_bul()
+
+    if dosya is None:
+        return HTMLResponse(content="""<!DOCTYPE html>
+<html lang='tr'><head><meta charset='UTF-8'>
+<title>121222</title>
+<style>
+  body{background:#0a0a0a;color:#fff;font-family:sans-serif;
+       display:flex;align-items:center;justify-content:center;height:100vh;margin:0;}
+  p{opacity:.5;font-size:1.2rem;}
+</style></head>
+<body><p>Henüz bir dosya yüklenmedi.</p></body></html>""", status_code=404)
+
+    url = f"/static/121222/{dosya.name}"
+
+    if tur == "image":
+        medya_html = f"""<img src="{url}" alt="121222"
+            style="max-width:100%;max-height:100%;object-fit:contain;border-radius:12px;
+                   box-shadow:0 8px 48px rgba(0,0,0,.7);">"""
+    else:
+        medya_html = f"""<video src="{url}" controls autoplay loop muted
+            style="max-width:100%;max-height:100%;object-fit:contain;border-radius:12px;
+                   box-shadow:0 8px 48px rgba(0,0,0,.7);">
+        </video>"""
+
+    html = f"""<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>121222</title>
   <style>
     *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
     html, body {{
