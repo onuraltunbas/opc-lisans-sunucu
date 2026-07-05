@@ -209,7 +209,7 @@ def _efe_dosya_bul():
     return None, None
 
 
-@router.get("/efeyicokseviyorum", response_class=HTMLResponse)
+@router.get("/dolandiriciefe", response_class=HTMLResponse)
 def efe_sayfasi():
     dosya, tur = _efe_dosya_bul()
 
