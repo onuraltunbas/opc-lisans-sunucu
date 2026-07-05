@@ -189,7 +189,7 @@ def blog_sayfasi():
 # ===== EFE SAYFASI (FOTOĞRAF / VİDEO) =====
 
 _STATIC_DIR = pathlib.Path(__file__).parent / "static"
-_EFE_DIR = _STATIC_DIR / "efeyicokseviyorum"
+_EFE_DIR = _STATIC_DIR / "dolandiriciefe"
 
 # Desteklenen uzantılar
 _IMAGE_EXT = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif"}
