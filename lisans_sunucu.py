@@ -22,7 +22,9 @@ import datetime
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from html_404 import render_404
 from fastapi.staticfiles import StaticFiles
 
 # ── Modüller ──────────────────────────────────────────────────────────
@@ -75,6 +77,12 @@ async def global_exception_handler(request: Request, exc: Exception):
     error_msg = f"❌ <b>SUNUCU HATASI (CRASH)</b>\n\n<b>Endpoint:</b> {request.url}\n<b>Hata:</b> {str(exc)}"
     telegram_bildirim_gonder(error_msg)
     return JSONResponse(status_code=500, content={"detail": "Sunucu hatası oluştu, yöneticiye bildirildi."})
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    if exc.status_code == 404:
+        return HTMLResponse(content=render_404(request.url.path), status_code=404)
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
 # =====================================================================
 # STARTUP / SHUTDOWN
