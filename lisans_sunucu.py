@@ -23,7 +23,7 @@ import shutil
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.responses import JSONResponse, HTMLResponse, RedirectResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from html_404 import render_404
 from fastapi.staticfiles import StaticFiles
@@ -61,7 +61,7 @@ app.add_middleware(
 # =====================================================================
 # GODOT WEB EXPORT GÜVENLİK VE ÖNBELLEK KIRMA (CACHE BUSTING)
 # =====================================================================
-GODOT_ASSET_VERSION = os.getenv("GODOT_ASSET_VERSION", "v20260711")
+GODOT_ASSET_VERSION = os.getenv("GODOT_ASSET_VERSION") or f"v{datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
 
 @app.middleware("http")
 async def no_cache_godot(request: Request, call_next):
@@ -149,8 +149,13 @@ for entry in _flappy_dir.iterdir():
         if not target.exists() or entry.stat().st_mtime > target.stat().st_mtime:
             shutil.copy2(entry, target)
 
-# html=True parametresi sayesinde /flappyelectronics yazılınca otomatik index.html açılır
-app.mount("/flappyelectronics", StaticFiles(directory=str(_versioned_flappy_dir), html=True), name="flappyelectronics")
+# Yeni sürüm yolu: tarayıcı eski URL üzerinden eski dosyaları tekrar kullanmaz.
+app.mount(f"/flappyelectronics/{GODOT_ASSET_VERSION}", StaticFiles(directory=str(_versioned_flappy_dir), html=True), name="flappyelectronics_versioned")
+
+@app.get("/flappyelectronics")
+@app.get("/flappyelectronics/")
+async def flappyelectronics_redirect():
+    return RedirectResponse(url=f"/flappyelectronics/{GODOT_ASSET_VERSION}/", status_code=302)
 
 # =====================================================================
 # ROUTER KAYITLARI
