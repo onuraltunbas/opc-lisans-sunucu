@@ -58,15 +58,23 @@ app.add_middleware(
 )
 
 # =====================================================================
-# GODOT 4 WEB EXPORT GÜVENLİK BAŞLIKLARI (MIDDLEWARE)
+# GODOT WEB EXPORT GÜVENLİK VE ÖNBELLEK KIRMA (CACHE BUSTING)
 # =====================================================================
 @app.middleware("http")
-async def add_godot_headers(request: Request, call_next):
+async def no_cache_godot(request: Request, call_next):
     response = await call_next(request)
-    # Eğer istek FlappyElectronics oyununa geliyorsa, SharedArrayBuffer izinlerini ver:
+    
+    # Sadece FlappyElectronics klasörüne girildiğinde bu kuralları uygula:
     if request.url.path.startswith("/flappyelectronics"):
+        # Godot 4 Fizik Motoru İzinleri
         response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
         response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
+        
+        # Tarayıcı Hafızasını (Cache) Zorla Temizletme Emirleri
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        
     return response
 
 # =====================================================================
