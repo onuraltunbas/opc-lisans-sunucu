@@ -19,6 +19,7 @@ GİRİŞ NOKTASI — sadece app tanımı ve router kayıtları burada.
 
 import os
 import datetime
+import shutil
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -60,21 +61,22 @@ app.add_middleware(
 # =====================================================================
 # GODOT WEB EXPORT GÜVENLİK VE ÖNBELLEK KIRMA (CACHE BUSTING)
 # =====================================================================
+GODOT_ASSET_VERSION = os.getenv("GODOT_ASSET_VERSION", "v20260711")
+
 @app.middleware("http")
 async def no_cache_godot(request: Request, call_next):
     response = await call_next(request)
-    
-    # Sadece FlappyElectronics klasörüne girildiğinde bu kuralları uygula:
+
     if request.url.path.startswith("/flappyelectronics"):
-        # Godot 4 Fizik Motoru İzinleri
         response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
         response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
-        
-        # Tarayıcı Hafızasını (Cache) Zorla Temizletme Emirleri
+        response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
         response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
-        
+        response.headers["Vary"] = "Accept-Encoding"
+        response.headers["X-Content-Type-Options"] = "nosniff"
+
     return response
 
 # =====================================================================
@@ -138,8 +140,17 @@ app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
 # =====================================================================
 _flappy_dir = pathlib.Path(__file__).parent / "flappyelectronics"
 _flappy_dir.mkdir(exist_ok=True)
+_versioned_flappy_dir = _flappy_dir / GODOT_ASSET_VERSION
+_versioned_flappy_dir.mkdir(exist_ok=True)
+
+for entry in _flappy_dir.iterdir():
+    if entry.is_file():
+        target = _versioned_flappy_dir / entry.name
+        if not target.exists() or entry.stat().st_mtime > target.stat().st_mtime:
+            shutil.copy2(entry, target)
+
 # html=True parametresi sayesinde /flappyelectronics yazılınca otomatik index.html açılır
-app.mount("/flappyelectronics", StaticFiles(directory=str(_flappy_dir), html=True), name="flappyelectronics")
+app.mount("/flappyelectronics", StaticFiles(directory=str(_versioned_flappy_dir), html=True), name="flappyelectronics")
 
 # =====================================================================
 # ROUTER KAYITLARI
