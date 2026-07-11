@@ -131,7 +131,7 @@ app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
 _flappy_dir = pathlib.Path(__file__).parent / "flappyelectronics"
 _flappy_dir.mkdir(exist_ok=True)
 # html=True parametresi sayesinde /flappyelectronics yazılınca otomatik index.html açılır
-app.mount("/basurefe", StaticFiles(directory=str(_flappy_dir), html=True), name="basurefe")
+app.mount("/flappyelectronics", StaticFiles(directory=str(_flappy_dir), html=True), name="flappyelectronics")
 
 # =====================================================================
 # ROUTER KAYITLARI
