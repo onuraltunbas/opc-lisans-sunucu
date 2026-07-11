@@ -354,3 +354,116 @@ def sayfa_121222():
 </body>
 </html>"""
     return HTMLResponse(content=html)
+
+
+# ===== NAH SAYFASI (VİDEO) =====
+_NAH_DIR = _STATIC_DIR / "nah"
+
+def _nah_dosya_bul():
+    """static/nah/ klasöründeki ilk videoyu döner."""
+    if not _NAH_DIR.exists():
+        return None
+    for f in _NAH_DIR.iterdir():
+        ext = f.suffix.lower()
+        if ext in _VIDEO_EXT:
+            return f
+    return None
+
+@router.get("/nah", response_class=HTMLResponse)
+def sayfa_nah():
+    dosya = _nah_dosya_bul()
+
+    if dosya is None:
+        return HTMLResponse(content="""<!DOCTYPE html>
+<html lang='tr'><head><meta charset='UTF-8'>
+<title>Nah</title>
+<style>
+  body{background:#000000;color:#fff;font-family:sans-serif;
+       display:flex;align-items:center;justify-content:center;height:100vh;margin:0;}
+  p{opacity:.5;font-size:1.2rem;}
+</style></head>
+<body><p>Henüz bir video yüklenmedi.</p></body></html>""", status_code=404)
+
+    url = f"/static/nah/{dosya.name}"
+
+    html = f"""<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nah</title>
+  <style>
+    *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
+    html, body {{
+      height: 100%;
+      background: #000000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      margin: 0;
+    }}
+    .container {{
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }}
+    #tiklaBtn {{
+      font-size: 3rem;
+      font-weight: bold;
+      color: #fff;
+      background: #ff0000;
+      padding: 20px 40px;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 0 20px rgba(255, 0, 0, 0.8);
+      animation: pulse 1.5s infinite;
+      z-index: 10;
+    }}
+    @keyframes pulse {{
+      0% {{ transform: scale(1); box-shadow: 0 0 20px rgba(255, 0, 0, 0.8); }}
+      50% {{ transform: scale(1.1); box-shadow: 0 0 40px rgba(255, 0, 0, 1); }}
+      100% {{ transform: scale(1); box-shadow: 0 0 20px rgba(255, 0, 0, 0.8); }}
+    }}
+    #videoElement {{
+      display: none;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      z-index: 1;
+    }}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <button id="tiklaBtn">TIKLA</button>
+    <video id="videoElement" src="{url}" playsinline></video>
+  </div>
+  
+  <script>
+    const btn = document.getElementById('tiklaBtn');
+    const video = document.getElementById('videoElement');
+    
+    btn.addEventListener('click', () => {{
+      btn.style.display = 'none';
+      video.style.display = 'block';
+      video.volume = 1.0;
+      
+      if (video.requestFullscreen) {{
+        video.requestFullscreen().catch(err => console.log(err));
+      }} else if (video.webkitRequestFullscreen) {{ /* Safari */
+        video.webkitRequestFullscreen().catch(err => console.log(err));
+      }} else if (video.msRequestFullscreen) {{ /* IE11 */
+        video.msRequestFullscreen().catch(err => console.log(err));
+      }}
+      
+      video.play().catch(err => console.log("Oynatma hatası:", err));
+    }});
+  </script>
+</body>
+</html>"""
+    return HTMLResponse(content=html)
