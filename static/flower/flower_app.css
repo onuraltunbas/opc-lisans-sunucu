@@ -1,0 +1,738 @@
+/* ═══════════════════════════════════════════════════════════════════
+   Flower Control — Paylaşılan CSS
+   3 sayfa varyantı: .flower-integrated, .flower-premium, .flower-minimal
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Google Fonts ── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap');
+
+/* ── CSS Değişkenleri ── */
+:root {
+  --flower-font: 'Inter', 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  --flower-primary: #a855f7;
+  --flower-primary-light: #c084fc;
+  --flower-primary-dark: #7c3aed;
+  --flower-accent: #ec4899;
+  --flower-accent-light: #f472b6;
+  --flower-success: #22c55e;
+  --flower-warning: #f59e0b;
+  --flower-danger: #ef4444;
+  --flower-bg-dark: #0a0a1a;
+  --flower-bg-card: rgba(255, 255, 255, 0.05);
+  --flower-glass: rgba(255, 255, 255, 0.08);
+  --flower-glass-border: rgba(255, 255, 255, 0.12);
+  --flower-text: #f0f0f5;
+  --flower-text-muted: rgba(240, 240, 245, 0.6);
+  --flower-radius: 16px;
+  --flower-radius-sm: 10px;
+  --flower-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --flower-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Reset (sayfa bazlı) ── */
+.flower-page * ,
+.flower-page *::before,
+.flower-page *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.flower-page {
+  font-family: var(--flower-font);
+  color: var(--flower-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ═══════════════════════════════════════════
+   ANA LAYOUT — Canvas ve Kontrol Alanları
+   ═══════════════════════════════════════════ */
+
+.flower-container {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  overflow: hidden;
+}
+
+/* Ana canvas (kamera + çiçek overlay) */
+.flower-canvas-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 800px;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--flower-radius);
+  overflow: hidden;
+  background: #000;
+}
+
+.flower-canvas-wrap canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+
+/* Kamera video (gizli, canvas'a çizilir) */
+#flower-video {
+  display: none;
+}
+
+/* Çiçek kare görseli (gizli, canvas'a çizilir) */
+.flower-frame-img {
+  display: none;
+}
+
+/* ═══════════════════════════════════════════
+   DURUM PANELİ (Kalibrasyon Adımları)
+   ═══════════════════════════════════════════ */
+
+.flower-status-panel {
+  width: 100%;
+  max-width: 800px;
+  padding: 16px 20px;
+  border-radius: var(--flower-radius-sm);
+  background: var(--flower-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--flower-glass-border);
+  text-align: center;
+  transition: var(--flower-transition);
+}
+
+.flower-status-title {
+  font-size: clamp(0.9rem, 2vw, 1.1rem);
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--flower-primary-light);
+}
+
+.flower-status-desc {
+  font-size: clamp(0.78rem, 1.6vw, 0.92rem);
+  color: var(--flower-text-muted);
+  line-height: 1.5;
+}
+
+/* Geri sayım */
+.flower-countdown {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, var(--flower-primary), var(--flower-accent));
+  box-shadow: 0 4px 20px rgba(168, 85, 247, 0.4);
+  margin: 10px 0;
+  animation: flower-pulse 1s ease-in-out infinite;
+}
+
+@keyframes flower-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+/* Adım göstergesi */
+.flower-steps {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.flower-step {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  transition: var(--flower-transition);
+}
+
+.flower-step.active {
+  background: var(--flower-primary);
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.6);
+  transform: scale(1.2);
+}
+
+.flower-step.done {
+  background: var(--flower-success);
+}
+
+/* ═══════════════════════════════════════════
+   FALLBACK SLIDER (Kamera yokken)
+   ═══════════════════════════════════════════ */
+
+.flower-fallback {
+  width: 100%;
+  max-width: 800px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+}
+
+.flower-fallback-info {
+  text-align: center;
+  padding: 12px 20px;
+  border-radius: var(--flower-radius-sm);
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  color: var(--flower-warning);
+  font-size: 0.88rem;
+}
+
+.flower-slider-wrap {
+  width: 100%;
+  max-width: 500px;
+  padding: 0 10px;
+}
+
+.flower-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--flower-primary-dark), var(--flower-primary), var(--flower-accent));
+  outline: none;
+  cursor: pointer;
+  transition: var(--flower-transition);
+}
+
+.flower-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3), 0 0 20px rgba(168, 85, 247, 0.3);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.flower-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+.flower-slider::-moz-range-thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #fff;
+  border: none;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3), 0 0 20px rgba(168, 85, 247, 0.3);
+  cursor: pointer;
+}
+
+.flower-slider-label {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--flower-text-muted);
+  margin-top: 4px;
+}
+
+/* Fallback çiçek gösterim alanı */
+.flower-display {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--flower-radius);
+  overflow: hidden;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flower-display img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* ═══════════════════════════════════════════
+   GELİŞTİRİCİ MODU
+   ═══════════════════════════════════════════ */
+
+.flower-dev-panel {
+  position: fixed;
+  bottom: 12px;
+  left: 12px;
+  z-index: 1000;
+  padding: 12px 16px;
+  border-radius: var(--flower-radius-sm);
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-family: 'Courier New', monospace;
+  font-size: 0.75rem;
+  color: #0f0;
+  max-width: 320px;
+  display: none;
+}
+
+.flower-dev-panel.show {
+  display: block;
+}
+
+.flower-dev-panel .dev-title {
+  color: var(--flower-accent);
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.flower-dev-panel .dev-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 0;
+}
+
+.flower-dev-panel .dev-label {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Dev toggle butonu */
+.flower-dev-toggle {
+  position: fixed;
+  bottom: 12px;
+  right: 12px;
+  z-index: 1001;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--flower-text-muted);
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--flower-transition);
+}
+
+.flower-dev-toggle:hover {
+  background: rgba(168, 85, 247, 0.3);
+  border-color: var(--flower-primary);
+  color: #fff;
+}
+
+/* ═══════════════════════════════════════════
+   YÜKLEME EKRANi
+   ═══════════════════════════════════════════ */
+
+.flower-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 40px;
+  min-height: 300px;
+}
+
+.flower-loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: var(--flower-primary);
+  border-radius: 50%;
+  animation: flower-spin 0.8s linear infinite;
+}
+
+@keyframes flower-spin {
+  to { transform: rotate(360deg); }
+}
+
+.flower-loading-text {
+  font-size: 0.92rem;
+  color: var(--flower-text-muted);
+}
+
+.flower-loading-bar {
+  width: 200px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.flower-loading-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--flower-primary), var(--flower-accent));
+  transition: width 0.3s ease;
+  width: 0%;
+}
+
+/* ═══════════════════════════════════════════
+   KAMERA İZNİ BUTONU
+   ═══════════════════════════════════════════ */
+
+.flower-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  border-radius: 50px;
+  border: none;
+  font-family: var(--flower-font);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--flower-transition);
+  text-decoration: none;
+  outline: none;
+}
+
+.flower-btn-primary {
+  background: linear-gradient(135deg, var(--flower-primary), var(--flower-accent));
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(168, 85, 247, 0.35);
+}
+
+.flower-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 28px rgba(168, 85, 247, 0.5);
+}
+
+.flower-btn-primary:active {
+  transform: translateY(0);
+}
+
+.flower-btn-secondary {
+  background: var(--flower-glass);
+  color: var(--flower-text);
+  border: 1px solid var(--flower-glass-border);
+}
+
+.flower-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.flower-btn-group {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ═══════════════════════════════════════════════════════
+   VARYANT 1: .flower-premium — Tam Ekran Premium
+   ═══════════════════════════════════════════════════════ */
+
+.flower-premium {
+  min-height: 100vh;
+  background: var(--flower-bg-dark);
+  background-image:
+    radial-gradient(ellipse 60% 50% at 20% 80%, rgba(168, 85, 247, 0.08) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 40% at 80% 20%, rgba(236, 72, 153, 0.06) 0%, transparent 70%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(16px, 3vw, 40px);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Dekoratif parçacıklar */
+.flower-premium::before {
+  content: '';
+  position: absolute;
+  top: -100px;
+  right: -100px;
+  width: 400px;
+  height: 400px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.06) 0%, transparent 60%);
+  animation: flower-float 12s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.flower-premium::after {
+  content: '';
+  position: absolute;
+  bottom: -80px;
+  left: -80px;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(236, 72, 153, 0.05) 0%, transparent 60%);
+  animation: flower-float 15s ease-in-out infinite reverse;
+  pointer-events: none;
+}
+
+@keyframes flower-float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(20px, -15px) scale(1.05); }
+  66% { transform: translate(-10px, 10px) scale(0.97); }
+}
+
+.flower-premium .flower-header {
+  text-align: center;
+  margin-bottom: clamp(16px, 3vw, 32px);
+  z-index: 1;
+}
+
+.flower-premium .flower-title {
+  font-family: 'Outfit', var(--flower-font);
+  font-size: clamp(1.4rem, 4vw, 2.4rem);
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--flower-primary-light), var(--flower-accent-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 6px;
+}
+
+.flower-premium .flower-subtitle {
+  font-size: clamp(0.82rem, 1.5vw, 0.95rem);
+  color: var(--flower-text-muted);
+  font-weight: 300;
+}
+
+.flower-premium .flower-canvas-wrap {
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  z-index: 1;
+}
+
+.flower-premium .flower-status-panel {
+  z-index: 1;
+}
+
+/* ═══════════════════════════════════════════════════════
+   VARYANT 2: .flower-integrated — Site Entegre
+   ═══════════════════════════════════════════════════════ */
+
+.flower-integrated {
+  background: var(--flower-bg-dark);
+  padding: clamp(20px, 4vw, 48px) clamp(12px, 3vw, 32px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  min-height: 80vh;
+}
+
+.flower-integrated .flower-header {
+  text-align: center;
+  max-width: 640px;
+}
+
+.flower-integrated .flower-title {
+  font-family: 'Outfit', var(--flower-font);
+  font-size: clamp(1.3rem, 3.5vw, 2rem);
+  font-weight: 700;
+  color: var(--flower-text);
+  margin-bottom: 8px;
+}
+
+.flower-integrated .flower-subtitle {
+  font-size: clamp(0.82rem, 1.5vw, 0.92rem);
+  color: var(--flower-text-muted);
+  line-height: 1.6;
+}
+
+.flower-integrated .flower-canvas-wrap {
+  box-shadow: var(--flower-shadow);
+  border: 1px solid var(--flower-glass-border);
+}
+
+/* ═══════════════════════════════════════════════════════
+   VARYANT 3: .flower-minimal — Minimal Sade
+   ═══════════════════════════════════════════════════════ */
+
+.flower-minimal {
+  min-height: 100vh;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  position: relative;
+}
+
+.flower-minimal .flower-canvas-wrap {
+  max-width: 100%;
+  border-radius: 0;
+  width: 100vw;
+  height: 100vh;
+  max-height: 100vh;
+  aspect-ratio: auto;
+}
+
+.flower-minimal .flower-status-panel {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(90vw, 500px);
+  z-index: 10;
+}
+
+.flower-minimal .flower-header {
+  display: none;
+}
+
+/* Minimal modda bilgi metni minimal */
+.flower-minimal .flower-hint {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.4);
+  z-index: 10;
+  white-space: nowrap;
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════ */
+
+/* Küçük mobil */
+@media (max-width: 480px) {
+  .flower-canvas-wrap {
+    border-radius: 10px;
+  }
+
+  .flower-status-panel {
+    padding: 12px 14px;
+  }
+
+  .flower-countdown {
+    width: 44px;
+    height: 44px;
+    font-size: 1.3rem;
+  }
+
+  .flower-btn {
+    padding: 10px 22px;
+    font-size: 0.88rem;
+  }
+
+  .flower-dev-panel {
+    max-width: 260px;
+    font-size: 0.68rem;
+    padding: 8px 12px;
+  }
+
+  .flower-premium .flower-canvas-wrap {
+    border-radius: 10px;
+  }
+}
+
+/* Tablet dikey */
+@media (min-width: 481px) and (max-width: 768px) {
+  .flower-canvas-wrap {
+    max-width: 95%;
+  }
+}
+
+/* Masaüstü geniş */
+@media (min-width: 1200px) {
+  .flower-canvas-wrap {
+    max-width: 900px;
+  }
+}
+
+/* Yatay mobil (landscape) */
+@media (max-height: 500px) and (orientation: landscape) {
+  .flower-premium {
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .flower-premium .flower-header {
+    margin-bottom: 6px;
+  }
+
+  .flower-premium .flower-title {
+    font-size: 1.2rem;
+  }
+
+  .flower-premium .flower-subtitle {
+    display: none;
+  }
+
+  .flower-canvas-wrap {
+    max-height: 80vh;
+  }
+
+  .flower-status-panel {
+    padding: 8px 14px;
+  }
+
+  .flower-countdown {
+    width: 36px;
+    height: 36px;
+    font-size: 1.1rem;
+    margin: 4px 0;
+  }
+}
+
+/* Yüksek DPI ekranlar */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .flower-canvas-wrap {
+    image-rendering: -webkit-optimize-contrast;
+  }
+}
+
+/* Prefers reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .flower-countdown,
+  .flower-premium::before,
+  .flower-premium::after {
+    animation: none;
+  }
+
+  * {
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Dark mode (zaten dark ama explicit destek) */
+@media (prefers-color-scheme: light) {
+  .flower-integrated {
+    background: #f5f3ff;
+  }
+
+  .flower-integrated .flower-title {
+    color: #1e1b4b;
+  }
+
+  .flower-integrated .flower-subtitle {
+    color: #6b7280;
+  }
+
+  .flower-integrated .flower-status-panel {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.08);
+  }
+
+  .flower-integrated .flower-status-title {
+    color: var(--flower-primary-dark);
+  }
+
+  .flower-integrated .flower-status-desc {
+    color: #4b5563;
+  }
+}

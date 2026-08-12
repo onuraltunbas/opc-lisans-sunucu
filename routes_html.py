@@ -11,6 +11,7 @@ from fastapi.responses import HTMLResponse, FileResponse
 
 from html_panel import PANEL_HTML
 from html_site import SITE_CSS, SITE_HTML_TEMPLATE
+from html_flower import FLOWER_HTML, FLOWER1_HTML, FLOWER2_HTML
 
 router = APIRouter()
 
@@ -467,3 +468,23 @@ def sayfa_nah():
 </body>
 </html>"""
     return HTMLResponse(content=html)
+
+
+# ===== ÇİÇEK KONTROL SAYFALARI =====
+
+@router.get("/flower", response_class=HTMLResponse)
+def flower_sayfasi():
+    """Çiçek kontrol sayfası — site entegre."""
+    return HTMLResponse(content=FLOWER_HTML)
+
+
+@router.get("/flower1", response_class=HTMLResponse)
+def flower1_sayfasi():
+    """Çiçek kontrol sayfası — premium tam ekran."""
+    return HTMLResponse(content=FLOWER1_HTML)
+
+
+@router.get("/flower2", response_class=HTMLResponse)
+def flower2_sayfasi():
+    """Çiçek kontrol sayfası — minimal/sade."""
+    return HTMLResponse(content=FLOWER2_HTML)
