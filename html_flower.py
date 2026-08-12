@@ -8,11 +8,6 @@ Sayfalar:
   FLOWER2_HTML  → /flower2  (Minimal/sade)
 """
 
-import os
-
-# Server-overridable frames path (set FLOWER_FRAMES_PATH env var to a CDN URL)
-_FRAMES_PATH = os.environ.get("FLOWER_FRAMES_PATH", "/static/flower/frames/")
-
 # ── Paylaşılan bileşenler ──
 
 _MEDIAPIPE_CDN = """
@@ -71,7 +66,7 @@ _FALLBACK_SECTION = """
     Kamera kullanılamıyor. Slider ile çiçeği kontrol edebilirsiniz.
   </div>
   <div class="flower-display">
-    <img id="flower-display-img" src="" alt="Çiçek">
+    <img id="flower-display-img" src="/static/flower/frames/kare_001.webp" alt="Çiçek">
   </div>
   <div class="flower-slider-wrap">
     <input type="range" id="flower-slider" class="flower-slider" min="0" max="149" value="0">
@@ -86,14 +81,6 @@ _DEV_TOOLS = """
 """
 
 _SCRIPTS = f"""
-<script>
-  // Provide frames path to client; server can override via FLOWER_FRAMES_PATH env var
-  window.FLOWER_FRAMES_PATH = "{_FRAMES_PATH}";
-  document.addEventListener('DOMContentLoaded', function () {{
-    var img = document.getElementById('flower-display-img');
-    if (img && (!img.src || img.src.length === 0)) img.src = window.FLOWER_FRAMES_PATH + 'kare_001.webp';
-  }});
-</script>
 {_MEDIAPIPE_CDN}
 <script src="/static/flower/flower_app.js"></script>
 """

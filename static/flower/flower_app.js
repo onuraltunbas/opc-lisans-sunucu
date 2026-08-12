@@ -8,23 +8,10 @@
 
   // ── AYARLAR ──
   const TOPLAM_KARE = 150;
-  // FRAMES_PATH may be overridden by server via window.FLOWER_FRAMES_PATH
-  let FRAMES_PATH = "/static/flower/frames/";
-  try {
-    if (typeof window !== "undefined" && window.FLOWER_FRAMES_PATH) {
-      FRAMES_PATH = window.FLOWER_FRAMES_PATH;
-    }
-  } catch (e) {
-    /* ignore */
-  }
+  const FRAMES_PATH = "/static/flower/frames/";
   const HIZALAMA_SURESI = 3; // saniye
   const KALIB1_SURESI = 5;
   const KALIB2_SURESI = 5;
-
-  // Frame kaynağı sağlanmadığında placeholder ile devam etmek için kontrol flag'i
-  let FRAMES_AVAILABLE = true;
-  // Inline küçük placeholder (1x1 PNG) — sunucuda gerçek görsel yoksa kullanılacak
-  const INLINE_PLACEHOLDER = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAAWgmWQ0AAAAASUVORK5CYII=";
 
   // ── DURUM DEĞİŞKENLERİ ──
   let durum = "YUKLENIYOR"; // YUKLENIYOR, BEKLEME, KALIB_1, KALIB_2, OYUN
@@ -103,26 +90,7 @@
     }
 
     // Kareleri yükle
-    // Önce frame kaynağının geçerli görsel döndürüp döndürmediğini kontrol et
-    checkFramesAvailable().then(() => {
-      kareleriYukle();
-    });
-  }
-
-  // Basit kontrol: ilk frame'i getirip içerik-type'ın image olup olmadığını doğrular.
-  async function checkFramesAvailable() {
-    try {
-      const testUrl = FRAMES_PATH + "kare_001.webp";
-      const resp = await fetch(testUrl, { method: "GET", cache: "no-store" });
-      const ct = resp.headers.get("content-type") || "";
-      if (!resp.ok || !ct.startsWith("image")) {
-        FRAMES_AVAILABLE = false;
-        console.warn("Flower: frames not available, falling back to placeholder.");
-      }
-    } catch (err) {
-      FRAMES_AVAILABLE = false;
-      console.warn("Flower: error checking frames availability:", err);
-    }
+    kareleriYukle();
   }
 
   // ═══════════════════════════════════════
@@ -134,18 +102,6 @@
     gosterGizle(loadingSection, true);
     gosterGizle(mainSection, false);
     gosterGizle(fallbackSection, false);
-
-    // Eğer framelar erişilebilir değilse placeholder ile devam et (hızlı fallback).
-    if (!FRAMES_AVAILABLE) {
-      for (let i = 0; i < TOPLAM_KARE; i++) {
-        const placeholder = new Image();
-        placeholder.src = INLINE_PLACEHOLDER;
-        kareler[i] = placeholder;
-        yuklenmisSayisi++;
-      }
-      yuklemeDurumuGuncelle();
-      return;
-    }
 
     for (let i = 1; i <= TOPLAM_KARE; i++) {
       const img = new Image();
