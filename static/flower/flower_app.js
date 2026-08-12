@@ -8,13 +8,23 @@
 
   // ── AYARLAR ──
   const TOPLAM_KARE = 150;
-  const FRAMES_PATH = "/static/flower/frames/";
+  // FRAMES_PATH may be overridden by server via window.FLOWER_FRAMES_PATH
+  let FRAMES_PATH = "/static/flower/frames/";
+  try {
+    if (typeof window !== "undefined" && window.FLOWER_FRAMES_PATH) {
+      FRAMES_PATH = window.FLOWER_FRAMES_PATH;
+    }
+  } catch (e) {
+    /* ignore */
+  }
   const HIZALAMA_SURESI = 3; // saniye
   const KALIB1_SURESI = 5;
   const KALIB2_SURESI = 5;
 
   // Frame kaynağı sağlanmadığında placeholder ile devam etmek için kontrol flag'i
   let FRAMES_AVAILABLE = true;
+  // Inline küçük placeholder (1x1 PNG) — sunucuda gerçek görsel yoksa kullanılacak
+  const INLINE_PLACEHOLDER = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAAWgmWQ0AAAAASUVORK5CYII=";
 
   // ── DURUM DEĞİŞKENLERİ ──
   let durum = "YUKLENIYOR"; // YUKLENIYOR, BEKLEME, KALIB_1, KALIB_2, OYUN
@@ -127,9 +137,9 @@
 
     // Eğer framelar erişilebilir değilse placeholder ile devam et (hızlı fallback).
     if (!FRAMES_AVAILABLE) {
-      const placeholder = new Image();
-      placeholder.src = FRAMES_PATH + "placeholder.webp";
       for (let i = 0; i < TOPLAM_KARE; i++) {
+        const placeholder = new Image();
+        placeholder.src = INLINE_PLACEHOLDER;
         kareler[i] = placeholder;
         yuklenmisSayisi++;
       }
