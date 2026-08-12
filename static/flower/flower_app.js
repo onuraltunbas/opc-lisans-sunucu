@@ -13,6 +13,9 @@
   const KALIB1_SURESI = 5;
   const KALIB2_SURESI = 5;
 
+  // Frame kaynağı sağlanmadığında placeholder ile devam etmek için kontrol flag'i
+  let FRAMES_AVAILABLE = true;
+
   // ── DURUM DEĞİŞKENLERİ ──
   let durum = "YUKLENIYOR"; // YUKLENIYOR, BEKLEME, KALIB_1, KALIB_2, OYUN
   let hizalamaZamanlayici = 0;
@@ -90,7 +93,26 @@
     }
 
     // Kareleri yükle
-    kareleriYukle();
+    // Önce frame kaynağının geçerli görsel döndürüp döndürmediğini kontrol et
+    checkFramesAvailable().then(() => {
+      kareleriYukle();
+    });
+  }
+
+  // Basit kontrol: ilk frame'i getirip içerik-type'ın image olup olmadığını doğrular.
+  async function checkFramesAvailable() {
+    try {
+      const testUrl = FRAMES_PATH + "kare_001.webp";
+      const resp = await fetch(testUrl, { method: "GET", cache: "no-store" });
+      const ct = resp.headers.get("content-type") || "";
+      if (!resp.ok || !ct.startsWith("image")) {
+        FRAMES_AVAILABLE = false;
+        console.warn("Flower: frames not available, falling back to placeholder.");
+      }
+    } catch (err) {
+      FRAMES_AVAILABLE = false;
+      console.warn("Flower: error checking frames availability:", err);
+    }
   }
 
   // ═══════════════════════════════════════
@@ -102,6 +124,18 @@
     gosterGizle(loadingSection, true);
     gosterGizle(mainSection, false);
     gosterGizle(fallbackSection, false);
+
+    // Eğer framelar erişilebilir değilse placeholder ile devam et (hızlı fallback).
+    if (!FRAMES_AVAILABLE) {
+      const placeholder = new Image();
+      placeholder.src = FRAMES_PATH + "placeholder.webp";
+      for (let i = 0; i < TOPLAM_KARE; i++) {
+        kareler[i] = placeholder;
+        yuklenmisSayisi++;
+      }
+      yuklemeDurumuGuncelle();
+      return;
+    }
 
     for (let i = 1; i <= TOPLAM_KARE; i++) {
       const img = new Image();
