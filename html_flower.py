@@ -32,7 +32,7 @@ _LOADING_SECTION = """
 """
 
 _STATUS_PANEL = """
-<div id="flower-status" class="flower-status-panel">
+<div id="flower-status" class="flower-status-panel" style="display:none;">
   <div id="flower-steps" class="flower-steps">
     <div class="flower-step"></div>
     <div class="flower-step"></div>
@@ -46,7 +46,7 @@ _STATUS_PANEL = """
 """
 
 _CANVAS_AREA = """
-<div class="flower-canvas-wrap">
+<div id="flower-canvas-container" class="flower-canvas-wrap" style="display:none;">
   <canvas id="flower-canvas"></canvas>
   <video id="flower-video" playsinline muted></video>
 </div>
@@ -91,7 +91,7 @@ _DEV_TOOLS = """
 
 _SCRIPTS = f"""
 {_MEDIAPIPE_CDN}
-<script src="/static/flower/flower_app.js?v=6"></script>
+<script src="/static/flower/flower_app.js?v=7"></script>
 """
 
 

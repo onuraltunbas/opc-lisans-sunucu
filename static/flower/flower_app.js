@@ -175,6 +175,14 @@
         const startCont = document.getElementById("flower-start-container");
         if (startCont) startCont.style.display = "none";
 
+        // Kamera açıldığı için asıl içerikleri (canvas ve durum paneli) göster
+        const canvasCont = document.getElementById("flower-canvas-container");
+        if (canvasCont) canvasCont.style.display = "";
+        if (statusPanel) {
+          statusPanel.style.display = "";
+          statusTitle.textContent = "Kamera Hazırlanıyor...";
+        }
+
         // Canvas boyutlarını ayarla
         videoElement.addEventListener("loadedmetadata", function () {
           if (canvas) {
