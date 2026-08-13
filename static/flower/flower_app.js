@@ -515,7 +515,8 @@
 
   function elKutudaMi(elLms, kutu, w, h) {
     if (!elLms) return false;
-    const x9 = elLms[9].x * w;
+    // Ayna görüntüsü (mirroring) uygulandığı için x koordinatını ters çeviriyoruz
+    const x9 = w - (elLms[9].x * w);
     const y9 = elLms[9].y * h;
     return x9 > kutu.x1 && x9 < kutu.x2 && y9 > kutu.y1 && y9 < kutu.y2;
   }
