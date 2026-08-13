@@ -282,18 +282,34 @@
     const simdi = Date.now() / 1000;
 
     if (durum === "BEKLEME") {
-      // Kutular
+      // Kutular için dinamik ve her ekrana uyumlu hesaplama
+      let boxW = w * 0.3; // Genişliğin %30'u
+      let boxH = boxW * 1.5; // El formu için 1:1.5 oran
+
+      // Eğer yükseklik ekranın %80'inden büyükse (yatay ve kısa ekran), yüksekliği kısıtla
+      if (boxH > h * 0.8) {
+        boxH = h * 0.8;
+        boxW = boxH / 1.5;
+      }
+
+      const centerY = h / 2;
+      const y1 = Math.round(centerY - boxH / 2);
+      const y2 = Math.round(centerY + boxH / 2);
+
+      const solCenterX = w * 0.25;
+      const sagCenterX = w * 0.75;
+
       const solKutu = {
-        x1: Math.round(w * 0.1),
-        y1: Math.round(h * 0.2),
-        x2: Math.round(w * 0.4),
-        y2: Math.round(h * 0.8),
+        x1: Math.round(solCenterX - boxW / 2),
+        y1: y1,
+        x2: Math.round(solCenterX + boxW / 2),
+        y2: y2,
       };
       const sagKutu = {
-        x1: Math.round(w * 0.6),
-        y1: Math.round(h * 0.2),
-        x2: Math.round(w * 0.9),
-        y2: Math.round(h * 0.8),
+        x1: Math.round(sagCenterX - boxW / 2),
+        y1: y1,
+        x2: Math.round(sagCenterX + boxW / 2),
+        y2: y2,
       };
 
       const solOk = elKutudaMi(solElLms, solKutu, w, h);

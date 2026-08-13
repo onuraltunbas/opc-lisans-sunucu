@@ -82,7 +82,7 @@ _DEV_TOOLS = """
 
 _SCRIPTS = f"""
 {_MEDIAPIPE_CDN}
-<script src="/static/flower/flower_app.js?v=3"></script>
+<script src="/static/flower/flower_app.js?v=5"></script>
 """
 
 
