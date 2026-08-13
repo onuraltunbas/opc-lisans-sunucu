@@ -18,7 +18,7 @@ _HEAD_COMMON = """
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0a0a1a">
-<link rel="stylesheet" href="/static/flower/flower_app.css">
+<link rel="stylesheet" href="/static/flower/flower_app.css?v=3">
 """
 
 _LOADING_SECTION = """
@@ -82,7 +82,7 @@ _DEV_TOOLS = """
 
 _SCRIPTS = f"""
 {_MEDIAPIPE_CDN}
-<script src="/static/flower/flower_app.js"></script>
+<script src="/static/flower/flower_app.js?v=3"></script>
 """
 
 
