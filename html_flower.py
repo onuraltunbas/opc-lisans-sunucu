@@ -53,7 +53,16 @@ _CANVAS_AREA = """
 """
 
 _START_BUTTON = """
-<div class="flower-btn-group">
+<div id="flower-instructions" style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: left; max-width: 600px; border: 1px solid rgba(255,255,255,0.1);">
+  <h3 style="color: #c084fc; margin-top: 0; margin-bottom: 12px; text-align: center; font-size: 1.1rem;">Nasıl Kullanılır?</h3>
+  <ol style="color: #f0f0f5; margin: 0; padding-left: 20px; line-height: 1.6; font-size: 0.95rem;">
+    <li>Aşağıdaki <strong>Kamerayı Başlat</strong> butonuna basıp kamera erişimine izin verin.</li>
+    <li>Ekranda belirecek olan <strong>Sol El</strong> ve <strong>Sağ El</strong> kutucuklarına ellerinizi hizalayıp 3 saniye sabit tutun.</li>
+    <li>Sol elinizin <strong>baş ve işaret parmağını</strong> açıp kapatarak ölçüm yapılmasını sağlayın.</li>
+    <li>İşlem bitince <strong>iki parmağınızın arasındaki mesafeyle</strong> sihirli bir şekilde çiçeği büyütebilirsiniz!</li>
+  </ol>
+</div>
+<div id="flower-start-container" class="flower-btn-group">
   <button id="flower-start-camera" class="flower-btn flower-btn-primary">
     📷 Kamerayı Başlat
   </button>
@@ -82,7 +91,7 @@ _DEV_TOOLS = """
 
 _SCRIPTS = f"""
 {_MEDIAPIPE_CDN}
-<script src="/static/flower/flower_app.js?v=5"></script>
+<script src="/static/flower/flower_app.js?v=6"></script>
 """
 
 
@@ -94,7 +103,7 @@ FLOWER_HTML = f"""<!DOCTYPE html>
 <html lang="tr">
 <head>
   {_HEAD_COMMON}
-  <title>Çiçek Kontrolü | Nautilus Technology</title>
+  <title>Flower | Nautilus Technology</title>
   <meta name="description" content="El hareketleriyle çiçeği büyütün — MediaPipe el takibi ile interaktif web deneyimi.">
   <meta name="keywords" content="çiçek kontrol, el takibi, MediaPipe, interaktif, Nautilus Technology">
   <style>

@@ -169,6 +169,12 @@
         videoElement.play();
         kameraAktif = true;
 
+        // Kamera başarılı şekilde açılınca yönergeleri ve butonu gizle
+        const instEl = document.getElementById("flower-instructions");
+        if (instEl) instEl.style.display = "none";
+        const startCont = document.getElementById("flower-start-container");
+        if (startCont) startCont.style.display = "none";
+
         // Canvas boyutlarını ayarla
         videoElement.addEventListener("loadedmetadata", function () {
           if (canvas) {
