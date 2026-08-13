@@ -66,7 +66,7 @@ _FALLBACK_SECTION = """
     Kamera kullanılamıyor. Slider ile çiçeği kontrol edebilirsiniz.
   </div>
   <div class="flower-display">
-    <img id="flower-display-img" src="/static/flower/frames/kare_001.webp" alt="Çiçek">
+    <img id="flower-display-img" src="/static/flower/frames/kare_001.webp?v=2" alt="Çiçek">
   </div>
   <div class="flower-slider-wrap">
     <input type="range" id="flower-slider" class="flower-slider" min="0" max="149" value="0">

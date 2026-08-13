@@ -106,7 +106,7 @@
     for (let i = 1; i <= TOPLAM_KARE; i++) {
       const img = new Image();
       const dosyaAdi = "kare_" + String(i).padStart(3, "0") + ".webp";
-      img.src = FRAMES_PATH + dosyaAdi;
+      img.src = FRAMES_PATH + dosyaAdi + "?v=2";
 
       img.onload = function () {
         yuklenmisSayisi++;
@@ -116,7 +116,7 @@
       img.onerror = function () {
         // WebP yüklenemezse PNG dene
         const pngAdi = "kare_" + String(i).padStart(3, "0") + ".png";
-        this.src = FRAMES_PATH + pngAdi;
+        this.src = FRAMES_PATH + pngAdi + "?v=2";
         // Hala hata varsa boş bırak
         this.onerror = function () {
           yuklenmisSayisi++;
